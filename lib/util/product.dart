@@ -1,8 +1,12 @@
 class Product {
   late String name;
+  late String ownerName;
   late double buyprice;
   late double sellprice;
   late int count;
+  late bool weightable;
+  late String wholeUnit;
+  
 
   Product({
     required this.name,
