@@ -1,0 +1,168 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../list.dart';
+import '../pages/InsertPage.dart';
+
+class GridItem extends StatelessWidget {
+  final int index;
+  const GridItem({super.key, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<Lists>(
+      builder: (context, li, child) {
+        return Padding(
+          padding: const EdgeInsets.all(10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.brown[100],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    li.productsList[index].name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Expanded(
+                  child: Text(
+                    'البيع : ${li.productsList[index].sellprice}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'الشراء : ${li.productsList[index].buyprice}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'الربح : ${(li.productsList[index].sellprice - li.productsList[index].buyprice).toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'الكمية : ${li.productsList[index].count}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.brown[200],
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(12),
+                          bottomLeft: Radius.circular(12),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            showGeneralDialog(
+                              barrierDismissible: true,
+                              barrierLabel: 'whatever',
+                              context: context,
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) {
+                                return ChangeNotifierProvider.value(
+                                  value: li,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 20,
+                                      right: 20,
+                                      top: 100,
+                                      bottom: 250,
+                                    ),
+                                    child: InPage(
+                                      buyPrice: li.productsList[index].buyprice,
+                                      count: li.productsList[index].count,
+                                      name: li.productsList[index].name,
+                                      sellPrice:
+                                          li.productsList[index].sellprice,
+                                      index: index,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          child: const Icon(Icons.edit),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.brown[200],
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text(
+                                    'هل انت متاكد',
+                                    style: TextStyle(fontSize: 20),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        li.removeProduct(index: index);
+                                        li.refreshProductsList();
+                                      },
+                                      child: const Text(
+                                        'نعم',
+                                        style: TextStyle(fontSize: 20),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text(
+                                        'لا',
+                                        style: TextStyle(fontSize: 20),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                          child: const Icon(Icons.delete_outline_rounded),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

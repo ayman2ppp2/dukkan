@@ -1,0 +1,85 @@
+import 'package:dukkan/util/Log.dart';
+import 'package:dukkan/util/product.dart';
+import 'package:hive/hive.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class DB {
+  late Box inventory;
+  late Box logs;
+  DB() {
+    init();
+  }
+  void init() async {
+    while (await Permission.storage.isDenied ||
+        await Permission.manageExternalStorage.isDenied) {
+      await Permission.manageExternalStorage.request();
+      await Permission.storage.request();
+    }
+
+    inventory = await Hive.openBox('inventory');
+    logs = await Hive.openBox('logs');
+
+    // List<Product> temp = [
+    //   Product(name: 'عدس', buyprice: 900, sellprice: 1000, count: 100),
+    //   Product(name: 'فول', buyprice: 600, sellprice: 700, count: 20),
+    //   Product(name: 'صلصة', buyprice: 500, sellprice: 600, count: 10),
+    //   Product(name: 'زيت', buyprice: 800, sellprice: 900, count: 15),
+    // ];
+    // for (var element in temp) {
+    //   inventory.put(element.name, element);
+    // }
+  }
+
+  List<Product> getAllProducts() {
+    List<Product> temp2 = List.from(inventory.values);
+
+    return temp2;
+  }
+
+  List<Log> getAllLogs() {
+    Iterable temp = logs.values;
+    List<Log> temp2 = [];
+    for (var element in temp) {
+      temp2.add(element);
+    }
+    return temp2;
+  }
+
+  Future<void> insertProducts({required List<Product> products}) async {
+    for (var element in products) {
+      await inventory.put(element.name, element);
+    }
+  }
+
+  void printProducts() {
+    for (var element in getAllProducts()) {
+      print(element.toMap());
+    }
+  }
+
+  Future<void> CheckOut(
+      {required List<Product> lst, required double total}) async {
+    double price = 0;
+    double profit = 0;
+    for (var element in lst) {
+      inventory.put(
+        element.name,
+        Product(
+            name: element.name,
+            buyprice: element.buyprice,
+            sellprice: element.sellprice,
+            count: (inventory.get(element.name))!.count - element.count),
+      );
+      price += element.sellprice * element.count;
+      profit += (element.sellprice - element.buyprice) * element.count;
+    }
+    logs.add(
+      Log(
+        products: lst,
+        price: price,
+        profit: profit,
+        date: DateTime.now(),
+      ),
+    );
+  }
+}
