@@ -1,10 +1,10 @@
 # dukkan
 
-A new Flutter project.
+A new Flutter project , intended to manage a medium retail shop.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+to test the app go to assets and download the last version.
 
 A few resources to get you started if this is your first Flutter project:
 
