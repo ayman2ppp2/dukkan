@@ -19,18 +19,18 @@ class Lists extends ChangeNotifier {
   List<Product> productsList = [];
   List<Product> sellList = [];
   List<Log> logsList = [];
-  List<DropdownMenuEntry> kg = const [
-    DropdownMenuEntry(value: '1000', label: 'كيلو'),
-    DropdownMenuEntry(value: '500', label: 'نص كيلو'),
-    DropdownMenuEntry(value: '250', label: 'ربع كيلو'),
-    DropdownMenuEntry(value: '0', label: 'وزن'),
-  ];
-  List<DropdownMenuEntry> pound = const [
-    DropdownMenuEntry(value: '450', label: 'رطل'),
-    DropdownMenuEntry(value: '225', label: 'نص رطل'),
-    DropdownMenuEntry(value: '112', label: 'ربع رطل'),
-    DropdownMenuEntry(value: '0', label: 'وزن'),
-  ];
+  Map kg = {
+    'كيلو': 1000,
+    'نص كيلو': 1000,
+    'ربع كيلو': 1000,
+    'وزن': 0,
+  };
+  Map pound = {
+    'كيلو': 1000,
+    'نص كيلو': 1000,
+    'ربع كيلو': 1000,
+    'وزن': 0,
+  };
 
   void refreshLogsList() {
     logsList = db.getAllLogs();

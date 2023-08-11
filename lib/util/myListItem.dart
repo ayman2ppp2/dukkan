@@ -33,8 +33,21 @@ class _MyListTileState extends State<MyListTile> {
                     },
                     width: 120,
                     initialSelection: '0',
-                    dropdownMenuEntries:
-                        widget.product.wholeUnit == 'كيلو' ? li.kg : li.pound,
+                    dropdownMenuEntries: widget.product.wholeUnit == 'كيلو'
+                        ? List.generate(
+                            li.kg.length,
+                            (index) => DropdownMenuEntry(
+                              value: li.kg.values.elementAt(index),
+                              label: li.kg.keys.elementAt(index),
+                            ),
+                          )
+                        : List.generate(
+                            li.kg.length,
+                            (index) => DropdownMenuEntry(
+                              value: li.pound.values.elementAt(index),
+                              label: li.pound.keys.elementAt(index),
+                            ),
+                          ),
                   ),
                 )
               : NumberPicker(
@@ -55,6 +68,9 @@ class _MyListTileState extends State<MyListTile> {
                     int gg =
                         (double.parse(value) / widget.product.sellprice).ceil();
                     li.updateSellListCount(index: widget.index, count: gg);
+                    widget.product.wholeUnit == 'كيلو'
+                        ? li.kg['وزن'] = gg
+                        : li.pound['وزن'] = gg;
                   },
                 )
               : Row(
