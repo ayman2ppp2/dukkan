@@ -19,6 +19,18 @@ class Lists extends ChangeNotifier {
   List<Product> productsList = [];
   List<Product> sellList = [];
   List<Log> logsList = [];
+  List<DropdownMenuEntry> kg = const [
+    DropdownMenuEntry(value: '1000', label: 'كيلو'),
+    DropdownMenuEntry(value: '500', label: 'نص كيلو'),
+    DropdownMenuEntry(value: '250', label: 'ربع كيلو'),
+    DropdownMenuEntry(value: '0', label: 'وزن'),
+  ];
+  List<DropdownMenuEntry> pound = const [
+    DropdownMenuEntry(value: '450', label: 'رطل'),
+    DropdownMenuEntry(value: '225', label: 'نص رطل'),
+    DropdownMenuEntry(value: '112', label: 'ربع رطل'),
+    DropdownMenuEntry(value: '0', label: 'وزن'),
+  ];
 
   void refreshLogsList() {
     logsList = db.getAllLogs();
@@ -28,8 +40,15 @@ class Lists extends ChangeNotifier {
     if (productsList.isNotEmpty) {
       Product temp = productsList.firstWhere(
         (element) => element.name == name,
-        orElse: () =>
-            Product(name: 'name', buyprice: 0, sellprice: 0, count: 999),
+        orElse: () => Product(
+          name: 'name',
+          buyprice: 0,
+          sellprice: 0,
+          count: 999,
+          ownerName: '',
+          weightable: true,
+          wholeUnit: '',
+        ),
       );
       return temp.count;
     } else {
@@ -207,7 +226,7 @@ class Lists extends ChangeNotifier {
     List<Product> result = [];
     for (var log in temp) {
       products.addAll(log.products);
-      if (log.date.day == time.day) {}
+      // if (log.date.day == time.day) {}
     }
     Map<String, int> yy = {};
     for (var product in products) {
@@ -223,6 +242,9 @@ class Lists extends ChangeNotifier {
         buyprice: 0,
         sellprice: 0,
         count: element.value,
+        weightable: true,
+        ownerName: '',
+        wholeUnit: '',
       ));
     }
     return result;

@@ -81,10 +81,13 @@ class _SearchPageState extends State<SearchPage> {
                             buyprice: product.buyprice,
                             sellprice: product.sellprice,
                             count: 1,
+                            ownerName: product.ownerName,
+                            weightable: product.weightable,
+                            wholeUnit: product.wholeUnit,
                           ));
-                          li.refresh();
                           Navigator.pop(context);
                           li.searchTemp.clear();
+                          li.refresh();
                         },
                       );
                     },

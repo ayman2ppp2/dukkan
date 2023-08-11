@@ -19,15 +19,47 @@ class DB {
     inventory = await Hive.openBox('inventory');
     logs = await Hive.openBox('logs');
 
-    // List<Product> temp = [
-    //   Product(name: 'عدس', buyprice: 900, sellprice: 1000, count: 100),
-    //   Product(name: 'فول', buyprice: 600, sellprice: 700, count: 20),
-    //   Product(name: 'صلصة', buyprice: 500, sellprice: 600, count: 10),
-    //   Product(name: 'زيت', buyprice: 800, sellprice: 900, count: 15),
-    // ];
-    // for (var element in temp) {
-    //   inventory.put(element.name, element);
-    // }
+    List<Product> temp = [
+      Product(
+        name: 'عدس',
+        buyprice: 900,
+        sellprice: 1000,
+        count: 100,
+        ownerName: '',
+        weightable: true,
+        wholeUnit: 'كيلو',
+      ),
+      Product(
+        name: 'فول',
+        buyprice: 600,
+        sellprice: 700,
+        count: 20,
+        ownerName: ',',
+        weightable: true,
+        wholeUnit: 'رطل',
+      ),
+      Product(
+        name: 'صلصة',
+        buyprice: 500,
+        sellprice: 600,
+        count: 10,
+        ownerName: '',
+        weightable: false,
+        wholeUnit: 'gg',
+      ),
+      Product(
+        name: 'زيت',
+        buyprice: 800,
+        sellprice: 900,
+        count: 15,
+        ownerName: '',
+        weightable: false,
+        wholeUnit: 'hh',
+      ),
+    ];
+    for (var element in temp) {
+      inventory.put(element.name, element);
+    }
   }
 
   List<Product> getAllProducts() {
@@ -65,10 +97,14 @@ class DB {
       inventory.put(
         element.name,
         Product(
-            name: element.name,
-            buyprice: element.buyprice,
-            sellprice: element.sellprice,
-            count: (inventory.get(element.name))!.count - element.count),
+          name: element.name,
+          buyprice: element.buyprice,
+          sellprice: element.sellprice,
+          count: (inventory.get(element.name))!.count - element.count,
+          ownerName: element.ownerName,
+          weightable: element.weightable,
+          wholeUnit: element.wholeUnit,
+        ),
       );
       price += element.sellprice * element.count;
       profit += (element.sellprice - element.buyprice) * element.count;

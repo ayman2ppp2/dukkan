@@ -10,6 +10,13 @@ class InPage extends StatefulWidget {
   double sellPrice;
   int count;
   int index;
+  TextEditingController nameCon = TextEditingController();
+  TextEditingController buyCon = TextEditingController();
+  TextEditingController sellCon = TextEditingController();
+  TextEditingController countCon = TextEditingController();
+  TextEditingController ownerCon = TextEditingController();
+  bool weightable = false;
+  TextEditingController wholeUnitCon = TextEditingController();
   InPage({
     super.key,
     required this.buyPrice,
@@ -24,26 +31,27 @@ class InPage extends StatefulWidget {
 }
 
 class _InPageState extends State<InPage> {
-  TextEditingController nameCon = TextEditingController();
-  TextEditingController buyCon = TextEditingController();
-  TextEditingController sellCon = TextEditingController();
-  TextEditingController countCon = TextEditingController();
+  @override
+  void initState() {
+    if (widget.index != -1) {
+      widget.nameCon.text = widget.name;
+      widget.buyCon.text = widget.buyPrice.toString();
+      widget.sellCon.text = widget.sellPrice.toString();
+      widget.countCon.text = widget.count.toString();
+    }
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<Lists>(
       builder: (context, li, child) {
-        if (widget.index != -1) {
-          nameCon.text = widget.name;
-          buyCon.text = widget.buyPrice.toString();
-          sellCon.text = widget.sellPrice.toString();
-          countCon.text = widget.count.toString();
-        }
         return Material(
           borderRadius: BorderRadius.circular(12),
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // add new Item
@@ -61,7 +69,7 @@ class _InPageState extends State<InPage> {
                   child: TextFormField(
                     enabled: widget.index == -1 ? true : false,
                     textDirection: TextDirection.rtl,
-                    controller: nameCon,
+                    controller: widget.nameCon,
                     decoration: InputDecoration(
                       hintText: 'الاسم',
                       border: OutlineInputBorder(
@@ -74,7 +82,7 @@ class _InPageState extends State<InPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextFormField(
-                    controller: buyCon,
+                    controller: widget.buyCon,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       hintText: 'سعر الشراء',
@@ -88,7 +96,7 @@ class _InPageState extends State<InPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextFormField(
-                    controller: sellCon,
+                    controller: widget.sellCon,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       hintText: 'سعر البيع',
@@ -102,7 +110,7 @@ class _InPageState extends State<InPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextFormField(
-                    controller: countCon,
+                    controller: widget.countCon,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       hintText: 'العدد',
@@ -112,20 +120,54 @@ class _InPageState extends State<InPage> {
                     ),
                   ),
                 ),
+                //count
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextFormField(
+                    controller: widget.wholeUnitCon,
+                    keyboardType: TextInputType.name,
+                    decoration: InputDecoration(
+                      hintText: 'كيلو/رطل/تمنة',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('وزن'),
+                      Checkbox(
+                        value: widget.weightable,
+                        onChanged: (value) {
+                          setState(() {
+                            widget.weightable = value!;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
                 // submit
                 IconButton(
                   onPressed: () {
                     if (widget.index == -1) {
-                      if (nameCon.text.isNotEmpty &
-                          buyCon.text.isNotEmpty &
-                          sellCon.text.isNotEmpty &
-                          countCon.text.isNotEmpty) {
+                      if (widget.nameCon.text.isNotEmpty &
+                          widget.buyCon.text.isNotEmpty &
+                          widget.sellCon.text.isNotEmpty &
+                          widget.countCon.text.isNotEmpty) {
                         List<Product> temp = [];
                         Product temp2 = Product(
-                            name: nameCon.text,
-                            buyprice: double.parse(buyCon.text),
-                            sellprice: double.parse(sellCon.text),
-                            count: int.parse(countCon.text));
+                          name: widget.nameCon.text,
+                          buyprice: double.parse(widget.buyCon.text),
+                          sellprice: double.parse(widget.sellCon.text),
+                          count: int.parse(widget.countCon.text),
+                          ownerName: widget.ownerCon.text,
+                          weightable: widget.weightable,
+                          wholeUnit: widget.wholeUnitCon.text,
+                        );
                         temp.add(temp2);
                         Navigator.pop(context);
                         li.db.insertProducts(products: temp);
@@ -148,15 +190,19 @@ class _InPageState extends State<InPage> {
                         );
                       }
                     } else {
-                      if (nameCon.text.isNotEmpty &
-                          buyCon.text.isNotEmpty &
-                          sellCon.text.isNotEmpty &
-                          countCon.text.isNotEmpty) {
+                      if (widget.nameCon.text.isNotEmpty &
+                          widget.buyCon.text.isNotEmpty &
+                          widget.sellCon.text.isNotEmpty &
+                          widget.countCon.text.isNotEmpty) {
                         Product temp2 = Product(
-                            name: nameCon.text,
-                            buyprice: double.parse(buyCon.text),
-                            sellprice: double.parse(sellCon.text),
-                            count: int.parse(countCon.text));
+                          name: widget.nameCon.text,
+                          buyprice: double.parse(widget.buyCon.text),
+                          sellprice: double.parse(widget.sellCon.text),
+                          count: int.parse(widget.countCon.text),
+                          ownerName: widget.ownerCon.text,
+                          weightable: widget.weightable,
+                          wholeUnit: widget.wholeUnitCon.text,
+                        );
                         li.updateProduct(temp2);
                         li.refreshProductsList();
                         Navigator.pop(context);
