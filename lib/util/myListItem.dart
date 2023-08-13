@@ -26,28 +26,11 @@ class _MyListTileState extends State<MyListTile> {
           trailing: widget.product.weightable
               ? Container(
                   constraints: const BoxConstraints(maxWidth: 100),
-                  child: DropdownMenu(
-                    onSelected: (value) {
-                      li.updateSellListCount(
-                          index: widget.index, count: int.parse(value));
+                  child: DropdownButton(
+                    items: [DropdownMenuItem(child: Text('test'))],
+                    onChanged: (value) {
+                      print(value);
                     },
-                    width: 120,
-                    initialSelection: '0',
-                    dropdownMenuEntries: widget.product.wholeUnit == 'كيلو'
-                        ? List.generate(
-                            li.kg.length,
-                            (index) => DropdownMenuEntry(
-                              value: li.kg.values.elementAt(index),
-                              label: li.kg.keys.elementAt(index),
-                            ),
-                          )
-                        : List.generate(
-                            li.kg.length,
-                            (index) => DropdownMenuEntry(
-                              value: li.pound.values.elementAt(index),
-                              label: li.pound.keys.elementAt(index),
-                            ),
-                          ),
                   ),
                 )
               : NumberPicker(
@@ -91,3 +74,26 @@ class _MyListTileState extends State<MyListTile> {
 // implement the collictions style for products from now on
 // 
 
+/*DropdownMenu(
+                    onSelected: (value) {
+                      li.updateSellListCount(
+                          index: widget.index, count: int.parse(value));
+                    },
+                    width: 120,
+                    initialSelection: '0',
+                    dropdownMenuEntries: widget.product.wholeUnit == 'كيلو'
+                        ? List.generate(
+                            li.kg.length,
+                            (index) => DropdownMenuEntry(
+                              value: li.kg.values.elementAt(index),
+                              label: li.kg.keys.elementAt(index),
+                            ),
+                          )
+                        : List.generate(
+                            li.kg.length,
+                            (index) => DropdownMenuEntry(
+                              value: li.pound.values.elementAt(index),
+                              label: li.pound.keys.elementAt(index),
+                            ),
+                          ),
+                  ), */
