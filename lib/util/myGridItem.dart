@@ -96,6 +96,11 @@ class GridItem extends StatelessWidget {
                                       sellPrice:
                                           li.productsList[index].sellprice,
                                       index: index,
+                                      owner: li.productsList[index].ownerName,
+                                      wholeUnit:
+                                          li.productsList[index].wholeUnit,
+                                      weightable:
+                                          li.productsList[index].weightable,
                                     ),
                                   ),
                                 );

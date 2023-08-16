@@ -6,6 +6,8 @@ import '../util/product.dart';
 
 class InPage extends StatefulWidget {
   String name;
+  String wholeUnit;
+  String owner;
   double buyPrice;
   double sellPrice;
   int count;
@@ -24,6 +26,9 @@ class InPage extends StatefulWidget {
     required this.name,
     required this.sellPrice,
     required this.index,
+    required this.owner,
+    required this.wholeUnit,
+    required this.weightable,
   });
 
   @override
@@ -38,6 +43,7 @@ class _InPageState extends State<InPage> {
       widget.buyCon.text = widget.buyPrice.toString();
       widget.sellCon.text = widget.sellPrice.toString();
       widget.countCon.text = widget.count.toString();
+      widget.wholeUnitCon.text = widget.wholeUnit;
     }
     super.initState();
   }

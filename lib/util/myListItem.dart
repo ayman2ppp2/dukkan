@@ -16,6 +16,7 @@ class MyListTile extends StatefulWidget {
 }
 
 class _MyListTileState extends State<MyListTile> {
+  String weight = "";
   @override
   Widget build(BuildContext context) {
     return Consumer<Lists>(
@@ -26,11 +27,59 @@ class _MyListTileState extends State<MyListTile> {
           trailing: widget.product.weightable
               ? Container(
                   constraints: const BoxConstraints(maxWidth: 100),
-                  child: DropdownButton(
-                    items: [DropdownMenuItem(child: Text('test'))],
-                    onChanged: (value) {
-                      print(value);
-                    },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text('${widget.product.count}ج',
+                          style: const TextStyle(fontSize: 15)),
+                      PopupMenuButton(
+                        onSelected: (value) {
+                          li.updateSellListCount(
+                              index: widget.index, count: value.toInt());
+                          switch (value) {
+                            case 1000:
+                              weight = 'كيلو';
+                            case 500:
+                              weight = 'نص كيلو';
+                            case 250:
+                              weight = 'ربع كيلو';
+                            case 450:
+                              weight = 'رطل';
+                            case 225:
+                              weight = 'نص رطل';
+                            case 112.5:
+                              weight = 'ربع رطل';
+                            case 0:
+                              weight = 'وزن';
+                              break;
+                            default:
+                          }
+                        },
+                        itemBuilder: (context) {
+                          if (widget.product.wholeUnit == 'كيلو') {
+                            return List.generate(
+                              li.kg.length,
+                              (index) => PopupMenuItem(
+                                value: li.kg.values.elementAt(index),
+                                child: Text(
+                                  li.kg.keys.elementAt(index),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return List.generate(
+                              li.kg.length,
+                              (index) => PopupMenuItem(
+                                value: li.pound.values.elementAt(index),
+                                child: Text(
+                                  li.pound.keys.elementAt(index),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      )
+                    ],
                   ),
                 )
               : NumberPicker(
@@ -45,15 +94,16 @@ class _MyListTileState extends State<MyListTile> {
                   itemWidth: 60,
                   itemCount: 1,
                 ),
-          subtitle: widget.product.weightable && widget.product.count == 0
+          subtitle: widget.product.weightable && weight == 'وزن'
               ? TextField(
+                  keyboardType: TextInputType.number,
+                  maxLength: 5,
                   onChanged: (value) {
-                    int gg =
-                        (double.parse(value) / widget.product.sellprice).ceil();
-                    li.updateSellListCount(index: widget.index, count: gg);
-                    widget.product.wholeUnit == 'كيلو'
-                        ? li.kg['وزن'] = gg
-                        : li.pound['وزن'] = gg;
+                    if (value.isNotEmpty) {
+                      int gg = (double.parse(value) / widget.product.sellprice)
+                          .ceil();
+                      li.updateSellListCount(index: widget.index, count: gg);
+                    }
                   },
                 )
               : Row(
@@ -75,25 +125,35 @@ class _MyListTileState extends State<MyListTile> {
 // 
 
 /*DropdownMenu(
-                    onSelected: (value) {
-                      li.updateSellListCount(
-                          index: widget.index, count: int.parse(value));
-                    },
-                    width: 120,
-                    initialSelection: '0',
-                    dropdownMenuEntries: widget.product.wholeUnit == 'كيلو'
-                        ? List.generate(
-                            li.kg.length,
-                            (index) => DropdownMenuEntry(
-                              value: li.kg.values.elementAt(index),
-                              label: li.kg.keys.elementAt(index),
-                            ),
-                          )
-                        : List.generate(
-                            li.kg.length,
-                            (index) => DropdownMenuEntry(
-                              value: li.pound.values.elementAt(index),
-                              label: li.pound.keys.elementAt(index),
-                            ),
+                          inputDecorationTheme: const InputDecorationTheme(
+                            border: UnderlineInputBorder(),
                           ),
-                  ), */
+                          onSelected: (value) {
+                            weight = (value as double).toString();
+                            li.updateSellListCount(
+                              index: widget.index,
+                              count: double.parse('${value as double}').toInt(),
+                            );
+                          },
+                          width: 120,
+                          initialSelection: '0',
+                          dropdownMenuEntries:
+                              widget.product.wholeUnit == 'كيلو'
+                                  ? List.generate(
+                                      li.kg.length,
+                                      (index) => DropdownMenuEntry(
+                                        value: li.kg.values.elementAt(index),
+                                        label: li.kg.keys.elementAt(index),
+                                      ),
+                                    )
+                                  : List.generate(
+                                      li.kg.length,
+                                      (index) => DropdownMenuEntry(
+                                        value: li.pound.values.elementAt(index),
+                                        label: li.pound.keys.elementAt(index),
+                                      ),
+                                    ),
+                        ),*/
+
+
+// I need a redisgn of this widget asap

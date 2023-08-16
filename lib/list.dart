@@ -17,18 +17,34 @@ class Lists extends ChangeNotifier {
   List<Widget> shareList = [];
   List<Product> searchTemp = [];
   List<Product> productsList = [];
-  List<Product> sellList = [];
+  List<Product> sellList = [
+    Product(
+      name: 'عدس',
+      buyprice: 900,
+      sellprice: 1000,
+      count: 100,
+      ownerName: '',
+      weightable: true,
+      wholeUnit: 'كيلو',
+    ),
+  ];
   List<Log> logsList = [];
-  Map kg = {
+  Map<String, double> kg = {
     'كيلو': 1000,
     'نص كيلو': 500,
     'ربع كيلو': 250,
     'وزن': 0,
   };
-  Map pound = {
+  Map<String, double> pound = {
     'رطل': 450,
     'نص رطل': 225,
     'ربع رطل': 112.5,
+    'وزن': 0,
+  };
+  Map<String, double> toumna = {
+    'تمنة': 850,
+    'نص تمنة': 425,
+    'ربع تمنة': 212.5,
     'وزن': 0,
   };
 
