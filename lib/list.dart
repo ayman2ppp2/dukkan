@@ -20,9 +20,9 @@ class Lists extends ChangeNotifier {
   List<Product> sellList = [
     Product(
       name: 'عدس',
-      buyprice: 900,
-      sellprice: 1000,
-      count: 100,
+      buyprice: 1,
+      sellprice: 1.5,
+      count: 1000,
       ownerName: '',
       weightable: true,
       wholeUnit: 'كيلو',

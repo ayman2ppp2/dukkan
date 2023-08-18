@@ -22,8 +22,8 @@ class DB {
     List<Product> temp = [
       Product(
         name: 'عدس',
-        buyprice: 900,
-        sellprice: 1000,
+        buyprice: 1,
+        sellprice: 1.5,
         count: 100,
         ownerName: '',
         weightable: true,
