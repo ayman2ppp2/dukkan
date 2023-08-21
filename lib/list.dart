@@ -220,17 +220,14 @@ class Lists extends ChangeNotifier {
     refreshProductsList();
   }
 
-  int getNumberOfSalesForAproduct(
-      {required String key, required DateTime time}) {
+  int getNumberOfSalesForAproduct({required String key}) {
     int count = 0;
     List<Log> logs = db.getAllLogs();
     for (var log in logs) {
-      if (log.date.day == time.day) {
-        List<Product> products = log.products;
-        for (var product in products) {
-          if (product.name == key) {
-            count += product.count;
-          }
+      List<Product> products = log.products;
+      for (var product in products) {
+        if (product.name == key) {
+          count += product.count;
         }
       }
     }
@@ -274,14 +271,14 @@ class Lists extends ChangeNotifier {
     List<Product> products = db.getAllProducts();
 
     for (var product in products) {
+      int gg = getNumberOfSalesForAproduct(
+        key: product.name,
+      );
       temp.add(
         ProdStats(
           date: DateTime.now(),
           name: product.name,
-          count: getNumberOfSalesForAproduct(
-            key: product.name,
-            time: DateTime.now(),
-          ),
+          count: gg > 1000 ? (gg).toDouble() : gg.toDouble(),
         ),
       );
     }
