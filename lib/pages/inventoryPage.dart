@@ -64,18 +64,21 @@ class _InvPageState extends State<InvPage> {
           ),
           body: Column(
             children: [
-              Container(
-                width: 250,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.brown[200],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    textDirection: TextDirection.rtl,
-                    decoration: const InputDecoration(hintText: 'إبحث'),
-                    onChanged: (value) => li.search(value),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  width: 250,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.brown[200],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextField(
+                      textDirection: TextDirection.rtl,
+                      decoration: const InputDecoration(hintText: 'إبحث'),
+                      onChanged: (value) => li.search(value),
+                    ),
                   ),
                 ),
               ),
@@ -88,7 +91,7 @@ class _InvPageState extends State<InvPage> {
                                 crossAxisCount: 2),
                         itemBuilder: (context, index) {
                           return GridItem(
-                            product: li.searchTemp.elementAt(index),
+                            name: li.searchTemp.elementAt(index).name,
                           );
                         },
                       )
@@ -102,7 +105,7 @@ class _InvPageState extends State<InvPage> {
                           // Provider.of<Lists>(context).refreshListOfOwners();
                           // debugPrint(Provider.of<Lists>(context).ownersList.toString());
                           return GridItem(
-                            product: li.productsList.elementAt(index),
+                            name: li.productsList.elementAt(index).name,
                           );
                         },
                       ),

@@ -1,4 +1,3 @@
-import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,13 +5,17 @@ import '../list.dart';
 import '../pages/InsertPage.dart';
 
 class GridItem extends StatelessWidget {
-  final Product product;
-  const GridItem({super.key, required this.product});
+  final String name;
+
+  const GridItem({super.key, required this.name});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<Lists>(
       builder: (context, li, child) {
+        int index = li.productsList.indexWhere(
+          (element) => element.name == name,
+        );
         return Padding(
           padding: const EdgeInsets.all(10),
           child: Container(
@@ -25,7 +28,7 @@ class GridItem extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    product.name,
+                    li.productsList[index].name,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
@@ -36,7 +39,7 @@ class GridItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'البيع : ${product.sellprice}',
+                    'البيع : ${li.productsList[index].sellprice}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
@@ -44,19 +47,19 @@ class GridItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'الشراء : ${product.buyprice}',
+                    'الشراء : ${li.productsList[index].buyprice}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   child: Text(
-                    'الربح : ${(product.sellprice - product.buyprice).toStringAsFixed(2)}',
+                    'الربح : ${(li.productsList[index].sellprice - li.productsList[index].buyprice).toStringAsFixed(2)}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   child: Text(
-                    'الكمية : ${product.count}',
+                    'الكمية : ${li.productsList[index].count}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -91,16 +94,17 @@ class GridItem extends StatelessWidget {
                                       bottom: 250,
                                     ),
                                     child: InPage(
-                                      buyPrice: product.buyprice,
-                                      count: product.count,
-                                      name: product.name,
-                                      sellPrice: product.sellprice,
-                                      index: li.productsList.indexWhere(
-                                          (element) =>
-                                              element.name == product.name),
-                                      owner: product.ownerName,
-                                      wholeUnit: product.wholeUnit,
-                                      weightable: product.weightable,
+                                      buyPrice: li.productsList[index].buyprice,
+                                      count: li.productsList[index].count,
+                                      name: li.productsList[index].name,
+                                      sellPrice:
+                                          li.productsList[index].sellprice,
+                                      index: index,
+                                      owner: li.productsList[index].ownerName,
+                                      wholeUnit:
+                                          li.productsList[index].wholeUnit,
+                                      weightable:
+                                          li.productsList[index].weightable,
                                     ),
                                   ),
                                 );
@@ -135,11 +139,7 @@ class GridItem extends StatelessWidget {
                                     TextButton(
                                       onPressed: () {
                                         Navigator.pop(context);
-                                        li.removeProduct(
-                                          index: li.productsList.indexWhere(
-                                              (element) =>
-                                                  element.name == product.name),
-                                        );
+                                        li.removeProduct(index: index);
                                         li.refreshProductsList();
                                       },
                                       child: const Text(

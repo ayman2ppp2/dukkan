@@ -231,6 +231,7 @@ class _InPageState extends State<InPage> {
                         );
                         li.updateProduct(temp2);
                         li.refreshProductsList();
+                        li.refresh();
                         Navigator.pop(context);
                       } else {
                         showDialog(
