@@ -1,4 +1,5 @@
 import 'package:dukkan/pages/InsertPage.dart';
+import 'package:dukkan/util/addUser.dart';
 import 'package:dukkan/util/myGridItem.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +22,23 @@ class _InvPageState extends State<InvPage> {
           appBar: AppBar(
             backgroundColor: Colors.brown,
             iconTheme: IconThemeData(color: Colors.brown[100]),
+            actions: [
+              IconButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return ChangeNotifierProvider.value(
+                        value: li,
+                        child: AddUser(),
+                      );
+                    },
+                  );
+                },
+                icon: const Icon(Icons.person_add),
+                tooltip: 'إضافة مالك',
+              )
+            ],
             title: Center(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -33,10 +51,10 @@ class _InvPageState extends State<InvPage> {
                         fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    ' الكلي : ${li.getTotalBuyPrice().toStringAsFixed(2)}',
+                    ' رأس المال : ${li.getTotalBuyPrice().toStringAsFixed(2)}',
                     style: TextStyle(
                         color: Colors.brown[50],
-                        fontSize: 20,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -44,15 +62,52 @@ class _InvPageState extends State<InvPage> {
             ),
             centerTitle: true,
           ),
-          body: GridView.builder(
-            itemCount: Provider.of<Lists>(context).productsList.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2),
-            itemBuilder: (context, index) {
-              return GridItem(
-                index: index,
-              );
-            },
+          body: Column(
+            children: [
+              Container(
+                width: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.brown[200],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    textDirection: TextDirection.rtl,
+                    decoration: const InputDecoration(hintText: 'إبحث'),
+                    onChanged: (value) => li.search(value),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: li.searchTemp.isNotEmpty
+                    ? GridView.builder(
+                        itemCount: li.searchTemp.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2),
+                        itemBuilder: (context, index) {
+                          return GridItem(
+                            product: li.searchTemp.elementAt(index),
+                          );
+                        },
+                      )
+                    : GridView.builder(
+                        itemCount:
+                            Provider.of<Lists>(context).productsList.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2),
+                        itemBuilder: (context, index) {
+                          // Provider.of<Lists>(context).refreshListOfOwners();
+                          // debugPrint(Provider.of<Lists>(context).ownersList.toString());
+                          return GridItem(
+                            product: li.productsList.elementAt(index),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: () {

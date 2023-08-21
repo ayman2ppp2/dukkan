@@ -84,6 +84,25 @@ class _InPageState extends State<InPage> {
                     ),
                   ),
                 ),
+                // owner name
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: DropdownMenu(
+                    dropdownMenuEntries: List.generate(
+                      Provider.of<Lists>(context).ownersList.length,
+                      (index) => DropdownMenuEntry(
+                        value: Provider.of<Lists>(context)
+                            .ownersList
+                            .elementAt(index),
+                        label: Provider.of<Lists>(context)
+                            .ownersList
+                            .elementAt(index),
+                      ),
+                    ),
+                    controller: widget.ownerCon,
+                    label: const Text('المالك'),
+                  ),
+                ),
                 //buyPrice
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -161,6 +180,7 @@ class _InPageState extends State<InPage> {
                   onPressed: () {
                     if (widget.index == -1) {
                       if (widget.nameCon.text.isNotEmpty &
+                          widget.ownerCon.text.isNotEmpty &
                           widget.buyCon.text.isNotEmpty &
                           widget.sellCon.text.isNotEmpty &
                           widget.countCon.text.isNotEmpty) {

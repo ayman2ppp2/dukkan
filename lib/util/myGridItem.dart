@@ -1,3 +1,4 @@
+import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,8 +6,8 @@ import '../list.dart';
 import '../pages/InsertPage.dart';
 
 class GridItem extends StatelessWidget {
-  final int index;
-  const GridItem({super.key, required this.index});
+  final Product product;
+  const GridItem({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +25,7 @@ class GridItem extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    li.productsList[index].name,
+                    product.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
@@ -35,7 +36,7 @@ class GridItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'البيع : ${li.productsList[index].sellprice}',
+                    'البيع : ${product.sellprice}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
@@ -43,19 +44,19 @@ class GridItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'الشراء : ${li.productsList[index].buyprice}',
+                    'الشراء : ${product.buyprice}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   child: Text(
-                    'الربح : ${(li.productsList[index].sellprice - li.productsList[index].buyprice).toStringAsFixed(2)}',
+                    'الربح : ${(product.sellprice - product.buyprice).toStringAsFixed(2)}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   child: Text(
-                    'الكمية : ${li.productsList[index].count}',
+                    'الكمية : ${product.count}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -90,17 +91,16 @@ class GridItem extends StatelessWidget {
                                       bottom: 250,
                                     ),
                                     child: InPage(
-                                      buyPrice: li.productsList[index].buyprice,
-                                      count: li.productsList[index].count,
-                                      name: li.productsList[index].name,
-                                      sellPrice:
-                                          li.productsList[index].sellprice,
-                                      index: index,
-                                      owner: li.productsList[index].ownerName,
-                                      wholeUnit:
-                                          li.productsList[index].wholeUnit,
-                                      weightable:
-                                          li.productsList[index].weightable,
+                                      buyPrice: product.buyprice,
+                                      count: product.count,
+                                      name: product.name,
+                                      sellPrice: product.sellprice,
+                                      index: li.productsList.indexWhere(
+                                          (element) =>
+                                              element.name == product.name),
+                                      owner: product.ownerName,
+                                      wholeUnit: product.wholeUnit,
+                                      weightable: product.weightable,
                                     ),
                                   ),
                                 );
@@ -135,7 +135,11 @@ class GridItem extends StatelessWidget {
                                     TextButton(
                                       onPressed: () {
                                         Navigator.pop(context);
-                                        li.removeProduct(index: index);
+                                        li.removeProduct(
+                                          index: li.productsList.indexWhere(
+                                              (element) =>
+                                                  element.name == product.name),
+                                        );
                                         li.refreshProductsList();
                                       },
                                       child: const Text(

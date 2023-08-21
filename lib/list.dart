@@ -17,6 +17,7 @@ class Lists extends ChangeNotifier {
   List<Widget> shareList = [];
   List<Product> searchTemp = [];
   List<Product> productsList = [];
+  Set<String> ownersList = {};
   List<Product> sellList = [
     Product(
       name: 'عدس',
@@ -47,6 +48,15 @@ class Lists extends ChangeNotifier {
     'ربع تمنة': 212.5,
     'وزن': 0,
   };
+
+  // List<Product> get
+
+  void refreshListOfOwners() {
+    refreshProductsList();
+    for (var product in productsList) {
+      ownersList.add(product.ownerName);
+    }
+  }
 
   void refreshLogsList() {
     logsList = db.getAllLogs();
@@ -199,14 +209,6 @@ class Lists extends ChangeNotifier {
     sellList[index].count = count;
     notifyListeners();
   }
-
-  // void SelectProduct({required Product product, required int sellListIndex}) {
-  //   sellList[sellListIndex].name = product.name;
-  //   sellList[sellListIndex].sellprice = product.sellprice;
-  //   sellList[sellListIndex].buyprice = product.buyprice;
-
-  //   notifyListeners();
-  // }
 
   void removeProduct({required int index}) async {
     Product temp = productsList[index];
