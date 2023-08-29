@@ -70,7 +70,7 @@ class StatsPage extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.all(10.0),
                             child: Text(
-                              'المبيعات اليومية : \n ${li.getDailySales().toStringAsFixed(2)}',
+                              'المبيعات اليومية : \n ${li.getDailySales(DateTime.now()).toStringAsFixed(2)}',
                               textDirection: TextDirection.rtl,
                             ),
                           ),
@@ -126,7 +126,7 @@ class StatsPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  // pie chart
+                  // daily saled products chart
                   Padding(
                     padding: const EdgeInsets.all(10.0),
                     child: Container(
@@ -142,7 +142,7 @@ class StatsPage extends StatelessWidget {
                           child: const CircularChart(),
                         )),
                   ),
-                  // Column Chart
+                  // total sales per product
                   Padding(
                     padding: const EdgeInsets.all(10.0),
                     child: Container(
@@ -157,6 +157,39 @@ class StatsPage extends StatelessWidget {
                           value: li,
                           child: const BarChart(),
                         )),
+                  ),
+                  // total sales for each day in the month
+                  Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Container(
+                        height: 500,
+                        constraints: const BoxConstraints(
+                          maxWidth: 200,
+                        ),
+                        decoration: BoxDecoration(
+                            color: Colors.brown[200],
+                            borderRadius: BorderRadius.circular(12)),
+                        child: ChangeNotifierProvider.value(
+                          value: li,
+                          child: const LineChart(),
+                        )),
+                  ),
+                  // owners list
+                  Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Container(
+                      height: 300,
+                      constraints: const BoxConstraints(
+                        maxWidth: 200,
+                      ),
+                      decoration: BoxDecoration(
+                          color: Colors.brown[200],
+                          borderRadius: BorderRadius.circular(12)),
+                      child: ChangeNotifierProvider.value(
+                        value: li,
+                        child: const Ownertile(),
+                      ),
+                    ),
                   ),
                 ],
               ),

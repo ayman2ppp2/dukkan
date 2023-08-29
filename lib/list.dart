@@ -1,3 +1,4 @@
+import 'package:dukkan/util/Owner.dart';
 import 'package:dukkan/util/db.dart';
 import 'package:dukkan/util/prodStats.dart';
 import 'package:dukkan/util/product.dart';
@@ -17,7 +18,7 @@ class Lists extends ChangeNotifier {
   List<Widget> shareList = [];
   List<Product> searchTemp = [];
   List<Product> productsList = [];
-  Set<String> ownersList = {};
+  Set<Owner> ownersList = {};
   List<Product> sellList = [
     Product(
       name: 'عدس',
@@ -49,13 +50,18 @@ class Lists extends ChangeNotifier {
     'وزن': 0,
   };
 
-  // List<Product> get
+  // void calculateEachOwnertotals(){
+  //   com
+  // }
+
+  void addOwner(Owner owner) {
+    db.insertOwner(owner);
+    refreshListOfOwners();
+    notifyListeners();
+  }
 
   void refreshListOfOwners() {
-    refreshProductsList();
-    for (var product in productsList) {
-      ownersList.add(product.ownerName);
-    }
+    ownersList.addAll(db.getOwnersList());
   }
 
   void refreshLogsList() {
@@ -145,13 +151,13 @@ class Lists extends ChangeNotifier {
     return sales;
   }
 
-  double getDailySales() {
+  double getDailySales(DateTime time) {
     List<Log> temp = db.getAllLogs();
     double sales = 0;
     for (var log in temp) {
-      if (log.date.day == DateTime.now().day &&
-          log.date.month == DateTime.now().month &&
-          log.date.year == DateTime.now().year) {
+      if (log.date.day == time.day &&
+          log.date.month == time.month &&
+          log.date.year == time.year) {
         sales += log.price;
       }
     }
@@ -241,7 +247,6 @@ class Lists extends ChangeNotifier {
     List<Product> result = [];
     for (var log in temp) {
       products.addAll(log.products);
-      // if (log.date.day == time.day) {}
     }
     Map<String, int> yy = {};
     for (var product in products) {
@@ -284,6 +289,29 @@ class Lists extends ChangeNotifier {
     }
 
     return temp;
+  }
+
+  List<SalesStats> getDailySalesOfTheMonth(DateTime month) {
+    DateTime tt = month;
+    List<SalesStats> result = [];
+    List<Log> temp = db.getAllLogs();
+
+    for (var log in temp) {
+      if (log.date.month == month.month && log.date.year == month.year) {
+        if (tt.day == log.date.day) {
+          continue;
+        } else {
+          result.add(
+            SalesStats(
+              date: log.date,
+              sales: getDailySales(log.date),
+            ),
+          );
+          tt = log.date;
+        }
+      }
+    }
+    return result;
   }
 
   void runServer() async {
