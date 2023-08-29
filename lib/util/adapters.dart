@@ -2,6 +2,7 @@ import 'package:dukkan/util/product.dart';
 import 'package:hive/hive.dart';
 
 import 'Log.dart';
+import 'Owner.dart';
 
 class ProductAdapter extends TypeAdapter<Product> {
   @override
@@ -51,5 +52,35 @@ class LogAdapter extends TypeAdapter<Log> {
     writer.write(obj.profit);
     writer.write(obj.date);
     writer.write(obj.products);
+  }
+}
+
+class OwnerAdapter extends TypeAdapter<Owner> {
+  @override
+  Owner read(BinaryReader reader) {
+    var ownerName = reader.read();
+    var lastPaymentDate = reader.read();
+    var lastPayment = reader.read();
+    var dueMoney = reader.read();
+    var totalPayment = reader.read();
+    return Owner(
+      ownerName: ownerName,
+      lastPaymentDate: lastPaymentDate,
+      lastPayment: lastPayment,
+      totalPayed: totalPayment,
+      dueMoney: dueMoney,
+    );
+  }
+
+  @override
+  int get typeId => 2;
+
+  @override
+  void write(BinaryWriter writer, Owner obj) {
+    writer.write(obj.ownerName);
+    writer.write(obj.lastPaymentDate);
+    writer.write(obj.lastPayment);
+    writer.write(obj.totalPayed);
+    writer.write(obj.dueMoney);
   }
 }

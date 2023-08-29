@@ -1,3 +1,4 @@
+import 'package:dukkan/util/Owner.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -30,7 +31,15 @@ class AddUser extends StatelessWidget {
             Consumer<Lists>(
               builder: (context, li, child) => IconButton(
                 onPressed: () {
-                  li.ownersList.add(Person.text);
+                  li.addOwner(
+                    Owner(
+                      ownerName: Person.text,
+                      lastPaymentDate: DateTime.now(),
+                      lastPayment: 0,
+                      totalPayed: 0,
+                      dueMoney: 0,
+                    ),
+                  );
                   Navigator.pop(context);
                 },
                 icon: const Icon(Icons.person_add),

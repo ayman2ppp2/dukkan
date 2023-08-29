@@ -3,9 +3,12 @@ import 'package:dukkan/util/product.dart';
 import 'package:hive/hive.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'Owner.dart';
+
 class DB {
   late Box inventory;
   late Box logs;
+  late Box owners;
   DB() {
     init();
   }
@@ -18,6 +21,7 @@ class DB {
 
     inventory = await Hive.openBox('inventory');
     logs = await Hive.openBox('logs');
+    owners = await Hive.openBox('owners');
 
     List<Product> temp = [
       Product(
@@ -62,9 +66,16 @@ class DB {
     }
   }
 
+  List<Owner> getOwnersList() {
+    return List<Owner>.from(owners.values);
+  }
+
+  void insertOwner(Owner owner) {
+    owners.put(owner.ownerName, owner);
+  }
+
   List<Product> getAllProducts() {
     List<Product> temp2 = List.from(inventory.values);
-
     return temp2;
   }
 

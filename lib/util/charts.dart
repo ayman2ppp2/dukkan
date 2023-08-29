@@ -12,10 +12,6 @@ class CircularChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SfCartesianChart(
-      zoomPanBehavior: ZoomPanBehavior(
-        enablePanning: true,
-        enablePinching: true,
-      ),
       title: ChartTitle(
           text: 'المبيعات اليومية لكل منتج', alignment: ChartAlignment.near),
       primaryXAxis: CategoryAxis(),
@@ -61,6 +57,59 @@ class BarChart extends StatelessWidget {
           color: Colors.brown,
         )
       ],
+    );
+  }
+}
+
+class LineChart extends StatelessWidget {
+  const LineChart({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      title: ChartTitle(
+        text: 'المبيعات اليومية لشهر ${DateTime.now().month}',
+      ),
+      primaryXAxis: CategoryAxis(
+        arrangeByIndex: true,
+      ),
+      primaryYAxis: CategoryAxis(
+        minimum: 0,
+      ),
+      series: <ChartSeries>[
+        StackedBarSeries<SalesStats, int>(
+          color: Colors.brown,
+          dataSource: Provider.of<Lists>(context).getDailySalesOfTheMonth(
+            DateTime.now(),
+          ),
+          xValueMapper: (SalesStats data, _) => data.date.day,
+          yValueMapper: (SalesStats data, _) => data.sales,
+          dataLabelSettings: const DataLabelSettings(
+            isVisible: true,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class Ownertile extends StatelessWidget {
+  const Ownertile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    Provider.of<Lists>(context).refreshListOfOwners();
+    return PageView.builder(
+      itemBuilder: (context, index) {
+        return Column(
+          children: [
+            Text('h'
+                // Provider.of<Lists>(context).ownersList.elementAt(index),
+                ),
+          ],
+        );
+      },
+      itemCount: Provider.of<Lists>(context).ownersList.length,
     );
   }
 }

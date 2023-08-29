@@ -12,6 +12,7 @@ void main() async {
 
   Hive.registerAdapter(ProductAdapter());
   Hive.registerAdapter(LogAdapter());
+  Hive.registerAdapter(OwnerAdapter());
 
   runApp(const MyApp());
 }

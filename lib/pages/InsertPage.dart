@@ -40,6 +40,7 @@ class _InPageState extends State<InPage> {
   void initState() {
     if (widget.index != -1) {
       widget.nameCon.text = widget.name;
+      widget.ownerCon.text = widget.owner;
       widget.buyCon.text = widget.buyPrice.toString();
       widget.sellCon.text = widget.sellPrice.toString();
       widget.countCon.text = widget.count.toString();
@@ -52,6 +53,7 @@ class _InPageState extends State<InPage> {
   Widget build(BuildContext context) {
     return Consumer<Lists>(
       builder: (context, li, child) {
+        li.refreshListOfOwners();
         return Material(
           borderRadius: BorderRadius.circular(12),
           child: SingleChildScrollView(
@@ -87,20 +89,19 @@ class _InPageState extends State<InPage> {
                 // owner name
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: DropdownMenu(
-                    dropdownMenuEntries: List.generate(
-                      Provider.of<Lists>(context).ownersList.length,
-                      (index) => DropdownMenuEntry(
-                        value: Provider.of<Lists>(context)
-                            .ownersList
-                            .elementAt(index),
-                        label: Provider.of<Lists>(context)
-                            .ownersList
-                            .elementAt(index),
+                  child: Consumer<Lists>(
+                    builder: (context, li, child) => DropdownMenu(
+                      initialSelection: widget.ownerCon.text,
+                      dropdownMenuEntries: List.generate(
+                        Provider.of<Lists>(context).ownersList.length,
+                        (index) => DropdownMenuEntry(
+                          value: li.ownersList.elementAt(index).ownerName,
+                          label: li.ownersList.elementAt(index).ownerName,
+                        ),
                       ),
+                      controller: widget.ownerCon,
+                      label: const Text('المالك'),
                     ),
-                    controller: widget.ownerCon,
-                    label: const Text('المالك'),
                   ),
                 ),
                 //buyPrice
@@ -264,3 +265,42 @@ class _InPageState extends State<InPage> {
     );
   }
 }
+
+/** DropdownMenu(
+                    initialSelection: widget.ownerCon.text,
+                    dropdownMenuEntries: List.generate(
+                      Provider.of<Lists>(context).ownersList.length,
+                      (index) => DropdownMenuEntry(
+                        value: Provider.of<Lists>(context)
+                            .ownersList
+                            .elementAt(index)
+                            .ownerName,
+                        label: Provider.of<Lists>(context)
+                            .ownersList
+                            .elementAt(index)
+                            .ownerName,
+                      ),
+                    ),
+                    controller: widget.ownerCon,
+                    label: const Text('المالك'),
+                  ),
+                  PopupMenuButton(
+                        enabled: true,
+                        // icon: Icon(Icons.person),
+                        child: Text('${widget.ownerCon.text}k'),
+                        onSelected: (value) => setState(() {
+                          widget.ownerCon.text = value;
+                        }),
+                        itemBuilder: (context) {
+                          return List.generate(
+                            li.ownersList.length,
+                            (index) => PopupMenuItem(
+                              value: li.ownersList.elementAt(index).ownerName,
+                              child: Text(
+                                li.ownersList.elementAt(index).ownerName,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                   */
