@@ -109,10 +109,11 @@ class DB {
     double price = 0;
     double profit = 0;
     for (var element in lst) {
-      Owner tempOwner = owners.get(element.ownerName);
-      tempOwner.dueMoney += element.sellprice * element.count;
-
-      owners.put(element.ownerName, tempOwner);
+      if (element.ownerName.isNotEmpty) {
+        Owner tempOwner = owners.get(element.ownerName);
+        tempOwner.dueMoney += element.sellprice * element.count;
+        owners.put(element.ownerName, tempOwner);
+      }
       inventory.put(
         element.name,
         Product(
