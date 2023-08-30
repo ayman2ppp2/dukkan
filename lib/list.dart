@@ -26,6 +26,7 @@ class Lists extends ChangeNotifier {
       sellprice: 1.5,
       count: 1000,
       ownerName: '',
+      barcode: '',
       weightable: true,
       wholeUnit: 'كيلو',
     ),
@@ -50,8 +51,32 @@ class Lists extends ChangeNotifier {
     'وزن': 0,
   };
 
-  // void calculateEachOwnertotals(){
-  //   com
+  void calculateEachOwnerSales(String ownerName) {
+    // refreshListOfOwners();
+
+    for (var product in productsList) {
+      if (product.ownerName == ownerName) {
+        var temp =
+            ownersList.firstWhere((element) => element.ownerName == ownerName);
+        temp.dueMoney += product.sellprice * product.count;
+      }
+    }
+  }
+
+  // Future<bool> calculateEachOwnertotals(int value) {
+  //   return compute(_calculate, value);
+  // }
+
+  // bool _calculate(int value) {
+  //   if (value == 1) {
+  //     return false;
+  //   }
+  //   for (int i = 2; i < value; ++i) {
+  //     if (value % i == 0) {
+  //       return false;
+  //     }
+  //   }
+  //   return true;
   // }
 
   void addOwner(Owner owner) {
@@ -74,6 +99,7 @@ class Lists extends ChangeNotifier {
         (element) => element.name == name,
         orElse: () => Product(
           name: 'name',
+          barcode: '',
           buyprice: 0,
           sellprice: 0,
           count: 999,
@@ -260,6 +286,7 @@ class Lists extends ChangeNotifier {
       result.add(Product(
         name: element.key,
         buyprice: 0,
+        barcode: '',
         sellprice: 0,
         count: element.value,
         weightable: true,
@@ -307,7 +334,9 @@ class Lists extends ChangeNotifier {
               sales: getDailySales(log.date),
             ),
           );
-          tt = log.date;
+          if (log.date.compareTo(tt) > 0) {
+            tt = log.date;
+          }
         }
       }
     }

@@ -26,15 +26,17 @@ class DB {
     List<Product> temp = [
       Product(
         name: 'عدس',
+        barcode: '',
         buyprice: 1,
         sellprice: 1.5,
-        count: 100,
+        count: 1000,
         ownerName: '',
         weightable: true,
         wholeUnit: 'كيلو',
       ),
       Product(
         name: 'فول',
+        barcode: '',
         buyprice: 600,
         sellprice: 700,
         count: 20,
@@ -44,6 +46,7 @@ class DB {
       ),
       Product(
         name: 'صلصة',
+        barcode: '',
         buyprice: 500,
         sellprice: 600,
         count: 10,
@@ -53,6 +56,7 @@ class DB {
       ),
       Product(
         name: 'زيت',
+        barcode: '',
         buyprice: 800,
         sellprice: 900,
         count: 15,
@@ -105,10 +109,15 @@ class DB {
     double price = 0;
     double profit = 0;
     for (var element in lst) {
+      Owner tempOwner = owners.get(element.ownerName);
+      tempOwner.dueMoney += element.sellprice * element.count;
+
+      owners.put(element.ownerName, tempOwner);
       inventory.put(
         element.name,
         Product(
           name: element.name,
+          barcode: element.barcode,
           buyprice: element.buyprice,
           sellprice: element.sellprice,
           count: (inventory.get(element.name))!.count - element.count,

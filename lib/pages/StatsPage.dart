@@ -187,7 +187,7 @@ class StatsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12)),
                       child: ChangeNotifierProvider.value(
                         value: li,
-                        child: const Ownertile(),
+                        child: Ownertile(),
                       ),
                     ),
                   ),

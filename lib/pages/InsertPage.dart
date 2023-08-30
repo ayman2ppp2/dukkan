@@ -188,6 +188,7 @@ class _InPageState extends State<InPage> {
                         List<Product> temp = [];
                         Product temp2 = Product(
                           name: widget.nameCon.text,
+                          barcode: '',
                           buyprice: double.parse(widget.buyCon.text),
                           sellprice: double.parse(widget.sellCon.text),
                           count: int.parse(widget.countCon.text),
@@ -223,6 +224,7 @@ class _InPageState extends State<InPage> {
                           widget.countCon.text.isNotEmpty) {
                         Product temp2 = Product(
                           name: widget.nameCon.text,
+                          barcode: '',
                           buyprice: double.parse(widget.buyCon.text),
                           sellprice: double.parse(widget.sellCon.text),
                           count: int.parse(widget.countCon.text),

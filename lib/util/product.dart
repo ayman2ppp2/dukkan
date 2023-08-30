@@ -3,6 +3,7 @@ class Product {
   late String ownerName;
   late double buyprice;
   late double sellprice;
+  late String barcode;
   late int count;
   late bool weightable;
   late String wholeUnit;
@@ -10,6 +11,7 @@ class Product {
   Product({
     required this.name,
     required this.ownerName,
+    required this.barcode,
     required this.buyprice,
     required this.sellprice,
     required this.count,

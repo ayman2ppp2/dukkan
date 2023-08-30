@@ -9,6 +9,7 @@ class ProductAdapter extends TypeAdapter<Product> {
   Product read(BinaryReader reader) {
     return Product(
       name: reader.read(),
+      barcode: reader.read(),
       ownerName: reader.read(),
       buyprice: reader.read(),
       sellprice: reader.read(),
@@ -24,6 +25,7 @@ class ProductAdapter extends TypeAdapter<Product> {
   @override
   void write(BinaryWriter writer, Product obj) {
     writer.write(obj.name);
+    writer.write(obj.barcode);
     writer.write(obj.ownerName);
     writer.write(obj.buyprice);
     writer.write(obj.sellprice);

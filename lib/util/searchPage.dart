@@ -77,6 +77,7 @@ class _SearchPageState extends State<SearchPage> {
                               ? product = li.productsList[index]
                               : product = li.searchTemp[index];
                           li.sellList.add(Product(
+                            barcode: '',
                             name: product.name,
                             buyprice: product.buyprice,
                             sellprice: product.sellprice,
