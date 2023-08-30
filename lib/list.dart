@@ -268,7 +268,8 @@ class Lists extends ChangeNotifier {
 
   List<Product> getSaledProductsByDate(DateTime time) {
     Iterable<Log> temp =
-        db.getAllLogs().where((element) => element.date.day == time.day);
+        db.getAllLogs().where((element) => element.date.day == time.day && element.date.month == time.month &&
+element.date.year == time.year);
     List<Product> products = [];
     List<Product> result = [];
     for (var log in temp) {
