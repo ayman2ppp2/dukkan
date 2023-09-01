@@ -82,7 +82,7 @@ class OwnerAdapter extends TypeAdapter<Owner> {
     writer.write(obj.ownerName);
     writer.write(obj.lastPaymentDate);
     writer.write(obj.lastPayment);
-    writer.write(obj.totalPayed);
     writer.write(obj.dueMoney);
+    writer.write(obj.totalPayed);
   }
 }

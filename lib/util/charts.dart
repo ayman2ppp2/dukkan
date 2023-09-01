@@ -22,7 +22,9 @@ class CircularChart extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           dataSource: Provider.of<Lists>(context)
               .getSaledProductsByDate(DateTime.now()),
-          xValueMapper: (Product data, _) => data.name,
+          xValueMapper: (Product data, _) => data.name.length >= 6
+              ? data.name.replaceRange(6, null, '..')
+              : data.name,
           yValueMapper: (Product data, _) => data.count,
           dataLabelSettings: const DataLabelSettings(
             isVisible: true,
@@ -49,7 +51,9 @@ class BarChart extends StatelessWidget {
           enableTooltip: true,
           borderRadius: BorderRadius.circular(12),
           dataSource: Provider.of<Lists>(context).getSalesPerProduct(),
-          xValueMapper: (ProdStats data, _) => data.name,
+          xValueMapper: (ProdStats data, _) => data.name.length >= 6
+              ? data.name.replaceRange(6, null, '..')
+              : data.name,
           yValueMapper: (ProdStats data, _) => data.count,
           dataLabelSettings: const DataLabelSettings(
             isVisible: true,
@@ -141,6 +145,7 @@ class Ownertile extends StatelessWidget {
             const SizedBox(
               height: 50,
             ),
+            // last payment and it's date
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -173,15 +178,18 @@ class Ownertile extends StatelessWidget {
             Consumer<Lists>(
               builder: (context, li, child) => IconButton(
                 onPressed: () {
-                  li.ownersList.elementAt(index).totalPayed +=
-                      double.parse(payCon.text);
-                  li.ownersList.elementAt(index).dueMoney -=
-                      double.parse(payCon.text);
-                  li.ownersList.elementAt(index).lastPaymentDate =
-                      DateTime.now();
-                  li.ownersList.elementAt(index).lastPayment =
-                      double.parse(payCon.text);
-                  li.refresh();
+                  if (payCon.text.isNotEmpty) {
+                    li.ownersList.elementAt(index).totalPayed +=
+                        double.parse(payCon.text);
+                    li.ownersList.elementAt(index).dueMoney -=
+                        double.parse(payCon.text);
+                    li.ownersList.elementAt(index).lastPaymentDate =
+                        DateTime.now();
+                    li.ownersList.elementAt(index).lastPayment =
+                        double.parse(payCon.text);
+                    li.updateOwner(li.ownersList.elementAt(index));
+                    li.refresh();
+                  }
                 },
                 icon: const Icon(Icons.payments_outlined),
               ),

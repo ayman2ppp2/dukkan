@@ -18,19 +18,8 @@ class Lists extends ChangeNotifier {
   List<Widget> shareList = [];
   List<Product> searchTemp = [];
   List<Product> productsList = [];
-  Set<Owner> ownersList = {};
-  List<Product> sellList = [
-    Product(
-      name: 'عدس',
-      buyprice: 1,
-      sellprice: 1.5,
-      count: 1000,
-      ownerName: '',
-      barcode: '',
-      weightable: true,
-      wholeUnit: 'كيلو',
-    ),
-  ];
+  List<Owner> ownersList = [];
+  List<Product> sellList = [];
   List<Log> logsList = [];
   Map<String, double> kg = {
     'كيلو': 1000,
@@ -59,6 +48,7 @@ class Lists extends ChangeNotifier {
         var temp =
             ownersList.firstWhere((element) => element.ownerName == ownerName);
         temp.dueMoney += product.sellprice * product.count;
+        db.owners.put(ownerName, temp);
       }
     }
   }
@@ -86,7 +76,7 @@ class Lists extends ChangeNotifier {
   }
 
   void refreshListOfOwners() {
-    ownersList.addAll(db.getOwnersList());
+    ownersList = db.getOwnersList();
   }
 
   void refreshLogsList() {
@@ -267,9 +257,10 @@ class Lists extends ChangeNotifier {
   }
 
   List<Product> getSaledProductsByDate(DateTime time) {
-    Iterable<Log> temp =
-        db.getAllLogs().where((element) => element.date.day == time.day && element.date.month == time.month &&
-element.date.year == time.year);
+    Iterable<Log> temp = db.getAllLogs().where((element) =>
+        element.date.day == time.day &&
+        element.date.month == time.month &&
+        element.date.year == time.year);
     List<Product> products = [];
     List<Product> result = [];
     for (var log in temp) {
@@ -438,5 +429,9 @@ element.date.year == time.year);
 
   List<int> toIntList(Uint8List source) {
     return List.from(source);
+  }
+
+  void updateOwner(Owner owner) {
+    db.owners.put(owner.ownerName, owner);
   }
 }

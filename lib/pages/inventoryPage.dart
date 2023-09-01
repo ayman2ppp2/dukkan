@@ -114,7 +114,6 @@ class _InvPageState extends State<InvPage> {
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: () async {
-              li.calculateEachOwnerSales('');
               showGeneralDialog(
                 barrierDismissible: true,
                 barrierLabel: 'whatever',

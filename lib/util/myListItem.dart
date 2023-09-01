@@ -49,6 +49,12 @@ class _MyListTileState extends State<MyListTile> {
                                 weight = 'نص كيلو';
                               case 250:
                                 weight = 'ربع كيلو';
+                              case 850:
+                                weight = 'تمنة';
+                              case 425:
+                                weight = 'نص تمنة';
+                              case 215:
+                                weight = 'ربع تمنة';
                               case 450:
                                 weight = 'رطل';
                               case 225:
@@ -72,6 +78,20 @@ class _MyListTileState extends State<MyListTile> {
                                   value: li.kg.values.elementAt(index),
                                   child: Text(
                                     li.kg.keys.elementAt(index),
+                                  ),
+                                ),
+                              );
+                            }
+                            if (widget.product.wholeUnit == 'تمنة') {
+                              return List.generate(
+                                li.kg.length,
+                                (index) => PopupMenuItem(
+                                  enabled:
+                                      li.getProductCount(widget.product.name) >=
+                                          li.toumna.values.elementAt(index),
+                                  value: li.toumna.values.elementAt(index),
+                                  child: Text(
+                                    li.toumna.keys.elementAt(index),
                                   ),
                                 ),
                               );
@@ -111,6 +131,15 @@ class _MyListTileState extends State<MyListTile> {
                               case 'ربع كيلو':
                                 li.updateSellListCount(
                                     index: widget.index, count: 250 * value);
+                              case 'تمنة':
+                                li.updateSellListCount(
+                                    index: widget.index, count: 850 * value);
+                              case 'نص تمنة':
+                                li.updateSellListCount(
+                                    index: widget.index, count: 425 * value);
+                              case 'ربع تمنة':
+                                li.updateSellListCount(
+                                    index: widget.index, count: 215 * value);
                               case 'رطل':
                                 li.updateSellListCount(
                                     index: widget.index, count: 450 * value);

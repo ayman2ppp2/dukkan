@@ -149,17 +149,18 @@ class _InPageState extends State<InPage> {
                 //count
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TextFormField(
+                  child: DropdownMenu(
+                    initialSelection: widget.ownerCon.text,
+                    dropdownMenuEntries: const [
+                      DropdownMenuEntry(value: 'كيلو', label: 'كيلو'),
+                      DropdownMenuEntry(value: 'تمنة', label: 'تمنة'),
+                      DropdownMenuEntry(value: 'رطل', label: 'رطل')
+                    ],
                     controller: widget.wholeUnitCon,
-                    keyboardType: TextInputType.name,
-                    decoration: InputDecoration(
-                      hintText: 'كيلو/رطل/تمنة',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                    label: const Text("الوحدة"),
                   ),
                 ),
+
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,

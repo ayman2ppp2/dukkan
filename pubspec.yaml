@@ -40,15 +40,21 @@ dependencies:
   hive: ^2.2.3
   permission_handler: ^10.4.3
   syncfusion_flutter_charts: ^22.1.39
-  share_plus: ^7.0.2
-  shelf: ^1.4.1
-  shelf_router: ^1.1.4
-  shelf_static: ^1.1.2
+  # share_plus: ^7.0.2
+  # shelf: ^1.4.1
+  # shelf_router: ^1.1.4
+  # shelf_static: ^1.1.2
   network_info_plus: ^4.0.2
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "lib/assets/icon.jpg"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -69,8 +75,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
+  assets:
+    - lib/assets/icon.jpg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

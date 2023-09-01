@@ -88,8 +88,9 @@ class CheckOut extends StatelessWidget {
                                   TextButton(
                                     onPressed: () async {
                                       await li.db
-                                          .CheckOut(lst: lst, total: total);
+                                          .checkOut(lst: lst, total: total);
                                       li.refreshProductsList();
+                                      li.refreshListOfOwners();
                                       Navigator.pop(context);
                                       Navigator.pop(context);
                                       li.defaultSellList();

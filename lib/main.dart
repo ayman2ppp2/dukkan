@@ -8,7 +8,7 @@ import 'package:hive/hive.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Hive.init('storage/emulated/0/dukkan/backup');
+  Hive.init('storage/emulated/0/dukkan/V2');
 
   Hive.registerAdapter(ProductAdapter());
   Hive.registerAdapter(LogAdapter());
