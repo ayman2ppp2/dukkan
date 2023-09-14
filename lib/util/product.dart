@@ -21,17 +21,22 @@ class Product {
 
   Product.fromMap({required Map<String, Object?> map}) {
     name = map['name'] as String;
-
+    ownerName = map['ownerName'] as String;
+    barcode = map['barcode'] as String;
+    weightable = map['weightable'] as bool;
+    wholeUnit = map['wholeUnit'] as String;
     buyprice = double.parse(map['buyprice'].toString());
-
     sellprice = double.parse(map['sellprice'].toString());
-
     count = int.parse(map['count'].toString());
   }
 
   Map<String, Object?> toMap() {
     return {
       'name': name,
+      'ownerName': ownerName,
+      'barcode': barcode,
+      'weightable': weightable,
+      'wholeUnit': wholeUnit,
       'buyprice': buyprice,
       'sellprice': sellprice,
       'count': count
