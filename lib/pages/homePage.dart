@@ -31,7 +31,7 @@ class _HomePageState extends State<HomePage> {
         appBar: AppBar(
           backgroundColor: Colors.brown,
           leading: const Icon(
-            Icons.money,
+            Icons.storefront,
             color: Colors.white,
           ),
           title: const Text(
