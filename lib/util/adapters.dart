@@ -16,6 +16,9 @@ class ProductAdapter extends TypeAdapter<Product> {
       count: reader.read(),
       weightable: reader.read(),
       wholeUnit: reader.read(),
+      offer: reader.read(),
+      offerCount: reader.read(),
+      offerPrice: reader.read(),
     );
   }
 
@@ -32,6 +35,9 @@ class ProductAdapter extends TypeAdapter<Product> {
     writer.write(obj.count);
     writer.write(obj.weightable);
     writer.write(obj.wholeUnit);
+    writer.write(obj.offer);
+    writer.write(obj.offerCount);
+    writer.write(obj.offerPrice);
   }
 }
 

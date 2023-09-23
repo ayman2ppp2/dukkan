@@ -2,6 +2,7 @@ import 'package:dukkan/list.dart';
 import 'package:dukkan/pages/inventoryPage.dart';
 import 'package:dukkan/util/share.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
 
 import 'SellPage.dart';
@@ -42,6 +43,20 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           actions: [
+            Consumer(
+              builder: (context, value, child) => IconButton(
+                onPressed: () async {
+                  print(
+                    await FlutterBarcodeScanner.scanBarcode(
+                        '#ff6666', 'Cancel', true, ScanMode.BARCODE),
+                  );
+                },
+                icon: Icon(
+                  Icons.barcode_reader,
+                  color: Colors.white,
+                ),
+              ),
+            ),
             Consumer<Lists>(
               builder: (context, li, child) => IconButton(
                 onPressed: () {

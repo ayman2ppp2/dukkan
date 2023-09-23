@@ -26,7 +26,10 @@ class _MyListTileState extends State<MyListTile> {
     return Consumer<Lists>(
       builder: (context, li, child) {
         return ListTile(
-          leading: Text(widget.product.sellprice.toString()),
+          leading: (widget.product.offer &&
+                  widget.product.count % widget.product.offerCount == 0)
+              ? Text(widget.product.offerPrice.toStringAsFixed(2))
+              : Text(widget.product.sellprice.toStringAsFixed(2)),
           title: Center(child: Text(widget.product.name)),
           trailing: widget.product.weightable
               ? Container(
@@ -248,8 +251,13 @@ class _MyListTileState extends State<MyListTile> {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                        "total : ${(widget.product.count * widget.product.sellprice).toStringAsFixed(2)}"),
+                    (widget.product.offer &&
+                            widget.product.count % widget.product.offerCount ==
+                                0)
+                        ? Text(
+                            "total : ${(widget.product.count * widget.product.offerPrice).toStringAsFixed(2)}")
+                        : Text(
+                            "total : ${(widget.product.count * widget.product.sellprice).toStringAsFixed(2)}"),
                   ],
                 ),
         );

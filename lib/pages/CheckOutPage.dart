@@ -24,7 +24,7 @@ class CheckOut extends StatelessWidget {
           ),
         ),
         title: const Text(
-          'الدفع',
+          'الفاتورة',
           style: TextStyle(color: Colors.white, fontSize: 30),
         ),
         backgroundColor: Colors.brown,
@@ -43,13 +43,21 @@ class CheckOut extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      leading: Text(lst[index].sellprice.toString()),
+                      leading: (lst[index].offer &&
+                              lst[index].count % lst[index].offerCount == 0)
+                          ? Text(lst[index].offerPrice.toStringAsFixed(2))
+                          : Text(lst[index].sellprice.toStringAsFixed(2)),
                       title: Text(lst[index].name),
                       trailing: Text(lst[index].count.toString()),
                       subtitle: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('${lst[index].sellprice * lst[index].count}'),
+                          (lst[index].offer &&
+                                  lst[index].count % lst[index].offerCount == 0)
+                              ? Text(
+                                  "${(lst[index].count * lst[index].offerPrice).toStringAsFixed(2)}")
+                              : Text(
+                                  "${(lst[index].count * lst[index].sellprice).toStringAsFixed(2)}"),
                         ],
                       ),
                     ),
@@ -72,7 +80,10 @@ class CheckOut extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           color: Colors.green[400],
                         ),
-                        child: Center(child: Text('المجموع : $total')),
+                        child: Center(
+                          child: Text(
+                              'المجموع : ${total.round().toStringAsFixed(2)}'),
+                        ),
                       ),
                       IconButton.filled(
                         onPressed: () async {

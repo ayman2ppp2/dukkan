@@ -96,6 +96,9 @@ class Lists extends ChangeNotifier {
           ownerName: '',
           weightable: true,
           wholeUnit: '',
+          offer: false,
+          offerCount: 0,
+          offerPrice: 0,
         ),
       );
       return temp.count;
@@ -284,6 +287,9 @@ class Lists extends ChangeNotifier {
         weightable: true,
         ownerName: '',
         wholeUnit: '',
+        offer: false,
+        offerCount: 0,
+        offerPrice: 0,
       ));
     }
     return result;

@@ -39,7 +39,7 @@ class GridItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'البيع : ${li.productsList[index].sellprice}',
+                    'البيع : ${(li.productsList[index].sellprice).toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
@@ -47,7 +47,7 @@ class GridItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'الشراء : ${li.productsList[index].buyprice}',
+                    'الشراء : ${(li.productsList[index].buyprice).toStringAsFixed(2)}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),

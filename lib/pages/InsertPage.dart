@@ -196,6 +196,9 @@ class _InPageState extends State<InPage> {
                           ownerName: widget.ownerCon.text,
                           weightable: widget.weightable,
                           wholeUnit: widget.wholeUnitCon.text,
+                          offer: false,
+                          offerCount: 0,
+                          offerPrice: 0,
                         );
                         temp.add(temp2);
                         Navigator.pop(context);
@@ -232,6 +235,9 @@ class _InPageState extends State<InPage> {
                           ownerName: widget.ownerCon.text,
                           weightable: widget.weightable,
                           wholeUnit: widget.wholeUnitCon.text,
+                          offer: false,
+                          offerCount: 0,
+                          offerPrice: 0,
                         );
                         li.updateProduct(temp2);
                         li.refreshProductsList();
@@ -268,42 +274,3 @@ class _InPageState extends State<InPage> {
     );
   }
 }
-
-/** DropdownMenu(
-                    initialSelection: widget.ownerCon.text,
-                    dropdownMenuEntries: List.generate(
-                      Provider.of<Lists>(context).ownersList.length,
-                      (index) => DropdownMenuEntry(
-                        value: Provider.of<Lists>(context)
-                            .ownersList
-                            .elementAt(index)
-                            .ownerName,
-                        label: Provider.of<Lists>(context)
-                            .ownersList
-                            .elementAt(index)
-                            .ownerName,
-                      ),
-                    ),
-                    controller: widget.ownerCon,
-                    label: const Text('المالك'),
-                  ),
-                  PopupMenuButton(
-                        enabled: true,
-                        // icon: Icon(Icons.person),
-                        child: Text('${widget.ownerCon.text}k'),
-                        onSelected: (value) => setState(() {
-                          widget.ownerCon.text = value;
-                        }),
-                        itemBuilder: (context) {
-                          return List.generate(
-                            li.ownersList.length,
-                            (index) => PopupMenuItem(
-                              value: li.ownersList.elementAt(index).ownerName,
-                              child: Text(
-                                li.ownersList.elementAt(index).ownerName,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                   */

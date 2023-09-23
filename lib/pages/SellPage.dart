@@ -104,7 +104,7 @@ class _SellPageState extends State<SellPage> {
                     ),
                     child: Center(
                         child: Text(
-                            'total : ${(li.sellList.fold(00.0, (previousValue, element) => previousValue + (element.sellprice * element.count))).toStringAsFixed(2)}')),
+                            'total : ${(li.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer && element.count % element.offerCount == 0) ? (element.offerPrice * element.count) : (element.sellprice * element.count)))).toStringAsFixed(2)}')),
                   ),
                 ),
                 // 2nd button
@@ -126,10 +126,17 @@ class _SellPageState extends State<SellPage> {
                               child: CheckOut(
                                 lst: li.sellList,
                                 total: (li.sellList.fold(
-                                    00.0,
-                                    (previousValue, element) =>
-                                        previousValue +
-                                        (element.sellprice * element.count))),
+                                  00.0,
+                                  (previousValue, element) =>
+                                      previousValue +
+                                      ((element.offer &&
+                                              element.count %
+                                                      element.offerCount ==
+                                                  0)
+                                          ? (element.offerPrice * element.count)
+                                          : (element.sellprice *
+                                              element.count)),
+                                )),
                               ),
                             ),
                           );

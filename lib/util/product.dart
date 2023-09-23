@@ -7,6 +7,9 @@ class Product {
   late int count;
   late bool weightable;
   late String wholeUnit;
+  late bool offer;
+  late double offerCount;
+  late double offerPrice;
 
   Product({
     required this.name,
@@ -17,6 +20,9 @@ class Product {
     required this.count,
     required this.weightable,
     required this.wholeUnit,
+    required this.offer,
+    required this.offerCount,
+    required this.offerPrice,
   });
 
   Product.fromMap({required Map<String, Object?> map}) {

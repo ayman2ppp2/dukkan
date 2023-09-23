@@ -42,6 +42,10 @@ class BarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SfCartesianChart(
+      zoomPanBehavior: ZoomPanBehavior(
+        enablePinching: true,
+        enablePanning: true,
+      ),
       title:
           ChartTitle(text: 'المبيعات لكل منتج', alignment: ChartAlignment.near),
       primaryXAxis: CategoryAxis(),

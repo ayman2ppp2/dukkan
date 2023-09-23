@@ -69,15 +69,17 @@ class _SearchPageState extends State<SearchPage> {
                         ),
                         trailing: Text(
                           li.searchTemp.isEmpty
-                              ? li.productsList[index].sellprice.toString()
-                              : li.searchTemp[index].sellprice.toString(),
+                              ? li.productsList[index].sellprice
+                                  .toStringAsFixed(2)
+                              : li.searchTemp[index].sellprice
+                                  .toStringAsFixed(2),
                         ),
                         onTap: () {
                           li.searchTemp.isEmpty
                               ? product = li.productsList[index]
                               : product = li.searchTemp[index];
                           li.sellList.add(Product(
-                            barcode: '',
+                            barcode: product.barcode,
                             name: product.name,
                             buyprice: product.buyprice,
                             sellprice: product.sellprice,
@@ -85,6 +87,9 @@ class _SearchPageState extends State<SearchPage> {
                             ownerName: product.ownerName,
                             weightable: product.weightable,
                             wholeUnit: product.wholeUnit,
+                            offer: product.offer,
+                            offerCount: product.offerCount,
+                            offerPrice: product.offerPrice,
                           ));
                           Navigator.pop(context);
                           li.searchTemp.clear();

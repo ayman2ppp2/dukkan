@@ -23,51 +23,54 @@ class DB {
     logs = await Hive.openBox('logs');
     owners = await Hive.openBox('owners');
 
-    // List<Product> temp = [
-    //   Product(
-    //     name: 'عدس',
-    //     barcode: '',
-    //     buyprice: 1,
-    //     sellprice: 1.5,
-    //     count: 1000,
-    //     ownerName: '',
-    //     weightable: true,
-    //     wholeUnit: 'كيلو',
-    //   ),
-    //   Product(
-    //     name: 'فول',
-    //     barcode: '',
-    //     buyprice: 600,
-    //     sellprice: 700,
-    //     count: 20,
-    //     ownerName: ',',
-    //     weightable: true,
-    //     wholeUnit: 'رطل',
-    //   ),
-    //   Product(
-    //     name: 'صلصة',
-    //     barcode: '',
-    //     buyprice: 500,
-    //     sellprice: 600,
-    //     count: 10,
-    //     ownerName: '',
-    //     weightable: false,
-    //     wholeUnit: 'gg',
-    //   ),
-    //   Product(
-    //     name: 'زيت',
-    //     barcode: '',
-    //     buyprice: 800,
-    //     sellprice: 900,
-    //     count: 15,
-    //     ownerName: '',
-    //     weightable: false,
-    //     wholeUnit: 'hh',
-    //   ),
-    // ];
-    // for (var element in temp) {
-    //   inventory.put(element.name, element);
-    // }
+    List<Product> temp = [
+      Product(
+        name: 'شعرية',
+        barcode: '',
+        buyprice: 250,
+        sellprice: 400,
+        count: 20,
+        ownerName: '',
+        weightable: false,
+        wholeUnit: 'كيلو',
+        offer: true,
+        offerCount: 3,
+        offerPrice: 333.3333333333,
+      ),
+      //   Product(
+      //     name: 'فول',
+      //     barcode: '',
+      //     buyprice: 600,
+      //     sellprice: 700,
+      //     count: 20,
+      //     ownerName: ',',
+      //     weightable: true,
+      //     wholeUnit: 'رطل',
+      //   ),
+      //   Product(
+      //     name: 'صلصة',
+      //     barcode: '',
+      //     buyprice: 500,
+      //     sellprice: 600,
+      //     count: 10,
+      //     ownerName: '',
+      //     weightable: false,
+      //     wholeUnit: 'gg',
+      //   ),
+      //   Product(
+      //     name: 'زيت',
+      //     barcode: '',
+      //     buyprice: 800,
+      //     sellprice: 900,
+      //     count: 15,
+      //     ownerName: '',
+      //     weightable: false,
+      //     wholeUnit: 'hh',
+      //   ),
+    ];
+    for (var element in temp) {
+      inventory.put(element.name, element);
+    }
   }
 
   List<Owner> getOwnersList() {
@@ -125,10 +128,24 @@ class DB {
           ownerName: element.ownerName,
           weightable: element.weightable,
           wholeUnit: element.wholeUnit,
+          offer: element.offer,
+          offerCount: element.offerCount,
+          offerPrice: element.offerPrice,
         ),
       );
-      price += element.sellprice * element.count;
-      profit += (element.sellprice - element.buyprice) * element.count;
+      price += ((lst.fold(
+          00.0,
+          (previousValue, element) =>
+              previousValue +
+              ((element.offer && element.count % element.offerCount == 0)
+                  ? (element.offerPrice * element.count)
+                  : (element.sellprice * element.count))))).round();
+      profit += ((((element.offer && element.count % element.offerCount == 0)
+                      ? (element.offerPrice)
+                      : (element.sellprice)) -
+                  element.buyprice) *
+              element.count)
+          .round();
     }
     logs.add(
       Log(
