@@ -321,6 +321,9 @@ class Lists extends ChangeNotifier {
     DateTime tt = month;
     List<SalesStats> result = [];
     List<Log> temp = db.getAllLogs();
+    temp.sort(
+      (a, b) => a.date.compareTo(b.date),
+    );
 
     for (var log in temp) {
       if (log.date.month == month.month && log.date.year == month.year) {
