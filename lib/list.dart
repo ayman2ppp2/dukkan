@@ -324,7 +324,7 @@ class Lists extends ChangeNotifier {
     temp.sort(
       (a, b) => a.date.compareTo(b.date),
     );
-
+    // temp = temp.reversed.toList();
     for (var log in temp) {
       if (log.date.month == month.month && log.date.year == month.year) {
         if (tt.day == log.date.day) {

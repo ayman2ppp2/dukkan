@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
 
+import '../util/Logs.dart';
 import 'SellPage.dart';
 import 'StatsPage.dart';
 
@@ -43,7 +44,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           actions: [
-            Consumer(
+            Consumer<Lists>(
               builder: (context, value, child) => IconButton(
                 onPressed: () async {
                   print(
@@ -53,6 +54,25 @@ class _HomePageState extends State<HomePage> {
                 },
                 icon: Icon(
                   Icons.barcode_reader,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            Consumer<Lists>(
+              builder: (context, li, child) => IconButton(
+                onPressed: () async {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChangeNotifierProvider.value(
+                        value: li,
+                        child: Logs(),
+                      ),
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Icons.receipt_long_sharp,
                   color: Colors.white,
                 ),
               ),

@@ -21,7 +21,7 @@ class _InvPageState extends State<InvPage> {
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.brown,
-            iconTheme: IconThemeData(color: Colors.brown[100]),
+            iconTheme: IconThemeData(color: Colors.brown[50]),
             actions: [
               IconButton(
                 onPressed: () {

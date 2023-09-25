@@ -147,7 +147,8 @@ class DB {
               element.count)
           .round();
     }
-    logs.add(
+    logs.put(
+      '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}-${DateTime.now().hour}-${DateTime.now().minute}-${DateTime.now().second}',
       Log(
         products: lst,
         price: price,
