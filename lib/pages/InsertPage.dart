@@ -199,6 +199,8 @@ class _InPageState extends State<InPage> {
                           offer: false,
                           offerCount: 0,
                           offerPrice: 0,
+                          priceHistory: [],
+                          endDate: DateTime(2024),
                         );
                         temp.add(temp2);
                         Navigator.pop(context);
@@ -238,6 +240,8 @@ class _InPageState extends State<InPage> {
                           offer: false,
                           offerCount: 0,
                           offerPrice: 0,
+                          priceHistory: [],
+                          endDate: DateTime(2024),
                         );
                         li.updateProduct(temp2);
                         li.refreshProductsList();

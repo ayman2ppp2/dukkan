@@ -19,6 +19,8 @@ class ProductAdapter extends TypeAdapter<Product> {
       offer: reader.read(),
       offerCount: reader.read(),
       offerPrice: reader.read(),
+      priceHistory: reader.read(),
+      endDate: reader.read(),
     );
   }
 
@@ -38,6 +40,8 @@ class ProductAdapter extends TypeAdapter<Product> {
     writer.write(obj.offer);
     writer.write(obj.offerCount);
     writer.write(obj.offerPrice);
+    writer.write(obj.priceHistory);
+    writer.write(obj.endDate);
   }
 }
 

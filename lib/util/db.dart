@@ -36,6 +36,8 @@ class DB {
         offer: true,
         offerCount: 3,
         offerPrice: 333.3333333333,
+        priceHistory: [],
+        endDate: DateTime(2024),
       ),
       //   Product(
       //     name: 'فول',
@@ -131,6 +133,8 @@ class DB {
           offer: element.offer,
           offerCount: element.offerCount,
           offerPrice: element.offerPrice,
+          priceHistory: element.priceHistory,
+          endDate: element.endDate,
         ),
       );
       price += ((lst.fold(

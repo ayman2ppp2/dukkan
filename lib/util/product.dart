@@ -10,6 +10,8 @@ class Product {
   late bool offer;
   late double offerCount;
   late double offerPrice;
+  late List<Map<DateTime, double>> priceHistory;
+  late DateTime endDate;
 
   Product({
     required this.name,
@@ -23,6 +25,8 @@ class Product {
     required this.offer,
     required this.offerCount,
     required this.offerPrice,
+    required this.priceHistory,
+    required this.endDate,
   });
 
   Product.fromMap({required Map<String, Object?> map}) {

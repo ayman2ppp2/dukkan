@@ -99,6 +99,8 @@ class Lists extends ChangeNotifier {
           offer: false,
           offerCount: 0,
           offerPrice: 0,
+          priceHistory: [],
+          endDate: DateTime(2024),
         ),
       );
       return temp.count;
@@ -280,18 +282,19 @@ class Lists extends ChangeNotifier {
     }
     for (var element in yy.entries) {
       result.add(Product(
-        name: element.key,
-        buyprice: 0,
-        barcode: '',
-        sellprice: 0,
-        count: element.value,
-        weightable: true,
-        ownerName: '',
-        wholeUnit: '',
-        offer: false,
-        offerCount: 0,
-        offerPrice: 0,
-      ));
+          name: element.key,
+          buyprice: 0,
+          barcode: '',
+          sellprice: 0,
+          count: element.value,
+          weightable: true,
+          ownerName: '',
+          wholeUnit: '',
+          offer: false,
+          offerCount: 0,
+          offerPrice: 0,
+          priceHistory: [],
+          endDate: DateTime(2024)));
     }
     return result;
   }
