@@ -90,6 +90,8 @@ class _SearchPageState extends State<SearchPage> {
                             offer: product.offer,
                             offerCount: product.offerCount,
                             offerPrice: product.offerPrice,
+                            priceHistory: product.priceHistory,
+                            endDate: product.endDate,
                           ));
                           Navigator.pop(context);
                           li.searchTemp.clear();
