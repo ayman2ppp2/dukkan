@@ -19,7 +19,7 @@ class ProductAdapter extends TypeAdapter<Product> {
       offer: reader.read(),
       offerCount: reader.read(),
       offerPrice: reader.read(),
-      priceHistory: reader.read(),
+      priceHistory: List<Map<DateTime, double>>.from(reader.read()),
       endDate: reader.read(),
     );
   }

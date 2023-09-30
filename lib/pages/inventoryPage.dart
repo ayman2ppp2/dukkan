@@ -126,7 +126,7 @@ class _InvPageState extends State<InvPage> {
                         left: 20,
                         right: 20,
                         top: 100,
-                        bottom: 250,
+                        bottom: 220,
                       ),
                       child: InPage(
                         buyPrice: 0,
@@ -137,6 +137,10 @@ class _InvPageState extends State<InvPage> {
                         weightable: false,
                         wholeUnit: '',
                         index: -1,
+                        offer: false,
+                        offerCount: 0,
+                        offerPrice: 0,
+                        endDate: DateTime.now(),
                       ),
                     ),
                   );

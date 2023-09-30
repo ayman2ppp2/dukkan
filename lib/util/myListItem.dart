@@ -18,7 +18,7 @@ class MyListTile extends StatefulWidget {
 class _MyListTileState extends State<MyListTile> {
   String weight = "";
   int gg = 0;
-  int _multiplyer = 0;
+  int _multiplyer = 1;
 
   TextEditingController con = TextEditingController();
   @override
@@ -37,7 +37,7 @@ class _MyListTileState extends State<MyListTile> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('${widget.product.count}ج',
+                      Text('${widget.product.count}جم',
                           style: const TextStyle(fontSize: 15)),
                       SizedBox(
                         width: 40,
@@ -117,7 +117,7 @@ class _MyListTileState extends State<MyListTile> {
                       ),
 
                       SizedBox(
-                        width: 10,
+                        width: 5,
                         child: PopupMenuButton(
                           child: Text(
                             '$_multiplyer',

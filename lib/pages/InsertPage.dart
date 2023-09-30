@@ -12,13 +12,21 @@ class InPage extends StatefulWidget {
   double sellPrice;
   int count;
   int index;
+  double offerCount;
+  double offerPrice;
+  DateTime endDate;
   TextEditingController nameCon = TextEditingController();
   TextEditingController buyCon = TextEditingController();
   TextEditingController sellCon = TextEditingController();
   TextEditingController countCon = TextEditingController();
   TextEditingController ownerCon = TextEditingController();
-  bool weightable = false;
+  TextEditingController offerCountCon = TextEditingController();
+  TextEditingController offerPriceCon = TextEditingController();
+
   TextEditingController wholeUnitCon = TextEditingController();
+  TextEditingController endDateCon = TextEditingController();
+  bool weightable = false;
+  bool offer = false;
   InPage({
     super.key,
     required this.buyPrice,
@@ -29,6 +37,10 @@ class InPage extends StatefulWidget {
     required this.owner,
     required this.wholeUnit,
     required this.weightable,
+    required this.offer,
+    required this.offerCount,
+    required this.offerPrice,
+    required this.endDate,
   });
 
   @override
@@ -45,6 +57,8 @@ class _InPageState extends State<InPage> {
       widget.sellCon.text = widget.sellPrice.toString();
       widget.countCon.text = widget.count.toString();
       widget.wholeUnitCon.text = widget.wholeUnit;
+      widget.offerCountCon.text = widget.offerCount.toString();
+      widget.offerPriceCon.text = widget.offerPrice.toString();
     }
     super.initState();
   }
@@ -139,27 +153,84 @@ class _InPageState extends State<InPage> {
                     controller: widget.countCon,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      hintText: 'العدد',
+                      hintText: 'الكمية بالجرام/العدد',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),
                 ),
-                //count
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: DropdownMenu(
-                    initialSelection: widget.ownerCon.text,
-                    dropdownMenuEntries: const [
-                      DropdownMenuEntry(value: 'كيلو', label: 'كيلو'),
-                      DropdownMenuEntry(value: 'تمنة', label: 'تمنة'),
-                      DropdownMenuEntry(value: 'رطل', label: 'رطل')
-                    ],
-                    controller: widget.wholeUnitCon,
-                    label: const Text("الوحدة"),
+                  child: GestureDetector(
+                    onTap: () async {
+                      widget.endDate = await showDatePicker(
+                              context: context,
+                              initialDate: widget.endDate,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2030)) ??
+                          widget.endDate;
+                      setState(() {});
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.brown[200],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: Text(
+                            'تاريخ الأنتهاء : ${widget.endDate.year}-${widget.endDate.month}-${widget.endDate.day}'),
+                      ),
+                    ),
                   ),
                 ),
+                //count
+                widget.weightable
+                    ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: DropdownMenu(
+                          dropdownMenuEntries: const [
+                            DropdownMenuEntry(value: 'كيلو', label: 'كيلو'),
+                            DropdownMenuEntry(value: 'تمنة', label: 'تمنة'),
+                            DropdownMenuEntry(value: 'رطل', label: 'رطل')
+                          ],
+                          controller: widget.wholeUnitCon,
+                          label: const Text("الوحدة"),
+                        ),
+                      )
+                    : Container(),
+
+                widget.offer
+                    ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextFormField(
+                          controller: widget.offerCountCon,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: 'عدد العرض',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(),
+                widget.offer
+                    ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextFormField(
+                          controller: widget.offerPriceCon,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: 'سعر الوحدة في العرض',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(),
 
                 Center(
                   child: Row(
@@ -171,6 +242,15 @@ class _InPageState extends State<InPage> {
                         onChanged: (value) {
                           setState(() {
                             widget.weightable = value!;
+                          });
+                        },
+                      ),
+                      const Text('عرض'),
+                      Checkbox(
+                        value: widget.offer,
+                        onChanged: (value) {
+                          setState(() {
+                            widget.offer = value!;
                           });
                         },
                       ),
@@ -196,11 +276,13 @@ class _InPageState extends State<InPage> {
                           ownerName: widget.ownerCon.text,
                           weightable: widget.weightable,
                           wholeUnit: widget.wholeUnitCon.text,
-                          offer: false,
-                          offerCount: 0,
-                          offerPrice: 0,
+                          offer: widget.offer,
+                          offerCount:
+                              double.tryParse(widget.offerCountCon.text) ?? 0,
+                          offerPrice:
+                              double.tryParse(widget.offerPriceCon.text) ?? 0,
                           priceHistory: [],
-                          endDate: DateTime(2024),
+                          endDate: widget.endDate,
                         );
                         temp.add(temp2);
                         Navigator.pop(context);

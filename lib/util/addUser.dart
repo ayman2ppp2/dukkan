@@ -14,7 +14,7 @@ class AddUser extends StatelessWidget {
         left: 20,
         right: 20,
         top: 100,
-        bottom: 500,
+        bottom: 450,
       ),
       child: Material(
         borderRadius: BorderRadius.circular(12),
