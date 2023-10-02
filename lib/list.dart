@@ -240,6 +240,7 @@ class Lists extends ChangeNotifier {
   void removeProduct({required int index}) async {
     Product temp = productsList[index];
     db.inventory.delete(temp.name);
+    notifyListeners();
   }
 
   void updateProduct(Product product) {
@@ -361,7 +362,7 @@ class Lists extends ChangeNotifier {
             final message = String.fromCharCodes(data);
 
             if (message == 'send inv') {
-              await File('storage/emulated/0/dukkan/inventory.hive')
+              await File('storage/emulated/0/dukkan/V2/inventory.hive')
                   .openRead()
                   .pipe(client);
               shareList.add(const Text('Sent inventory'));
@@ -369,10 +370,17 @@ class Lists extends ChangeNotifier {
               client.close();
             }
             if (message == 'send logs') {
-              await File('storage/emulated/0/dukkan/logs.hive')
+              await File('storage/emulated/0/dukkan/V2/logs.hive')
                   .openRead()
                   .pipe(client);
               shareList.add(const Text('Sent logs'));
+              notifyListeners();
+            }
+            if (message == 'send owners') {
+              await File('storage/emulated/0/dukkan/V2/owners.hive')
+                  .openRead()
+                  .pipe(client);
+              shareList.add(const Text('Sent owners data'));
               notifyListeners();
             }
           },
@@ -397,7 +405,8 @@ class Lists extends ChangeNotifier {
         notifyListeners();
         socket.write('send inv');
 
-        var file = File('storage/emulated/0/dukkan/inventory.hive').openWrite();
+        var file =
+            File('storage/emulated/0/dukkan/V2/inventory.hive').openWrite();
         try {
           await socket.map(toIntList).pipe(file);
         } finally {
@@ -426,11 +435,33 @@ class Lists extends ChangeNotifier {
       notifyListeners();
       socket.write('send logs');
 
-      var file = File('storage/emulated/0/dukkan/logs.hive').openWrite();
+      var file = File('storage/emulated/0/dukkan/V2/logs.hive').openWrite();
       try {
         await socket.map(toIntList).pipe(file);
       } finally {
         shareList.add(const Text('logs received'));
+        notifyListeners();
+        await file.close();
+      }
+    } finally {
+      reciveOwners();
+    }
+  }
+
+  void reciveOwners() async {
+    String? ip = await NetworkInfo().getWifiGatewayIP();
+    Socket socket = await Socket.connect(ip, 30000);
+    try {
+      shareList.add(Text("Connected to :"
+          '${socket.remoteAddress.address}:${socket.remotePort}'));
+      notifyListeners();
+      socket.write('send owners');
+
+      var file = File('storage/emulated/0/dukkan/V2/owners.hive').openWrite();
+      try {
+        await socket.map(toIntList).pipe(file);
+      } finally {
+        shareList.add(const Text('owners data received'));
         notifyListeners();
         await file.close();
       }

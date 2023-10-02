@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:dukkan/util/Log.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class Receipt extends StatefulWidget {
   final Log log;
@@ -32,8 +33,10 @@ class _ReceiptState extends State<Receipt> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Text(widget.log.price.toStringAsFixed(2) + ' : السعر'),
-                Text(widget.log.profit.toStringAsFixed(2) + ' : الربح'),
+                Text(NumberFormat.simpleCurrency().format(widget.log.price) +
+                    ' : السعر'),
+                Text(NumberFormat.simpleCurrency().format(widget.log.profit) +
+                    ' : الربح'),
                 IconButton(
                   onPressed: () {
                     setState(() {
@@ -55,14 +58,16 @@ class _ReceiptState extends State<Receipt> {
                             (e) => ListTile(
                               title: Text('${e.name}'),
                               leading: (e.offer && e.count % e.offerCount == 0)
-                                  ? Text(e.offerPrice.toStringAsFixed(2))
-                                  : Text(e.sellprice.toStringAsFixed(2)),
+                                  ? Text(NumberFormat.simpleCurrency()
+                                      .format(e.offerPrice))
+                                  : Text(NumberFormat.simpleCurrency()
+                                      .format(e.sellprice)),
                               trailing: Text('${e.count}'),
                               subtitle: (e.offer && e.count % e.offerCount == 0)
                                   ? Text(
-                                      "total : ${(e.count * e.offerPrice).toStringAsFixed(2)}")
+                                      "total : ${NumberFormat.simpleCurrency().format((e.count * e.offerPrice))}")
                                   : Text(
-                                      "total : ${(e.count * e.sellprice).toStringAsFixed(2)}"),
+                                      "total : ${NumberFormat.simpleCurrency().format((e.count * e.sellprice))}"),
                             ),
                           )
                           .toList(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../list.dart';
@@ -39,7 +40,7 @@ class GridItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'البيع : ${(li.productsList[index].sellprice).toStringAsFixed(2)}',
+                    'البيع : ${NumberFormat.simpleCurrency().format((li.productsList[index].sellprice))}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
@@ -47,13 +48,13 @@ class GridItem extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'الشراء : ${(li.productsList[index].buyprice).toStringAsFixed(2)}',
+                    'الشراء : ${NumberFormat.simpleCurrency().format((li.productsList[index].buyprice))}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
                   child: Text(
-                    'الربح : ${(li.productsList[index].sellprice - li.productsList[index].buyprice).toStringAsFixed(2)}',
+                    'الربح : ${NumberFormat.simpleCurrency().format((li.productsList[index].sellprice - li.productsList[index].buyprice))}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),

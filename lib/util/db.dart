@@ -94,6 +94,7 @@ class DB {
     for (var element in temp) {
       temp2.add(element);
     }
+    temp2.sort((a, b) => a.date.compareTo(b.date));
     return temp2;
   }
 
@@ -137,13 +138,6 @@ class DB {
           endDate: element.endDate,
         ),
       );
-      price += ((lst.fold(
-          00.0,
-          (previousValue, element) =>
-              previousValue +
-              ((element.offer && element.count % element.offerCount == 0)
-                  ? (element.offerPrice * element.count)
-                  : (element.sellprice * element.count))))).round();
       profit += ((((element.offer && element.count % element.offerCount == 0)
                       ? (element.offerPrice)
                       : (element.sellprice)) -
@@ -151,6 +145,8 @@ class DB {
               element.count)
           .round();
     }
+    price += total.round();
+
     logs.put(
       '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}-${DateTime.now().hour}-${DateTime.now().minute}-${DateTime.now().second}',
       Log(
@@ -162,3 +158,11 @@ class DB {
     );
   }
 }
+
+// ((lst.fold(
+//           00.0,
+//           (previousValue, element) =>
+//               previousValue +
+//               ((element.offer && element.count % element.offerCount == 0)
+//                   ? (element.offerPrice * element.count)
+//                   : (element.sellprice * element.count)))))

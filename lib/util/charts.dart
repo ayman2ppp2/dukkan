@@ -1,6 +1,7 @@
 import 'package:dukkan/util/prodStats.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -131,15 +132,15 @@ class Ownertile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Text(
-                  'المطلوب : ${Provider.of<Lists>(context).ownersList.elementAt(index).dueMoney.toStringAsFixed(2)}',
-                  textDirection: TextDirection.rtl,
+                  'المطلوب : ${NumberFormat.simpleCurrency().format(Provider.of<Lists>(context).ownersList.elementAt(index).dueMoney)}',
+                  // textDirection: TextDirection.rtl,
                   style: const TextStyle(
                     fontSize: 15,
                   ),
                 ),
                 Text(
-                  'المدفوع : ${Provider.of<Lists>(context).ownersList.elementAt(index).totalPayed.toStringAsFixed(2)}',
-                  textDirection: TextDirection.rtl,
+                  'المدفوع : ${NumberFormat.simpleCurrency().format(Provider.of<Lists>(context).ownersList.elementAt(index).totalPayed)}',
+                  // textDirection: TextDirection.rtl,
                   style: const TextStyle(
                     fontSize: 15,
                   ),
@@ -154,15 +155,15 @@ class Ownertile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Text(
-                  'بتاريخ : ${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.year.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.month.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.day.toString()}(${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.hour.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.minute})',
-                  textDirection: TextDirection.rtl,
+                  'بتاريخ : ${DateFormat.yMd().format(Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate)})',
+                  // textDirection: TextDirection.rtl,
                   style: const TextStyle(
                     fontSize: 15,
                   ),
                 ),
                 Text(
-                  'اخر دفعة : ${Provider.of<Lists>(context).ownersList.elementAt(index).lastPayment.toStringAsFixed(2)}',
-                  textDirection: TextDirection.rtl,
+                  'اخر دفعة : ${NumberFormat.simpleCurrency().format(Provider.of<Lists>(context).ownersList.elementAt(index).lastPayment)}',
+                  // textDirection: TextDirection.rtl,
                   style: const TextStyle(
                     fontSize: 15,
                   ),
@@ -205,3 +206,4 @@ class Ownertile extends StatelessWidget {
     );
   }
 }
+// Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.year.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.month.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.day.toString()}(${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.hour.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.minute

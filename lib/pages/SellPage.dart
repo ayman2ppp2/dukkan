@@ -4,6 +4,7 @@ import 'package:dukkan/util/myListItem.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:dukkan/util/searchPage.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class SellPage extends StatefulWidget {
@@ -104,7 +105,7 @@ class _SellPageState extends State<SellPage> {
                     ),
                     child: Center(
                         child: Text(
-                            'total : ${(li.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer && element.count % element.offerCount == 0) ? (element.offerPrice * element.count) : (element.sellprice * element.count)))).toStringAsFixed(2)}')),
+                            'total : ${NumberFormat.simpleCurrency().format((li.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer && element.count % element.offerCount == 0) ? (element.offerPrice * element.count) : (element.sellprice * element.count)))))}')),
                   ),
                 ),
                 // 2nd button

@@ -22,9 +22,8 @@ class InPage extends StatefulWidget {
   TextEditingController ownerCon = TextEditingController();
   TextEditingController offerCountCon = TextEditingController();
   TextEditingController offerPriceCon = TextEditingController();
-
   TextEditingController wholeUnitCon = TextEditingController();
-  TextEditingController endDateCon = TextEditingController();
+  // TextEditingController endDateCon = TextEditingController();
   bool weightable = false;
   bool offer = false;
   InPage({
@@ -319,11 +318,13 @@ class _InPageState extends State<InPage> {
                           ownerName: widget.ownerCon.text,
                           weightable: widget.weightable,
                           wholeUnit: widget.wholeUnitCon.text,
-                          offer: false,
-                          offerCount: 0,
-                          offerPrice: 0,
+                          offer: widget.offer,
+                          offerCount:
+                              double.tryParse(widget.offerCountCon.text) ?? 0,
+                          offerPrice:
+                              double.tryParse(widget.offerPriceCon.text) ?? 0,
                           priceHistory: [],
-                          endDate: DateTime(2024),
+                          endDate: widget.endDate,
                         );
                         li.updateProduct(temp2);
                         li.refreshProductsList();

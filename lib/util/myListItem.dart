@@ -1,5 +1,6 @@
 import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
 
@@ -28,8 +29,10 @@ class _MyListTileState extends State<MyListTile> {
         return ListTile(
           leading: (widget.product.offer &&
                   widget.product.count % widget.product.offerCount == 0)
-              ? Text(widget.product.offerPrice.toStringAsFixed(2))
-              : Text(widget.product.sellprice.toStringAsFixed(2)),
+              ? Text(NumberFormat.simpleCurrency()
+                  .format(widget.product.offerPrice))
+              : Text(NumberFormat.simpleCurrency()
+                  .format(widget.product.sellprice)),
           title: Center(child: Text(widget.product.name)),
           trailing: widget.product.weightable
               ? Container(
@@ -237,9 +240,9 @@ class _MyListTileState extends State<MyListTile> {
                         li.getProductCount(widget.product.name) *
                             widget.product.sellprice) {
                       // setState(() {
-                      con.text = (li.getProductCount(widget.product.name) *
-                              widget.product.sellprice)
-                          .toStringAsFixed(0);
+                      con.text = NumberFormat.simpleCurrency().format(
+                          (li.getProductCount(widget.product.name) *
+                              widget.product.sellprice));
                       li.updateSellListCount(
                           index: widget.index,
                           count: li.getProductCount(widget.product.name));
@@ -255,9 +258,9 @@ class _MyListTileState extends State<MyListTile> {
                             widget.product.count % widget.product.offerCount ==
                                 0)
                         ? Text(
-                            "total : ${(widget.product.count * widget.product.offerPrice).toStringAsFixed(2)}")
+                            "total : ${NumberFormat.simpleCurrency().format((widget.product.count * widget.product.offerPrice))}")
                         : Text(
-                            "total : ${(widget.product.count * widget.product.sellprice).toStringAsFixed(2)}"),
+                            "total : ${NumberFormat.simpleCurrency().format((widget.product.count * widget.product.sellprice))}"),
                   ],
                 ),
         );

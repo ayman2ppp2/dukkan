@@ -3,6 +3,7 @@
 import 'package:dukkan/list.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class CheckOut extends StatelessWidget {
@@ -45,8 +46,10 @@ class CheckOut extends StatelessWidget {
                     child: ListTile(
                       leading: (lst[index].offer &&
                               lst[index].count % lst[index].offerCount == 0)
-                          ? Text(lst[index].offerPrice.toStringAsFixed(2))
-                          : Text(lst[index].sellprice.toStringAsFixed(2)),
+                          ? Text(NumberFormat.simpleCurrency()
+                              .format(lst[index].offerPrice))
+                          : Text(NumberFormat.simpleCurrency()
+                              .format(lst[index].sellprice)),
                       title: Text(lst[index].name),
                       trailing: Text(lst[index].count.toString()),
                       subtitle: Row(
@@ -55,9 +58,9 @@ class CheckOut extends StatelessWidget {
                           (lst[index].offer &&
                                   lst[index].count % lst[index].offerCount == 0)
                               ? Text(
-                                  "${(lst[index].count * lst[index].offerPrice).toStringAsFixed(2)}")
+                                  "${NumberFormat.simpleCurrency().format((lst[index].count * lst[index].offerPrice))}")
                               : Text(
-                                  "${(lst[index].count * lst[index].sellprice).toStringAsFixed(2)}"),
+                                  "${NumberFormat.simpleCurrency().format((lst[index].count * lst[index].sellprice))}"),
                         ],
                       ),
                     ),
@@ -82,7 +85,7 @@ class CheckOut extends StatelessWidget {
                         ),
                         child: Center(
                           child: Text(
-                              'المجموع : ${total.round().toStringAsFixed(2)}'),
+                              'المجموع : ${NumberFormat.simpleCurrency().format(total.round())}'),
                         ),
                       ),
                       IconButton.filled(
