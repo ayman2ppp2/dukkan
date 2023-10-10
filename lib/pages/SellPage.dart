@@ -15,6 +15,7 @@ class SellPage extends StatefulWidget {
 }
 
 class _SellPageState extends State<SellPage> {
+  TrackingScrollController con = TrackingScrollController();
   @override
   Widget build(BuildContext context) {
     return Consumer<Lists>(
@@ -22,41 +23,48 @@ class _SellPageState extends State<SellPage> {
         return Column(
           children: [
             Expanded(
-              child: ListView.builder(
-                itemCount: li.sellList.length,
-                itemBuilder: (context, index) {
-                  return Dismissible(
-                    background: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.brown[100],
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.brown,
-                          ),
-                        ],
-                      ),
-                    ),
-                    key: ValueKey<Product>(li.sellList[index]),
-                    onDismissed: (DismissDirection direction) {
-                      setState(() {
-                        li.sellList.removeAt(index);
-                      });
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Container(
+              child: Scrollbar(
+                controller: con,
+                interactive: true,
+                thumbVisibility: true,
+                child: ListView.builder(
+                  controller: con,
+                  scrollDirection: Axis.vertical,
+                  itemCount: li.sellList.length,
+                  itemBuilder: (context, index) {
+                    return Dismissible(
+                      background: Container(
                         decoration: BoxDecoration(
-                          color: Colors.brown[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: MyListTile(
-                          product: li.sellList[index],
-                          index: index,
+                          color: Colors.brown[100],
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.brown,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  );
-                },
+                      key: ValueKey<Product>(li.sellList[index]),
+                      onDismissed: (DismissDirection direction) {
+                        setState(() {
+                          li.sellList.removeAt(index);
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.brown[200],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: MyListTile(
+                            product: li.sellList[index],
+                            index: index,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
             Row(

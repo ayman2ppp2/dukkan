@@ -28,8 +28,9 @@ class _ReceiptState extends State<Receipt> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-                '${widget.log.date.year}-${widget.log.date.month}-${widget.log.date.day}-${widget.log.date.hour}-${widget.log.date.minute}-${widget.log.date.second}'),
+            Text('${DateFormat.yMEd().add_jmv().format(widget.log.date)}'),
+            // widget.log.date.year}-${widget.log.date.month}-${widget.log.date.day}-${widget.log.date.hour}-${widget.log.date.minute}-${widget.log.date.second}'
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [

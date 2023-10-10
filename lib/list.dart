@@ -186,13 +186,13 @@ class Lists extends ChangeNotifier {
     return sales;
   }
 
-  double getDailyProfits() {
+  double getDailyProfits(DateTime time) {
     List<Log> temp = db.getAllLogs();
     double profit = 0;
     for (var log in temp) {
-      if (log.date.day == DateTime.now().day &&
-          log.date.month == DateTime.now().month &&
-          log.date.year == DateTime.now().year) {
+      if (log.date.day == time.day &&
+          log.date.month == time.month &&
+          log.date.year == time.year) {
         profit += log.profit;
       }
     }
@@ -325,9 +325,9 @@ class Lists extends ChangeNotifier {
     DateTime tt = month;
     List<SalesStats> result = [];
     List<Log> temp = db.getAllLogs();
-    temp.sort(
-      (a, b) => a.date.compareTo(b.date),
-    );
+    // temp.sort(
+    //   (a, b) => a.date.compareTo(b.date),
+    // );
     // temp = temp.reversed.toList();
     for (var log in temp) {
       if (log.date.month == month.month && log.date.year == month.year) {
@@ -340,7 +340,35 @@ class Lists extends ChangeNotifier {
               sales: getDailySales(log.date),
             ),
           );
-          if (log.date.compareTo(tt) > 0) {
+          if (log.date.compareTo(tt) < 0) {
+            tt = log.date;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  List<SalesStats> getDailyProfitOfTheMonth(DateTime month) {
+    DateTime tt = month;
+    List<SalesStats> result = [];
+    List<Log> temp = db.getAllLogs();
+    // temp.sort(
+    //   (a, b) => a.date.compareTo(b.date),
+    // );
+    // temp = temp.reversed.toList();
+    for (var log in temp) {
+      if (log.date.month == month.month && log.date.year == month.year) {
+        if (tt.day == log.date.day) {
+          continue;
+        } else {
+          result.add(
+            SalesStats(
+              date: log.date,
+              sales: getDailyProfits(log.date),
+            ),
+          );
+          if (log.date.compareTo(tt) < 0) {
             tt = log.date;
           }
         }

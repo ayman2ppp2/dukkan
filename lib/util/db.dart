@@ -95,6 +95,7 @@ class DB {
       temp2.add(element);
     }
     temp2.sort((a, b) => a.date.compareTo(b.date));
+    temp2 = List<Log>.from(temp2.reversed);
     return temp2;
   }
 

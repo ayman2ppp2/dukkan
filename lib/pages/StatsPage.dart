@@ -59,7 +59,7 @@ class StatsPage extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.all(10.0),
                             child: Text(
-                              'الأرباح اليومية: \n ${NumberFormat.simpleCurrency().format(li.getDailyProfits())}',
+                              'الأرباح اليومية: \n ${NumberFormat.simpleCurrency().format(li.getDailyProfits(DateTime.now()))}',
                               ////textDirection: TextDirection.rtl,
                             ),
                           ),

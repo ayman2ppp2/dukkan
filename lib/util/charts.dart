@@ -12,27 +12,33 @@ class CircularChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SfCartesianChart(
-      title: ChartTitle(
-          text: 'المبيعات اليومية لكل منتج', alignment: ChartAlignment.near),
-      primaryXAxis: CategoryAxis(),
-      tooltipBehavior: TooltipBehavior(),
-      series: <ChartSeries<Product, String>>[
-        ColumnSeries<Product, String>(
-          enableTooltip: true,
-          borderRadius: BorderRadius.circular(12),
-          dataSource: Provider.of<Lists>(context)
-              .getSaledProductsByDate(DateTime.now()),
-          xValueMapper: (Product data, _) => data.name.length >= 6
-              ? data.name.replaceRange(6, null, '..')
-              : data.name,
-          yValueMapper: (Product data, _) => data.count,
-          dataLabelSettings: const DataLabelSettings(
-            isVisible: true,
+    return SingleChildScrollView(
+      child: SizedBox(
+        height: 700,
+        child: SfCartesianChart(
+          title: ChartTitle(
+              text: 'المبيعات اليومية لكل منتج',
+              alignment: ChartAlignment.near),
+          primaryXAxis: CategoryAxis(
+            labelsExtent: 70 % (MediaQuery.of(context).size.width),
           ),
-          color: Colors.brown,
-        )
-      ],
+          // tooltipBehavior: TooltipBehavior(enable: true),
+          series: <ChartSeries<Product, String>>[
+            StackedBarSeries<Product, String>(
+              // enableTooltip: true,
+              borderRadius: BorderRadius.circular(12),
+              dataSource: Provider.of<Lists>(context)
+                  .getSaledProductsByDate(DateTime.now()),
+              xValueMapper: (Product data, _) => data.name,
+              yValueMapper: (Product data, _) => data.count,
+              dataLabelSettings: const DataLabelSettings(
+                isVisible: true,
+              ),
+              color: Colors.brown,
+            )
+          ],
+        ),
+      ),
     );
   }
 }
@@ -42,30 +48,32 @@ class BarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SfCartesianChart(
-      zoomPanBehavior: ZoomPanBehavior(
-        enablePinching: true,
-        enablePanning: true,
+    return SingleChildScrollView(
+      child: SizedBox(
+        height: 3000,
+        child: SfCartesianChart(
+          // zoomPanBehavior: ZoomPanBehavior(
+          //   enablePinching: true,
+          //   enablePanning: true,
+          // ),
+          title: ChartTitle(
+              text: 'المبيعات لكل منتج', alignment: ChartAlignment.near),
+          primaryXAxis: CategoryAxis(),
+          tooltipBehavior: TooltipBehavior(enable: true),
+          series: <ChartSeries>[
+            StackedBarSeries<ProdStats, String>(
+              spacing: 8,
+              color: Colors.brown[400],
+              dataSource: Provider.of<Lists>(context).getSalesPerProduct(),
+              xValueMapper: (ProdStats data, _) => data.name,
+              yValueMapper: (ProdStats data, _) => data.count,
+              dataLabelSettings: const DataLabelSettings(
+                isVisible: true,
+              ),
+            ),
+          ],
+        ),
       ),
-      title:
-          ChartTitle(text: 'المبيعات لكل منتج', alignment: ChartAlignment.near),
-      primaryXAxis: CategoryAxis(),
-      tooltipBehavior: TooltipBehavior(),
-      series: <ChartSeries<ProdStats, String>>[
-        ColumnSeries<ProdStats, String>(
-          enableTooltip: true,
-          borderRadius: BorderRadius.circular(12),
-          dataSource: Provider.of<Lists>(context).getSalesPerProduct(),
-          xValueMapper: (ProdStats data, _) => data.name.length >= 6
-              ? data.name.replaceRange(6, null, '..')
-              : data.name,
-          yValueMapper: (ProdStats data, _) => data.count,
-          dataLabelSettings: const DataLabelSettings(
-            isVisible: true,
-          ),
-          color: Colors.brown,
-        )
-      ],
     );
   }
 }
@@ -77,7 +85,7 @@ class LineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return SfCartesianChart(
       title: ChartTitle(
-        text: 'المبيعات اليومية لشهر ${DateTime.now().month}',
+        text: 'الأرباح و المبيعات اليومية لشهر ${DateTime.now().month}',
       ),
       primaryXAxis: CategoryAxis(
         arrangeByIndex: true,
@@ -86,6 +94,17 @@ class LineChart extends StatelessWidget {
         minimum: 0,
       ),
       series: <ChartSeries>[
+        StackedBarSeries<SalesStats, int>(
+          color: Colors.brown[400],
+          dataSource: Provider.of<Lists>(context).getDailyProfitOfTheMonth(
+            DateTime.now(),
+          ),
+          xValueMapper: (SalesStats data, _) => data.date.day,
+          yValueMapper: (SalesStats data, _) => data.sales,
+          dataLabelSettings: const DataLabelSettings(
+            isVisible: true,
+          ),
+        ),
         StackedBarSeries<SalesStats, int>(
           color: Colors.brown,
           dataSource: Provider.of<Lists>(context).getDailySalesOfTheMonth(
@@ -155,7 +174,7 @@ class Ownertile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Text(
-                  'بتاريخ : ${DateFormat.yMd().format(Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate)})',
+                  'بتاريخ : ${DateFormat.yMEd().format(Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate)}',
                   // textDirection: TextDirection.rtl,
                   style: const TextStyle(
                     fontSize: 15,
