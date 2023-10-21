@@ -7,21 +7,34 @@ import 'Owner.dart';
 class ProductAdapter extends TypeAdapter<Product> {
   @override
   Product read(BinaryReader reader) {
+    var name = reader.read();
+    var barcode = reader.read();
+    var ownerName = reader.read();
+    var buyprice = reader.read();
+    var sellprice = reader.read();
+    var count = reader.read();
+    var weightable = reader.read();
+    var wholeUnit = reader.read();
+    var offer = reader.read();
+    var offerCount = reader.read();
+    var offerPrice = reader.read();
+    List<Map<DateTime, double>> priceHistory =
+        (reader.read() as List).cast<Map<DateTime, double>>();
+    var endDate = reader.read();
     return Product(
-      name: reader.read(),
-      barcode: reader.read(),
-      ownerName: reader.read(),
-      buyprice: reader.read(),
-      sellprice: reader.read(),
-      count: reader.read(),
-      weightable: reader.read(),
-      wholeUnit: reader.read(),
-      offer: reader.read(),
-      offerCount: reader.read(),
-      offerPrice: reader.read(),
-      priceHistory: List<Map<DateTime, double>>.from(reader.read()),
-      endDate: reader.read(),
-    );
+        name: name,
+        ownerName: ownerName,
+        barcode: barcode,
+        buyprice: buyprice,
+        sellprice: sellprice,
+        count: count,
+        weightable: weightable,
+        wholeUnit: wholeUnit,
+        offer: offer,
+        offerCount: offerCount,
+        offerPrice: offerPrice,
+        priceHistory: priceHistory,
+        endDate: endDate);
   }
 
   @override

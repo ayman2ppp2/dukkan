@@ -100,6 +100,9 @@ class DB {
   }
 
   Future<void> insertProducts({required List<Product> products}) async {
+    products.elementAt(0).priceHistory.add({
+      DateTime.now(): products.elementAt(0).buyprice,
+    });
     for (var element in products) {
       await inventory.put(element.name, element);
     }
@@ -107,7 +110,7 @@ class DB {
 
   void printProducts() {
     for (var element in getAllProducts()) {
-      print(element.toMap());
+      print(element.toJson());
     }
   }
 

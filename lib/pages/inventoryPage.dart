@@ -141,6 +141,7 @@ class _InvPageState extends State<InvPage> {
                         offerCount: 0,
                         offerPrice: 0,
                         endDate: DateTime.now(),
+                        priceHistory: [],
                       ),
                     ),
                   );

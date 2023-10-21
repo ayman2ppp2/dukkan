@@ -29,7 +29,7 @@ class Product {
     required this.endDate,
   });
 
-  Product.fromMap({required Map<String, Object?> map}) {
+  Product.fromJson({required map}) {
     name = map['name'] as String;
     ownerName = map['ownerName'] as String;
     barcode = map['barcode'] as String;
@@ -38,9 +38,16 @@ class Product {
     buyprice = double.parse(map['buyprice'].toString());
     sellprice = double.parse(map['sellprice'].toString());
     count = int.parse(map['count'].toString());
+    offer = map['offer'] as bool;
+    offerCount = double.parse(map['offerCount'].toString());
+    offerPrice = double.parse(map['offerPrice'].toString());
+    priceHistory = List.generate(map['priceHistory'].length,
+            (index) => map['priceHistory'].elementAt(index))
+        .cast<Map<DateTime, double>>();
+    endDate = map['endDate'] as DateTime;
   }
 
-  Map<String, Object?> toMap() {
+  Map<String, Object?> toJson() {
     return {
       'name': name,
       'ownerName': ownerName,
@@ -49,7 +56,13 @@ class Product {
       'wholeUnit': wholeUnit,
       'buyprice': buyprice,
       'sellprice': sellprice,
-      'count': count
+      'count': count,
+      'offer': offer,
+      'offerCount': offerCount,
+      'offerPrice': offerPrice,
+      'priceHistory': List.generate(
+          priceHistory.length, (index) => priceHistory.elementAt(index)),
+      'endDate': endDate,
     };
   }
 }

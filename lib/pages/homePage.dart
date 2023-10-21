@@ -2,12 +2,14 @@ import 'package:dukkan/list.dart';
 import 'package:dukkan/pages/inventoryPage.dart';
 import 'package:dukkan/util/share.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
+// import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
-
+import 'package:hive_ui/hive_ui.dart';
 import '../util/Logs.dart';
+import '../util/product.dart';
 import 'SellPage.dart';
 import 'StatsPage.dart';
+// import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -45,12 +47,41 @@ class _HomePageState extends State<HomePage> {
           ),
           actions: [
             Consumer<Lists>(
-              builder: (context, value, child) => IconButton(
+              builder: (context, li, child) => IconButton(
                 onPressed: () async {
-                  print(
-                    await FlutterBarcodeScanner.scanBarcode(
-                        '#ff6666', 'Cancel', true, ScanMode.BARCODE),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => HiveBoxesView(
+                                hiveBoxes: {
+                                  li.db.inventory: (json) => Product.fromJson
+                                },
+                                onError: (String errorMessage) =>
+                                    {print(errorMessage)})),
                   );
+                  // print(await Navigator.of(context).push(
+                  //   MaterialPageRoute(
+                  //     builder: (context) => AiBarcodeScanner(
+                  //       validator: (value) {
+                  //         return value.startsWith('https://');
+                  //       },
+                  //       canPop: false,
+                  //       onScan: (String value) {
+                  //         debugPrint(value);
+                  //         // setState(() {
+                  //         //   barcode = value;
+                  //         // });
+                  //       },
+                  //       onDetect: (p0) {},
+                  //       onDispose: () {
+                  //         debugPrint("Barcode scanner disposed!");
+                  //       },
+                  //       controller: MobileScannerController(
+                  //         detectionSpeed: DetectionSpeed.noDuplicates,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ));
                 },
                 icon: Icon(
                   Icons.barcode_reader,

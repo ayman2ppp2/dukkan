@@ -112,6 +112,8 @@ class GridItem extends StatelessWidget {
                                       offerPrice:
                                           li.productsList[index].offerPrice,
                                       endDate: li.productsList[index].endDate,
+                                      priceHistory:
+                                          li.productsList[index].priceHistory,
                                     ),
                                   ),
                                 );
@@ -120,6 +122,17 @@ class GridItem extends StatelessWidget {
                           },
                           child: const Icon(Icons.edit),
                         ),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.brown[200],
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                            '${(100 - (li.productsList[index].buyprice / li.productsList[index].sellprice * 100)).toStringAsFixed(2)}'),
                       ),
                     ),
                     Container(

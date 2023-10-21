@@ -1,6 +1,7 @@
 import 'package:dukkan/util/prodStats.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';

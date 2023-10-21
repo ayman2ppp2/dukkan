@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:dukkan/util/Owner.dart';
 import 'package:dukkan/util/db.dart';
 import 'package:dukkan/util/prodStats.dart';
@@ -6,7 +8,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-
+import 'package:cron/cron.dart';
 import 'util/Log.dart';
 
 class Lists extends ChangeNotifier {
@@ -244,6 +246,10 @@ class Lists extends ChangeNotifier {
   }
 
   void updateProduct(Product product) {
+    // Map<DateTime, double> temp =
+    //     Map.fromEntries([MapEntry(DateTime.now(), product.buyprice)]);
+    product.priceHistory.add({DateTime.now(): product.buyprice});
+    // db.inventory.delete(product.name);
     db.inventory.put(product.name, product);
     refreshProductsList();
   }
@@ -261,6 +267,25 @@ class Lists extends ChangeNotifier {
     }
     return count;
   }
+
+  // Future<List<Product>> getSaledProductsByDate(DateTime time) {
+  //   return Isolate.run(() => _getSaledProductsByDate(
+  //       time,
+  //       db.getAllLogs().where((element) =>
+  //           element.date.day == time.day &&
+  //           element.date.month == time.month &&
+  //           element.date.year == time.year)));
+  //   // compute(
+  //   //   _getSaledProductsByDate as ComputeCallback<Set<Object>, List<Product>>,
+  //   //   {
+  //   //     time,
+  //   //     db.getAllLogs().where((element) =>
+  //   //         element.date.day == time.day &&
+  //   //         element.date.month == time.month &&
+  //   //         element.date.year == time.year)
+  //   //   },
+  //   // );
+  // }
 
   List<Product> getSaledProductsByDate(DateTime time) {
     Iterable<Log> temp = db.getAllLogs().where((element) =>

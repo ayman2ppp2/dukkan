@@ -14,6 +14,7 @@ class InPage extends StatefulWidget {
   int index;
   double offerCount;
   double offerPrice;
+  List<Map<DateTime, double>> priceHistory;
   DateTime endDate;
   TextEditingController nameCon = TextEditingController();
   TextEditingController buyCon = TextEditingController();
@@ -40,6 +41,7 @@ class InPage extends StatefulWidget {
     required this.offerCount,
     required this.offerPrice,
     required this.endDate,
+    required this.priceHistory,
   });
 
   @override
@@ -179,7 +181,8 @@ class _InPageState extends State<InPage> {
                       child: Padding(
                         padding: const EdgeInsets.all(10.0),
                         child: Text(
-                            'تاريخ الأنتهاء : ${widget.endDate.year}-${widget.endDate.month}-${widget.endDate.day}'),
+                          'تاريخ الأنتهاء : ${widget.endDate.year}-${widget.endDate.month}-${widget.endDate.day}',
+                        ),
                       ),
                     ),
                   ),
@@ -323,7 +326,7 @@ class _InPageState extends State<InPage> {
                               double.tryParse(widget.offerCountCon.text) ?? 0,
                           offerPrice:
                               double.tryParse(widget.offerPriceCon.text) ?? 0,
-                          priceHistory: [],
+                          priceHistory: widget.priceHistory,
                           endDate: widget.endDate,
                         );
                         li.updateProduct(temp2);

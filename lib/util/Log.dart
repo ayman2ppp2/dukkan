@@ -15,7 +15,7 @@ class Log {
     profit = map['profit'] as double;
     date = DateTime.fromMillisecondsSinceEpoch(map['date']);
     products = List<Product>.generate(map['products'].length,
-        (index) => Product.fromMap(map: map['products'][index]));
+        (index) => Product.fromJson(map: map['products'][index]));
   }
   Map<String, Object?> toMap() {
     return {
@@ -23,7 +23,7 @@ class Log {
       'profit': profit,
       'date': date.millisecondsSinceEpoch,
       'products':
-          List.generate(products.length, (index) => products[index].toMap())
+          List.generate(products.length, (index) => products[index].toJson())
     };
   }
 }
