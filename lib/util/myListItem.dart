@@ -1,3 +1,4 @@
+import 'package:dukkan/salesProvider.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -24,7 +25,7 @@ class _MyListTileState extends State<MyListTile> {
   TextEditingController con = TextEditingController();
   @override
   Widget build(BuildContext context) {
-    return Consumer<Lists>(
+    return Consumer<SalesProvider>(
       builder: (context, li, child) {
         return ListTile(
           leading: (widget.product.offer &&
@@ -42,155 +43,157 @@ class _MyListTileState extends State<MyListTile> {
                     children: [
                       Text('${widget.product.count}جم',
                           style: const TextStyle(fontSize: 15)),
-                      SizedBox(
-                        width: 40,
-                        child: PopupMenuButton(
-                          onSelected: (value) {
-                            li.updateSellListCount(
-                                index: widget.index, count: value.toInt());
-                            switch (value) {
-                              case 1000:
-                                weight = 'كيلو';
-                              case 500:
-                                weight = 'نص كيلو';
-                              case 250:
-                                weight = 'ربع كيلو';
-                              case 850:
-                                weight = 'تمنة';
-                              case 425:
-                                weight = 'نص تمنة';
-                              case 215:
-                                weight = 'ربع تمنة';
-                              case 450:
-                                weight = 'رطل';
-                              case 225:
-                                weight = 'نص رطل';
-                              case 112.5:
-                                weight = 'ربع رطل';
-                              case 0:
-                                weight = 'وزن';
-                                break;
-                              default:
-                            }
-                          },
-                          itemBuilder: (context) {
-                            if (widget.product.wholeUnit == 'كيلو') {
-                              return List.generate(
-                                li.kg.length,
-                                (index) => PopupMenuItem(
-                                  enabled:
-                                      li.getProductCount(widget.product.name) >=
+                      Flexible(
+                          flex: 2,
+                          child: Consumer<SalesProvider>(
+                            builder: (context, sa, child) => PopupMenuButton(
+                              onSelected: (value) {
+                                sa.updateSellListCount(
+                                    index: widget.index, count: value.toInt());
+                                switch (value) {
+                                  case 1000:
+                                    weight = 'كيلو';
+                                  case 500:
+                                    weight = 'نص كيلو';
+                                  case 250:
+                                    weight = 'ربع كيلو';
+                                  case 850:
+                                    weight = 'تمنة';
+                                  case 425:
+                                    weight = 'نص تمنة';
+                                  case 215:
+                                    weight = 'ربع تمنة';
+                                  case 450:
+                                    weight = 'رطل';
+                                  case 225:
+                                    weight = 'نص رطل';
+                                  case 112.5:
+                                    weight = 'ربع رطل';
+                                  case 0:
+                                    weight = 'وزن';
+                                    break;
+                                  default:
+                                }
+                              },
+                              itemBuilder: (context) {
+                                if (widget.product.wholeUnit == 'كيلو') {
+                                  return List.generate(
+                                    li.kg.length,
+                                    (index) => PopupMenuItem(
+                                      enabled: li.getProductCount(
+                                              widget.product.name) >=
                                           li.kg.values.elementAt(index),
-                                  value: li.kg.values.elementAt(index),
-                                  child: Text(
-                                    li.kg.keys.elementAt(index),
-                                  ),
-                                ),
-                              );
-                            }
-                            if (widget.product.wholeUnit == 'تمنة') {
-                              return List.generate(
-                                li.kg.length,
-                                (index) => PopupMenuItem(
-                                  enabled:
-                                      li.getProductCount(widget.product.name) >=
+                                      value: li.kg.values.elementAt(index),
+                                      child: Text(
+                                        li.kg.keys.elementAt(index),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                if (widget.product.wholeUnit == 'تمنة') {
+                                  return List.generate(
+                                    li.kg.length,
+                                    (index) => PopupMenuItem(
+                                      enabled: li.getProductCount(
+                                              widget.product.name) >=
                                           li.toumna.values.elementAt(index),
-                                  value: li.toumna.values.elementAt(index),
-                                  child: Text(
-                                    li.toumna.keys.elementAt(index),
-                                  ),
-                                ),
-                              );
-                            } else {
-                              return List.generate(
-                                li.pound.length,
-                                (index) => PopupMenuItem(
-                                  enabled:
-                                      li.getProductCount(widget.product.name) >=
+                                      value: li.toumna.values.elementAt(index),
+                                      child: Text(
+                                        li.toumna.keys.elementAt(index),
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  return List.generate(
+                                    li.pound.length,
+                                    (index) => PopupMenuItem(
+                                      enabled: li.getProductCount(
+                                              widget.product.name) >=
                                           li.pound.values.elementAt(index),
-                                  value: li.pound.values.elementAt(index),
-                                  child: Text(
-                                    li.pound.keys.elementAt(index),
-                                  ),
+                                      value: li.pound.values.elementAt(index),
+                                      child: Text(
+                                        li.pound.keys.elementAt(index),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          )),
+
+                      Flexible(
+                        child: Consumer<SalesProvider>(
+                          builder: (context, sa, child) => PopupMenuButton(
+                            child: Text(
+                              '$_multiplyer',
+                              style: TextStyle(fontSize: 20),
+                            ),
+                            onSelected: (value) {
+                              switch (weight) {
+                                case 'كيلو':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 1000 * value);
+                                case 'نص كيلو':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 500 * value);
+                                case 'ربع كيلو':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 250 * value);
+                                case 'تمنة':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 850 * value);
+                                case 'نص تمنة':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 425 * value);
+                                case 'ربع تمنة':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 215 * value);
+                                case 'رطل':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 450 * value);
+                                case 'نص رطل':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 225 * value);
+                                case 'ربع رطل':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 113 * value);
+                                case 'وزن':
+                                  sa.updateSellListCount(
+                                      index: widget.index, count: 0);
+                                  break;
+                                default:
+                              }
+
+                              _multiplyer = value;
+                              // li.updateSellListCount(
+                              //     index: widget.index,
+                              //     count: widget.product.count * value);
+                            },
+                            itemBuilder: (context) {
+                              return const [
+                                PopupMenuItem(
+                                  value: 1,
+                                  child: Text('1'),
                                 ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-
-                      SizedBox(
-                        width: 5,
-                        child: PopupMenuButton(
-                          child: Text(
-                            '$_multiplyer',
-                            style: TextStyle(fontSize: 20),
+                                PopupMenuItem(
+                                  value: 2,
+                                  child: Text('2'),
+                                ),
+                                PopupMenuItem(
+                                  value: 3,
+                                  child: Text('3'),
+                                ),
+                                PopupMenuItem(
+                                  value: 4,
+                                  child: Text('4'),
+                                ),
+                                PopupMenuItem(
+                                  value: 5,
+                                  child: Text('5'),
+                                ),
+                              ];
+                            },
                           ),
-                          onSelected: (value) {
-                            switch (weight) {
-                              case 'كيلو':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 1000 * value);
-                              case 'نص كيلو':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 500 * value);
-                              case 'ربع كيلو':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 250 * value);
-                              case 'تمنة':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 850 * value);
-                              case 'نص تمنة':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 425 * value);
-                              case 'ربع تمنة':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 215 * value);
-                              case 'رطل':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 450 * value);
-                              case 'نص رطل':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 225 * value);
-                              case 'ربع رطل':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 113 * value);
-                              case 'وزن':
-                                li.updateSellListCount(
-                                    index: widget.index, count: 0);
-                                break;
-                              default:
-                            }
-
-                            _multiplyer = value;
-                            // li.updateSellListCount(
-                            //     index: widget.index,
-                            //     count: widget.product.count * value);
-                          },
-                          itemBuilder: (context) {
-                            return const [
-                              PopupMenuItem(
-                                value: 1,
-                                child: Text('1'),
-                              ),
-                              PopupMenuItem(
-                                value: 2,
-                                child: Text('2'),
-                              ),
-                              PopupMenuItem(
-                                value: 3,
-                                child: Text('3'),
-                              ),
-                              PopupMenuItem(
-                                value: 4,
-                                child: Text('4'),
-                              ),
-                              PopupMenuItem(
-                                value: 5,
-                                child: Text('5'),
-                              ),
-                            ];
-                          },
                         ),
                       )
                       // NumberPicker(
@@ -211,45 +214,49 @@ class _MyListTileState extends State<MyListTile> {
                     ],
                   ),
                 )
-              : NumberPicker(
-                  value: widget.product.count,
-                  maxValue: li.getProductCount(widget.product.name),
-                  minValue: 1,
-                  onChanged: (int value) {
-                    li.updateSellListCount(index: widget.index, count: value);
-                  },
-                  haptics: true,
-                  itemHeight: 40,
-                  itemWidth: 60,
-                  itemCount: 1,
+              : Consumer<SalesProvider>(
+                  builder: (context, sa, child) => NumberPicker(
+                    value: widget.product.count,
+                    maxValue: li.getProductCount(widget.product.name),
+                    minValue: 1,
+                    onChanged: (int value) {
+                      sa.updateSellListCount(index: widget.index, count: value);
+                    },
+                    haptics: true,
+                    itemHeight: 40,
+                    itemWidth: 60,
+                    itemCount: 1,
+                  ),
                 ),
           subtitle: widget.product.weightable && weight == 'وزن'
-              ? TextFormField(
-                  keyboardType: TextInputType.number,
-                  maxLength: 5,
-                  controller: con,
+              ? Consumer<SalesProvider>(
+                  builder: (context, sa, child) => TextFormField(
+                    keyboardType: TextInputType.number,
+                    maxLength: 5,
+                    controller: con,
 
-                  onChanged: (value) {
-                    if (value.isNotEmpty) {
-                      gg = (((double.tryParse(value) ?? 0) ~/
-                              (widget.product.sellprice)))
-                          .toInt();
-                      li.updateSellListCount(index: widget.index, count: gg);
-                    }
-                    if ((double.tryParse(value) ?? 0) >=
-                        li.getProductCount(widget.product.name) *
-                            widget.product.sellprice) {
-                      // setState(() {
-                      con.text = NumberFormat.simpleCurrency().format(
-                          (li.getProductCount(widget.product.name) *
-                              widget.product.sellprice));
-                      li.updateSellListCount(
-                          index: widget.index,
-                          count: li.getProductCount(widget.product.name));
-                      // });
-                    }
-                  },
-                  // enabled: ,
+                    onChanged: (value) {
+                      if (value.isNotEmpty) {
+                        gg = (((double.tryParse(value) ?? 0) ~/
+                                (widget.product.sellprice)))
+                            .toInt();
+                        sa.updateSellListCount(index: widget.index, count: gg);
+                      }
+                      if ((double.tryParse(value) ?? 0) >=
+                          li.getProductCount(widget.product.name) *
+                              widget.product.sellprice) {
+                        // setState(() {
+                        con.text = NumberFormat.simpleCurrency().format(
+                            (li.getProductCount(widget.product.name) *
+                                widget.product.sellprice));
+                        sa.updateSellListCount(
+                            index: widget.index,
+                            count: li.getProductCount(widget.product.name));
+                        // });
+                      }
+                    },
+                    // enabled: ,
+                  ),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,

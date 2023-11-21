@@ -2,6 +2,7 @@ import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:dukkan/list.dart';
 import 'package:dukkan/pages/homePage.dart';
+import 'package:dukkan/salesProvider.dart';
 import 'package:dukkan/util/adapters.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -64,8 +65,15 @@ class MyApp extends StatelessWidget {
             ),
           ],
         ),
-        nextScreen: ChangeNotifierProvider(
-          create: (context) => Lists(),
+        nextScreen: MultiProvider(
+          providers: [
+            ChangeNotifierProvider<Lists>(
+              create: (context) => Lists(),
+            ),
+            ChangeNotifierProvider<SalesProvider>(
+              create: (context) => SalesProvider(),
+            ),
+          ],
           builder: (context, child) => const HomePage(),
         ),
       ),

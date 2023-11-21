@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:dukkan/list.dart';
+import 'package:dukkan/salesProvider.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -73,6 +74,7 @@ class CheckOut extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Consumer<Lists>(
                 builder: (context, li, child) {
+                  debugPrint('77');
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -88,56 +90,62 @@ class CheckOut extends StatelessWidget {
                               'المجموع : ${NumberFormat.simpleCurrency().format(total.round())}'),
                         ),
                       ),
-                      IconButton.filled(
-                        onPressed: () async {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text(
-                                  'هل انت متاكد',
-                                  style: TextStyle(fontSize: 20),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () async {
-                                      await li.db
-                                          .checkOut(lst: lst, total: total);
-                                      li.refreshProductsList();
-                                      li.refreshListOfOwners();
-                                      Navigator.pop(context);
-                                      Navigator.pop(context);
-                                      li.defaultSellList();
-                                    },
-                                    child: const Text(
-                                      'نعم',
+                      Consumer<SalesProvider>(
+                        builder: (context, sa, child) => IconButton.filled(
+                          onPressed: () async {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return ChangeNotifierProvider.value(
+                                  value: sa,
+                                  child: AlertDialog(
+                                    title: const Text(
+                                      'هل انت متاكد',
                                       style: TextStyle(fontSize: 20),
                                     ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () async {
+                                          await li.db
+                                              .checkOut(lst: lst, total: total);
+                                          sa.refreshProductsList();
+                                          li.refresh();
+                                          li.refreshListOfOwners();
+                                          Navigator.pop(context);
+                                          Navigator.pop(context);
+                                          sa.defaultSellList();
+                                        },
+                                        child: const Text(
+                                          'نعم',
+                                          style: TextStyle(fontSize: 20),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text(
+                                          'لا',
+                                          style: TextStyle(fontSize: 20),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text(
-                                      'لا',
-                                      style: TextStyle(fontSize: 20),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.checklist_outlined,
-                          color: Colors.white,
-                          size: 40,
-                        ),
-                        style: ButtonStyle(
-                          backgroundColor: MaterialStatePropertyAll(
-                            Colors.green[500],
+                                );
+                              },
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.checklist_outlined,
+                            color: Colors.white,
+                            size: 40,
                           ),
-                          elevation: const MaterialStatePropertyAll(20),
+                          style: ButtonStyle(
+                            backgroundColor: MaterialStatePropertyAll(
+                              Colors.green[500],
+                            ),
+                            elevation: const MaterialStatePropertyAll(20),
+                          ),
                         ),
                       )
                     ],

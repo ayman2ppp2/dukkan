@@ -1,4 +1,5 @@
 import 'package:dukkan/list.dart';
+import 'package:dukkan/salesProvider.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +21,7 @@ class _SearchPageState extends State<SearchPage> {
   late Product product;
   @override
   Widget build(BuildContext context) {
-    return Consumer<Lists>(
+    return Consumer<SalesProvider>(
       builder: (context, li, child) {
         return Material(
           borderRadius: BorderRadius.circular(12),

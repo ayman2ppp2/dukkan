@@ -17,6 +17,7 @@ class DB {
         await Permission.manageExternalStorage.isDenied) {
       await Permission.manageExternalStorage.request();
       await Permission.storage.request();
+      // print('here');
     }
 
     inventory = await Hive.openBox('inventory');
@@ -100,9 +101,9 @@ class DB {
   }
 
   Future<void> insertProducts({required List<Product> products}) async {
-    products.elementAt(0).priceHistory.add({
-      DateTime.now(): products.elementAt(0).buyprice,
-    });
+    // products.elementAt(0).priceHistory.add({
+    //   DateTime.now(): products.elementAt(0).buyprice,
+    // });
     for (var element in products) {
       await inventory.put(element.name, element);
     }

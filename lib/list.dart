@@ -18,34 +18,16 @@ class Lists extends ChangeNotifier {
     db = DB();
   }
   List<Widget> shareList = [];
-  List<Product> searchTemp = [];
-  List<Product> productsList = [];
+  // List<Product> searchTemp = [];
+  // List<Product> productsList = [];
+  // List<Product> sellList = [];
   List<Owner> ownersList = [];
-  List<Product> sellList = [];
   List<Log> logsList = [];
-  Map<String, double> kg = {
-    'كيلو': 1000,
-    'نص كيلو': 500,
-    'ربع كيلو': 250,
-    'وزن': 0,
-  };
-  Map<String, double> pound = {
-    'رطل': 450,
-    'نص رطل': 225,
-    'ربع رطل': 112.5,
-    'وزن': 0,
-  };
-  Map<String, double> toumna = {
-    'تمنة': 850,
-    'نص تمنة': 425,
-    'ربع تمنة': 212.5,
-    'وزن': 0,
-  };
 
   void calculateEachOwnerSales(String ownerName) {
     // refreshListOfOwners();
 
-    for (var product in productsList) {
+    for (var product in db.inventory.values) {
       if (product.ownerName == ownerName) {
         var temp =
             ownersList.firstWhere((element) => element.ownerName == ownerName);
@@ -55,6 +37,9 @@ class Lists extends ChangeNotifier {
     }
   }
 
+  void refresh() {
+    notifyListeners();
+  }
   // Future<bool> calculateEachOwnertotals(int value) {
   //   return compute(_calculate, value);
   // }
@@ -85,56 +70,13 @@ class Lists extends ChangeNotifier {
     logsList = db.getAllLogs();
   }
 
-  int getProductCount(String name) {
-    if (productsList.isNotEmpty) {
-      Product temp = productsList.firstWhere(
-        (element) => element.name == name,
-        orElse: () => Product(
-          name: 'name',
-          barcode: '',
-          buyprice: 0,
-          sellprice: 0,
-          count: 999,
-          ownerName: '',
-          weightable: true,
-          wholeUnit: '',
-          offer: false,
-          offerCount: 0,
-          offerPrice: 0,
-          priceHistory: [],
-          endDate: DateTime(2024),
-        ),
-      );
-      return temp.count;
-    } else {
-      return 909;
-    }
-  }
-
-  bool isProductOutOFStock(String name) {
-    return getProductCount(name) == 0 ? false : true;
-  }
-
-  void defaultSellList() {
-    sellList = [];
-    notifyListeners();
-  }
-
-  void refresh() {
-    notifyListeners();
-  }
-
-  void refreshProductsList() async {
-    productsList = await db.getAllProducts();
-    notifyListeners();
-  }
-
   double getTotalBuyPrice() {
     var temp = db.getAllProducts();
     double sum = 0;
     for (var product in temp) {
       sum += product.buyprice * product.count;
     }
+    // print(sum);
     return sum;
   }
 
@@ -221,39 +163,6 @@ class Lists extends ChangeNotifier {
     return sales;
   }
 
-  void search(String keyWord) {
-    refreshProductsList();
-    notifyListeners();
-    searchTemp.clear();
-    for (var i = 0; i < productsList.length; i++) {
-      if (productsList[i].name.startsWith(keyWord) ||
-          productsList[i].name.contains(keyWord)) {
-        searchTemp.add(productsList[i]);
-        notifyListeners();
-      }
-    }
-  }
-
-  void updateSellListCount({required int index, required int count}) {
-    sellList[index].count = count;
-    notifyListeners();
-  }
-
-  void removeProduct({required int index}) async {
-    Product temp = productsList[index];
-    db.inventory.delete(temp.name);
-    notifyListeners();
-  }
-
-  void updateProduct(Product product) {
-    // Map<DateTime, double> temp =
-    //     Map.fromEntries([MapEntry(DateTime.now(), product.buyprice)]);
-    product.priceHistory.add({DateTime.now(): product.buyprice});
-    // db.inventory.delete(product.name);
-    db.inventory.put(product.name, product);
-    refreshProductsList();
-  }
-
   int getNumberOfSalesForAproduct({required String key}) {
     int count = 0;
     List<Log> logs = db.getAllLogs();
@@ -268,138 +177,41 @@ class Lists extends ChangeNotifier {
     return count;
   }
 
-  // Future<List<Product>> getSaledProductsByDate(DateTime time) {
-  //   return Isolate.run(() => _getSaledProductsByDate(
-  //       time,
-  //       db.getAllLogs().where((element) =>
-  //           element.date.day == time.day &&
-  //           element.date.month == time.month &&
-  //           element.date.year == time.year)));
-  //   // compute(
-  //   //   _getSaledProductsByDate as ComputeCallback<Set<Object>, List<Product>>,
-  //   //   {
-  //   //     time,
-  //   //     db.getAllLogs().where((element) =>
-  //   //         element.date.day == time.day &&
-  //   //         element.date.month == time.month &&
-  //   //         element.date.year == time.year)
-  //   //   },
-  //   // );
-  // }
-
-  List<Product> getSaledProductsByDate(DateTime time) {
-    Iterable<Log> temp = db.getAllLogs().where((element) =>
+  Future<List<Product>> getSaledProductsByDate(DateTime time) {
+    // return Isolate.run(() => _getSaledProductsByDate(
+    //     time,
+    //     db.getAllLogs().where((element) =>
+    //         element.date.day == time.day &&
+    //         element.date.month == time.month &&
+    //         element.date.year == time.year) as List<Log>));
+    Map map = Map();
+    map['1'] = time;
+    map['2'] = db.getAllLogs().where((element) =>
         element.date.day == time.day &&
         element.date.month == time.month &&
         element.date.year == time.year);
-//@to-do sort the list by date
-    List<Product> products = [];
-    List<Product> result = [];
-    for (var log in temp) {
-      products.addAll(log.products);
-    }
-    Map<String, int> yy = {};
-    for (var product in products) {
-      if (yy.containsKey(product.name)) {
-        yy.update(product.name, (value) => product.count + value);
-      } else {
-        yy.addAll({product.name: product.count});
-      }
-    }
-    for (var element in yy.entries) {
-      result.add(Product(
-          name: element.key,
-          buyprice: 0,
-          barcode: '',
-          sellprice: 0,
-          count: element.value,
-          weightable: true,
-          ownerName: '',
-          wholeUnit: '',
-          offer: false,
-          offerCount: 0,
-          offerPrice: 0,
-          priceHistory: [],
-          endDate: DateTime(2024)));
-    }
-    return result;
+    return compute(_getSaledProductsByDate, map);
   }
 
-  List<ProdStats> getSalesPerProduct() {
-    List<ProdStats> temp = [];
-
-    List<Product> products = db.getAllProducts();
-
-    for (var product in products) {
-      int gg = getNumberOfSalesForAproduct(
-        key: product.name,
-      );
-      temp.add(
-        ProdStats(
-          date: DateTime.now(),
-          name: product.name,
-          count: gg > 1000 ? (gg).toDouble() : gg.toDouble(),
-        ),
-      );
-    }
-
-    return temp;
+  Future<List<ProdStats>> getSalesPerProduct() async {
+    Map map = Map();
+    map['1'] = db.getAllProducts();
+    map['2'] = db.getAllLogs();
+    return compute(_getSalesPerProduct, map);
   }
 
-  List<SalesStats> getDailySalesOfTheMonth(DateTime month) {
-    DateTime tt = month;
-    List<SalesStats> result = [];
-    List<Log> temp = db.getAllLogs();
-    // temp.sort(
-    //   (a, b) => a.date.compareTo(b.date),
-    // );
-    // temp = temp.reversed.toList();
-    for (var log in temp) {
-      if (log.date.month == month.month && log.date.year == month.year) {
-        if (tt.day == log.date.day) {
-          continue;
-        } else {
-          result.add(
-            SalesStats(
-              date: log.date,
-              sales: getDailySales(log.date),
-            ),
-          );
-          if (log.date.compareTo(tt) < 0) {
-            tt = log.date;
-          }
-        }
-      }
-    }
-    return result;
+  Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) async {
+    Map map = Map();
+    map['1'] = db.getAllLogs();
+    map['2'] = month;
+    return await compute(_getDailySalesOfTheMonth, map);
   }
 
-  List<SalesStats> getDailyProfitOfTheMonth(DateTime month) {
-    DateTime tt = month;
-    List<SalesStats> result = [];
-    List<Log> temp = db.getAllLogs();
-    // temp.sort(
-    //   (a, b) => a.date.compareTo(b.date),
-    // );
-    // temp = temp.reversed.toList();
-    for (var log in temp) {
-      if (log.date.month == month.month && log.date.year == month.year) {
-        if (tt.day == log.date.day) {
-          continue;
-        } else {
-          result.add(
-            SalesStats(
-              date: log.date,
-              sales: getDailyProfits(log.date),
-            ),
-          );
-          if (log.date.compareTo(tt) < 0) {
-            tt = log.date;
-          }
-        }
-      }
-    }
-    return result;
+  Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) async {
+    Map map = Map();
+    map['1'] = month;
+    map['2'] = db.getAllLogs();
+    return await compute(_getDailyProfitOfTheMonth, map);
   }
 
   void runServer() async {
@@ -531,4 +343,176 @@ class Lists extends ChangeNotifier {
   void updateOwner(Owner owner) {
     db.owners.put(owner.ownerName, owner);
   }
+}
+
+List<Product> _getSaledProductsByDate(Map map) {
+  Iterable<Log> temp = map['2'];
+  // db.getAllLogs().where((element) =>
+  //     element.date.day == time.day &&
+  //     element.date.month == time.month &&
+  //     element.date.year == time.year);
+//@to-do sort the list by date
+  List<Product> products = [];
+  List<Product> result = [];
+  for (var log in temp) {
+    products.addAll(log.products);
+  }
+  Map<String, int> yy = {};
+  for (var product in products) {
+    if (yy.containsKey(product.name)) {
+      yy.update(product.name, (value) => product.count + value);
+    } else {
+      yy.addAll({product.name: product.count});
+    }
+  }
+  for (var element in yy.entries) {
+    result.add(Product(
+        name: element.key,
+        buyprice: 0,
+        barcode: '',
+        sellprice: 0,
+        count: element.value,
+        weightable: true,
+        ownerName: '',
+        wholeUnit: '',
+        offer: false,
+        offerCount: 0,
+        offerPrice: 0,
+        priceHistory: [],
+        endDate: DateTime(2024)));
+  }
+  return result;
+}
+
+int _getNumberOfSalesForAproduct(Map map) {
+  int count = 0;
+  List<Log> logs = map['2'];
+  String key = map['1'];
+  for (var log in logs) {
+    List<Product> products = log.products;
+    for (var product in products) {
+      if (product.name == key) {
+        count += product.count;
+      }
+    }
+  }
+  return count;
+}
+
+List<ProdStats> _getSalesPerProduct(var map) {
+  int getNumberOfSalesForAproduct({required String key}) {
+    int count = 0;
+    // List<Log> logs = db.getAllLogs();
+    for (var log in map['2']) {
+      List<Product> products = log.products;
+      for (var product in products) {
+        if (product.name == key) {
+          count += product.count;
+        }
+      }
+    }
+    return count;
+  }
+
+  List<ProdStats> temp = [];
+
+  // List<Product> products = db.getAllProducts();
+
+  for (var product in map['1']) {
+    int gg = getNumberOfSalesForAproduct(key: product.name);
+    temp.add(
+      ProdStats(
+        date: DateTime.now(),
+        name: product.name,
+        count: gg > 1000 ? (gg).toDouble() : gg.toDouble(),
+      ),
+    );
+  }
+
+  return temp;
+}
+
+List<SalesStats> _getDailyProfitOfTheMonth(map) {
+  DateTime month = map['1'];
+  List<Log> logs = map['2'];
+  double getDailyProfits(DateTime time) {
+    List<Log> temp = logs;
+    double profit = 0;
+    for (var log in temp) {
+      if (log.date.day == time.day &&
+          log.date.month == time.month &&
+          log.date.year == time.year) {
+        profit += log.profit;
+      }
+    }
+    return profit;
+  }
+
+  DateTime tt = month;
+  List<SalesStats> result = [];
+  List<Log> temp = logs;
+  // temp.sort(
+  //   (a, b) => a.date.compareTo(b.date),
+  // );
+  // temp = temp.reversed.toList();
+  for (var log in temp) {
+    if (log.date.month == month.month && log.date.year == month.year) {
+      if (tt.day == log.date.day) {
+        continue;
+      } else {
+        result.add(
+          SalesStats(
+            date: log.date,
+            sales: getDailyProfits(log.date),
+          ),
+        );
+        if (log.date.compareTo(tt) < 0) {
+          tt = log.date;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+List<SalesStats> _getDailySalesOfTheMonth(Map map) {
+  double getDailySales(DateTime time) {
+    List<Log> temp = map['1'];
+    double sales = 0;
+    for (var log in temp) {
+      if (log.date.day == time.day &&
+          log.date.month == time.month &&
+          log.date.year == time.year) {
+        sales += log.price;
+      }
+    }
+
+    return sales;
+  }
+
+  DateTime tt = map['2'];
+  List<SalesStats> result = [];
+  List<Log> temp = map['1'];
+  // temp.sort(
+  //   (a, b) => a.date.compareTo(b.date),
+  // );
+  // temp = temp.reversed.toList();
+  for (var log in temp) {
+    if (log.date.month == map['2'].month && log.date.year == map['2'].year) {
+      if (tt.day == log.date.day) {
+        continue;
+      } else {
+        result.add(
+          SalesStats(
+            date: log.date,
+            sales: getDailySales(log.date),
+          ),
+        );
+        if (log.date.compareTo(tt) < 0) {
+          tt = log.date;
+        }
+      }
+    }
+  }
+  return result;
 }

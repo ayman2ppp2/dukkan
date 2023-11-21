@@ -1,5 +1,6 @@
 import 'package:dukkan/list.dart';
 import 'package:dukkan/pages/CheckOutPage.dart';
+import 'package:dukkan/salesProvider.dart';
 import 'package:dukkan/util/myListItem.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:dukkan/util/searchPage.dart';
@@ -18,8 +19,8 @@ class _SellPageState extends State<SellPage> {
   TrackingScrollController con = TrackingScrollController();
   @override
   Widget build(BuildContext context) {
-    return Consumer<Lists>(
-      builder: (context, li, child) {
+    return Consumer<SalesProvider>(
+      builder: (context, sa, child) {
         return Column(
           children: [
             Expanded(
@@ -30,7 +31,7 @@ class _SellPageState extends State<SellPage> {
                 child: ListView.builder(
                   controller: con,
                   scrollDirection: Axis.vertical,
-                  itemCount: li.sellList.length,
+                  itemCount: sa.sellList.length,
                   itemBuilder: (context, index) {
                     return Dismissible(
                       background: Container(
@@ -43,10 +44,11 @@ class _SellPageState extends State<SellPage> {
                           ],
                         ),
                       ),
-                      key: ValueKey<Product>(li.sellList[index]),
+                      key: ValueKey<Product>(sa.sellList[index]),
                       onDismissed: (DismissDirection direction) {
+                        debugPrint(direction.name);
                         setState(() {
-                          li.sellList.removeAt(index);
+                          sa.sellList.removeAt(index);
                         });
                       },
                       child: Padding(
@@ -57,7 +59,7 @@ class _SellPageState extends State<SellPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: MyListTile(
-                            product: li.sellList[index],
+                            product: sa.sellList[index],
                             index: index,
                           ),
                         ),
@@ -74,14 +76,14 @@ class _SellPageState extends State<SellPage> {
                   padding: const EdgeInsets.only(bottom: 20, top: 10),
                   child: IconButton.filled(
                     onPressed: () {
-                      li.refreshProductsList();
+                      sa.refreshProductsList();
                       showGeneralDialog(
                         barrierDismissible: true,
                         barrierLabel: 'tet',
                         context: context,
                         pageBuilder: (context, animation, secondaryAnimation) =>
                             ChangeNotifierProvider.value(
-                          value: li,
+                          value: sa,
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(40, 150, 40, 10),
                             child: SearchPage(),
@@ -113,55 +115,62 @@ class _SellPageState extends State<SellPage> {
                     ),
                     child: Center(
                         child: Text(
-                            'total : ${NumberFormat.simpleCurrency().format((li.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer && element.count % element.offerCount == 0) ? (element.offerPrice * element.count) : (element.sellprice * element.count)))))}')),
+                            'total : ${NumberFormat.simpleCurrency().format((sa.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer && element.count % element.offerCount == 0) ? (element.offerPrice * element.count) : (element.sellprice * element.count)))))}')),
                   ),
                 ),
                 // 2nd button
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20, top: 10),
-                  child: IconButton.filled(
-                    onPressed: () {
-                      showGeneralDialog(
-                        context: context,
-                        pageBuilder: (context, animation, secondaryAnimation) {
-                          return ChangeNotifierProvider.value(
-                            value: li,
-                            child: Padding(
+                  child: Consumer<Lists>(
+                    builder: (context, li, child) => IconButton.filled(
+                      onPressed: () {
+                        showGeneralDialog(
+                          context: context,
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) {
+                            return Padding(
                               padding: const EdgeInsets.only(
                                 left: 20,
                                 right: 20,
                                 top: 100,
                               ),
-                              child: CheckOut(
-                                lst: li.sellList,
-                                total: (li.sellList.fold(
-                                  00.0,
-                                  (previousValue, element) =>
-                                      previousValue +
-                                      ((element.offer &&
-                                              element.count %
-                                                      element.offerCount ==
-                                                  0)
-                                          ? (element.offerPrice * element.count)
-                                          : (element.sellprice *
-                                              element.count)),
-                                )),
+                              child: ChangeNotifierProvider.value(
+                                value: sa,
+                                child: ChangeNotifierProvider.value(
+                                  value: li,
+                                  child: CheckOut(
+                                    lst: sa.sellList,
+                                    total: (sa.sellList.fold(
+                                      00.0,
+                                      (previousValue, element) =>
+                                          previousValue +
+                                          ((element.offer &&
+                                                  element.count %
+                                                          element.offerCount ==
+                                                      0)
+                                              ? (element.offerPrice *
+                                                  element.count)
+                                              : (element.sellprice *
+                                                  element.count)),
+                                    )),
+                                  ),
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.price_check_outlined,
-                      color: Colors.white,
-                    ),
-                    iconSize: 40,
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStatePropertyAll(
-                        Colors.brown[400],
+                            );
+                          },
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.price_check_outlined,
+                        color: Colors.white,
                       ),
-                      elevation: const MaterialStatePropertyAll(20),
+                      iconSize: 40,
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStatePropertyAll(
+                          Colors.brown[400],
+                        ),
+                        elevation: const MaterialStatePropertyAll(20),
+                      ),
                     ),
                   ),
                 ),

@@ -1,4 +1,5 @@
 import 'package:dukkan/pages/InsertPage.dart';
+import 'package:dukkan/salesProvider.dart';
 import 'package:dukkan/util/addUser.dart';
 import 'package:dukkan/util/myGridItem.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +17,8 @@ class InvPage extends StatefulWidget {
 class _InvPageState extends State<InvPage> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<Lists>(
-      builder: (context, li, child) {
+    return Consumer<SalesProvider>(
+      builder: (context, as, child) {
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.brown,
@@ -29,7 +30,7 @@ class _InvPageState extends State<InvPage> {
                     context: context,
                     builder: (context) {
                       return ChangeNotifierProvider.value(
-                        value: li,
+                        value: as,
                         child: AddUser(),
                       );
                     },
@@ -50,12 +51,14 @@ class _InvPageState extends State<InvPage> {
                         fontSize: 20,
                         fontWeight: FontWeight.bold),
                   ),
-                  Text(
-                    ' رأس المال : ${li.getTotalBuyPrice().toStringAsFixed(2)}',
-                    style: TextStyle(
-                        color: Colors.brown[50],
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold),
+                  Consumer<Lists>(
+                    builder: (context, as, child) => Text(
+                      ' رأس المال : ${as.getTotalBuyPrice().toStringAsFixed(2)}',
+                      style: TextStyle(
+                          color: Colors.brown[50],
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -77,27 +80,26 @@ class _InvPageState extends State<InvPage> {
                     child: TextField(
                       textDirection: TextDirection.rtl,
                       decoration: const InputDecoration(hintText: 'إبحث'),
-                      onChanged: (value) => li.search(value),
+                      onChanged: (value) => as.search(value),
                     ),
                   ),
                 ),
               ),
               Expanded(
-                child: li.searchTemp.isNotEmpty
+                child: as.searchTemp.isNotEmpty
                     ? GridView.builder(
-                        itemCount: li.searchTemp.length,
+                        itemCount: as.searchTemp.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2),
                         itemBuilder: (context, index) {
                           return GridItem(
-                            name: li.searchTemp.elementAt(index).name,
+                            name: as.searchTemp.elementAt(index).name,
                           );
                         },
                       )
                     : GridView.builder(
-                        itemCount:
-                            Provider.of<Lists>(context).productsList.length,
+                        itemCount: as.productsList.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2),
@@ -105,7 +107,7 @@ class _InvPageState extends State<InvPage> {
                           // Provider.of<Lists>(context).refreshListOfOwners();
                           // debugPrint(Provider.of<Lists>(context).ownersList.toString());
                           return GridItem(
-                            name: li.productsList.elementAt(index).name,
+                            name: as.productsList.elementAt(index).name,
                           );
                         },
                       ),
@@ -120,7 +122,7 @@ class _InvPageState extends State<InvPage> {
                 context: context,
                 pageBuilder: (context, animation, secondaryAnimation) {
                   return ChangeNotifierProvider.value(
-                    value: li,
+                    value: as,
                     child: Padding(
                       padding: const EdgeInsets.only(
                         left: 20,

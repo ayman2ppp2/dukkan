@@ -1,5 +1,7 @@
 import 'package:dukkan/list.dart';
 import 'package:dukkan/pages/inventoryPage.dart';
+import 'package:dukkan/salesProvider.dart';
+import 'package:dukkan/util/owner.dart';
 import 'package:dukkan/util/share.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
@@ -54,7 +56,8 @@ class _HomePageState extends State<HomePage> {
                     MaterialPageRoute(
                         builder: (context) => HiveBoxesView(
                                 hiveBoxes: {
-                                  li.db.inventory: (json) => Product.fromJson
+                                  li.db.inventory: (json) => Product.fromJson,
+                                  li.db.owners: (json) => Owner.fromJson
                                 },
                                 onError: (String errorMessage) =>
                                     {print(errorMessage)})),
@@ -108,23 +111,28 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            Consumer<Lists>(
-              builder: (context, li, child) => IconButton(
-                onPressed: () {
-                  li.refreshProductsList();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChangeNotifierProvider.value(
-                        value: li,
-                        child: const InvPage(),
+            Consumer<SalesProvider>(
+              builder: (context, sa, child) => Consumer<Lists>(
+                builder: (context, li, child) => IconButton(
+                  onPressed: () {
+                    sa.refreshProductsList();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider.value(
+                          value: li,
+                          child: ChangeNotifierProvider.value(
+                            value: sa,
+                            child: const InvPage(),
+                          ),
+                        ),
                       ),
-                    ),
-                  );
-                },
-                icon: const Icon(
-                  Icons.inventory_2_outlined,
-                  color: Colors.white,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.inventory_2_outlined,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -138,11 +146,12 @@ class _HomePageState extends State<HomePage> {
                       context: context,
                       pageBuilder: (context, animation, secondaryAnimation) =>
                           ChangeNotifierProvider.value(
-                              value: li,
-                              child: const Padding(
-                                padding: EdgeInsets.fromLTRB(20, 130, 20, 20),
-                                child: Share(),
-                              )),
+                        value: li,
+                        child: const Padding(
+                          padding: EdgeInsets.fromLTRB(20, 130, 20, 20),
+                          child: Share(),
+                        ),
+                      ),
                     );
                   },
                   icon: const Icon(

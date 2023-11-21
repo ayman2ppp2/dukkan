@@ -11,7 +11,7 @@ class Owner {
     required this.totalPayed,
     required this.dueMoney,
   });
-  Map<String, Object?> toMap() {
+  Map<String, Object?> toJson() {
     return {
       'ownerName': ownerName,
       'lastPaymentDate': lastPaymentDate,
@@ -21,7 +21,7 @@ class Owner {
     };
   }
 
-  Owner.fromMap({required Map<String, Object?> map}) {
+  Owner.fromJson({required Map<String, Object?> map}) {
     ownerName = map['ownerName'] as String;
     lastPaymentDate = map['lastPaymentDate'] as DateTime;
     lastPayment = map['lastPayment'] as double;

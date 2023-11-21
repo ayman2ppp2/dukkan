@@ -8,40 +8,80 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../list.dart';
 
-class CircularChart extends StatelessWidget {
+class CircularChart extends StatefulWidget {
   const CircularChart({super.key});
 
   @override
+  State<CircularChart> createState() => _CircularChartState();
+}
+
+class _CircularChartState extends State<CircularChart>
+    with AutomaticKeepAliveClientMixin {
+  @override
   Widget build(BuildContext context) {
+    // print('daily sales');
     return SingleChildScrollView(
-      child: SizedBox(
-        height: 700,
-        child: SfCartesianChart(
-          title: ChartTitle(
-              text: 'المبيعات اليومية لكل منتج',
-              alignment: ChartAlignment.near),
-          primaryXAxis: CategoryAxis(
-            labelsExtent: 70 % (MediaQuery.of(context).size.width),
+      // physics: NeverScrollableScrollPhysics(),
+      primary: false,
+      child: Flex(
+        mainAxisSize: MainAxisSize.min,
+        direction: Axis.vertical,
+        children: [
+          Consumer<Lists>(
+            builder: (context, li, child) {
+              return Flexible(
+                child: FutureBuilder(
+                    future: li.getSaledProductsByDate(DateTime.now()),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Text('${snapshot.error.toString()}');
+                      }
+                      if (snapshot.hasData) {
+                        return SizedBox(
+                          height: snapshot.data!.length * 30.0,
+                          child: SfCartesianChart(
+                            title: ChartTitle(
+                                text: 'المبيعات اليومية لكل منتج',
+                                alignment: ChartAlignment.near),
+                            primaryXAxis: CategoryAxis(
+                                // labelsExtent: 70 % (MediaQuery.of(context).size.width),
+                                ),
+                            // tooltipBehavior: TooltipBehavior(enable: true),
+                            series: <ChartSeries<Product, String>>[
+                              StackedBarSeries<Product, String>(
+                                // enableTooltip: true,
+                                animationDuration: 0,
+                                borderRadius: BorderRadius.circular(12),
+                                dataSource: snapshot.data!,
+                                xValueMapper: (Product data, _) => data.name,
+                                yValueMapper: (Product data, _) => data.count,
+                                dataLabelSettings: const DataLabelSettings(
+                                  isVisible: true,
+                                ),
+                                color: Colors.brown,
+                              )
+                            ],
+                          ),
+                        );
+                      } else {
+                        return Center(
+                          child: SpinKitChasingDots(
+                            color: Colors.white,
+                          ),
+                        );
+                      }
+                    }),
+              );
+            },
           ),
-          // tooltipBehavior: TooltipBehavior(enable: true),
-          series: <ChartSeries<Product, String>>[
-            StackedBarSeries<Product, String>(
-              // enableTooltip: true,
-              borderRadius: BorderRadius.circular(12),
-              dataSource: Provider.of<Lists>(context)
-                  .getSaledProductsByDate(DateTime.now()),
-              xValueMapper: (Product data, _) => data.name,
-              yValueMapper: (Product data, _) => data.count,
-              dataLabelSettings: const DataLabelSettings(
-                isVisible: true,
-              ),
-              color: Colors.brown,
-            )
-          ],
-        ),
+        ],
       ),
     );
   }
+
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
 }
 
 class BarChart extends StatelessWidget {
@@ -49,81 +89,151 @@ class BarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // print('products sales');
     return SingleChildScrollView(
-      child: SizedBox(
-        height: 3000,
-        child: SfCartesianChart(
-          // zoomPanBehavior: ZoomPanBehavior(
-          //   enablePinching: true,
-          //   enablePanning: true,
-          // ),
-          title: ChartTitle(
-              text: 'المبيعات لكل منتج', alignment: ChartAlignment.near),
-          primaryXAxis: CategoryAxis(),
-          tooltipBehavior: TooltipBehavior(enable: true),
-          series: <ChartSeries>[
-            StackedBarSeries<ProdStats, String>(
-              spacing: 8,
-              color: Colors.brown[400],
-              dataSource: Provider.of<Lists>(context).getSalesPerProduct(),
-              xValueMapper: (ProdStats data, _) => data.name,
-              yValueMapper: (ProdStats data, _) => data.count,
-              dataLabelSettings: const DataLabelSettings(
-                isVisible: true,
-              ),
+      physics: ClampingScrollPhysics(),
+      child: Flex(
+        mainAxisSize: MainAxisSize.min,
+        direction: Axis.vertical,
+        children: [
+          Flexible(
+            child: Consumer<Lists>(
+              builder: (context, li, child) => FutureBuilder(
+                  future: li.getSalesPerProduct(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Text('${snapshot.error.toString()}');
+                    }
+                    if (snapshot.hasData) {
+                      return SizedBox(
+                        height: snapshot.data!.length * 20.0,
+                        child: SfCartesianChart(
+                          title: ChartTitle(
+                              text: 'المبيعات لكل منتج',
+                              alignment: ChartAlignment.near),
+                          primaryXAxis: CategoryAxis(),
+                          tooltipBehavior: TooltipBehavior(enable: true),
+                          series: <ChartSeries>[
+                            StackedBarSeries<ProdStats, String>(
+                              animationDuration: 0,
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.brown,
+                              dataSource: snapshot.data!,
+                              xValueMapper: (ProdStats data, _) => data.name,
+                              yValueMapper: (ProdStats data, _) => data.count,
+                              dataLabelSettings: const DataLabelSettings(
+                                isVisible: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Center(
+                        child: SpinKitChasingDots(
+                          color: Colors.white,
+                        ),
+                      );
+                    }
+                  }),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class LineChart extends StatelessWidget {
+class LineChart extends StatefulWidget {
   const LineChart({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return SfCartesianChart(
-      title: ChartTitle(
-        text: 'الأرباح و المبيعات اليومية لشهر ${DateTime.now().month}',
-      ),
-      primaryXAxis: CategoryAxis(
-        arrangeByIndex: true,
-      ),
-      primaryYAxis: CategoryAxis(
-        minimum: 0,
-      ),
-      series: <ChartSeries>[
-        StackedBarSeries<SalesStats, int>(
-          color: Colors.brown[400],
-          dataSource: Provider.of<Lists>(context).getDailyProfitOfTheMonth(
-            DateTime.now(),
-          ),
-          xValueMapper: (SalesStats data, _) => data.date.day,
-          yValueMapper: (SalesStats data, _) => data.sales,
-          dataLabelSettings: const DataLabelSettings(
-            isVisible: true,
-          ),
-        ),
-        StackedBarSeries<SalesStats, int>(
-          color: Colors.brown,
-          dataSource: Provider.of<Lists>(context).getDailySalesOfTheMonth(
-            DateTime.now(),
-          ),
-          xValueMapper: (SalesStats data, _) => data.date.day,
-          yValueMapper: (SalesStats data, _) => data.sales,
-          dataLabelSettings: const DataLabelSettings(
-            isVisible: true,
-          ),
-        ),
-      ],
-    );
-  }
+  State<LineChart> createState() => _LineChartState();
 }
 
-class Ownertile extends StatelessWidget {
+class _LineChartState extends State<LineChart>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    // print(' month daily sales');
+    return Consumer<Lists>(
+      builder: (context, li, child) {
+        return FutureBuilder(
+            future: Future.wait(
+              [
+                li.getDailyProfitOfTheMonth(
+                  DateTime.now(),
+                ),
+                li.getDailySalesOfTheMonth(
+                  DateTime.now(),
+                ),
+              ],
+            ),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Text('${snapshot.error.toString()}');
+              }
+              if (snapshot.hasData) {
+                return SizedBox(
+                    height: snapshot.data!.length * 60.0,
+                    child: SfCartesianChart(
+                      title: ChartTitle(
+                        text:
+                            'الأرباح و المبيعات اليومية لشهر ${DateTime.now().month}',
+                      ),
+                      primaryXAxis: CategoryAxis(
+                        arrangeByIndex: false,
+                      ),
+                      primaryYAxis: CategoryAxis(
+                        minimum: 0,
+                      ),
+                      series: <ChartSeries>[
+                        StackedBarSeries<SalesStats, int>(
+                          color: Colors.brown[400],
+                          dataSource: snapshot.data![0],
+                          xValueMapper: (SalesStats data, _) => data.date.day,
+                          yValueMapper: (SalesStats data, _) => data.sales,
+                          dataLabelSettings: const DataLabelSettings(
+                            isVisible: true,
+                          ),
+                        ),
+                        StackedBarSeries<SalesStats, int>(
+                          color: Colors.brown,
+                          dataSource: snapshot.data![1],
+                          xValueMapper: (SalesStats data, _) => data.date.day,
+                          yValueMapper: (SalesStats data, _) => data.sales,
+                          dataLabelSettings: const DataLabelSettings(
+                            isVisible: true,
+                          ),
+                        ),
+                      ],
+                    ));
+              } else {
+                return Center(
+                  child: SpinKitChasingDots(
+                    color: Colors.white,
+                  ),
+                );
+              }
+            });
+      },
+    );
+  }
+
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
+}
+
+class Ownertile extends StatefulWidget {
   Ownertile({super.key});
+
+  @override
+  State<Ownertile> createState() => _OwnertileState();
+}
+
+class _OwnertileState extends State<Ownertile>
+    with AutomaticKeepAliveClientMixin {
   TextEditingController payCon = TextEditingController();
 
   @override
@@ -225,5 +335,7 @@ class Ownertile extends StatelessWidget {
       itemCount: Provider.of<Lists>(context).ownersList.length,
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
-// Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.year.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.month.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.day.toString()}(${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.hour.toString()}-${Provider.of<Lists>(context).ownersList.elementAt(index).lastPaymentDate.minute

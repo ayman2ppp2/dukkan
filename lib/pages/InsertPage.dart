@@ -1,3 +1,4 @@
+import 'package:dukkan/salesProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -260,100 +261,102 @@ class _InPageState extends State<InPage> {
                   ),
                 ),
                 // submit
-                IconButton(
-                  onPressed: () {
-                    if (widget.index == -1) {
-                      if (widget.nameCon.text.isNotEmpty &
-                          widget.ownerCon.text.isNotEmpty &
-                          widget.buyCon.text.isNotEmpty &
-                          widget.sellCon.text.isNotEmpty &
-                          widget.countCon.text.isNotEmpty) {
-                        List<Product> temp = [];
-                        Product temp2 = Product(
-                          name: widget.nameCon.text,
-                          barcode: '',
-                          buyprice: double.parse(widget.buyCon.text),
-                          sellprice: double.parse(widget.sellCon.text),
-                          count: int.parse(widget.countCon.text),
-                          ownerName: widget.ownerCon.text,
-                          weightable: widget.weightable,
-                          wholeUnit: widget.wholeUnitCon.text,
-                          offer: widget.offer,
-                          offerCount:
-                              double.tryParse(widget.offerCountCon.text) ?? 0,
-                          offerPrice:
-                              double.tryParse(widget.offerPriceCon.text) ?? 0,
-                          priceHistory: [],
-                          endDate: widget.endDate,
-                        );
-                        temp.add(temp2);
-                        Navigator.pop(context);
-                        li.db.insertProducts(products: temp);
-                        li.refreshProductsList();
-                      } else {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            backgroundColor: Colors.brown[200],
-                            icon: const Icon(Icons.error_outline_rounded),
-                            iconColor: Colors.red,
-                            title: const Text(
-                              'أدخل قيم صحيحة',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                Consumer<SalesProvider>(
+                  builder: (context, sa, child) => IconButton(
+                    onPressed: () {
+                      if (widget.index == -1) {
+                        if (widget.nameCon.text.isNotEmpty &
+                            widget.ownerCon.text.isNotEmpty &
+                            widget.buyCon.text.isNotEmpty &
+                            widget.sellCon.text.isNotEmpty &
+                            widget.countCon.text.isNotEmpty) {
+                          List<Product> temp = [];
+                          Product temp2 = Product(
+                            name: widget.nameCon.text,
+                            barcode: '',
+                            buyprice: double.parse(widget.buyCon.text),
+                            sellprice: double.parse(widget.sellCon.text),
+                            count: int.parse(widget.countCon.text),
+                            ownerName: widget.ownerCon.text,
+                            weightable: widget.weightable,
+                            wholeUnit: widget.wholeUnitCon.text,
+                            offer: widget.offer,
+                            offerCount:
+                                double.tryParse(widget.offerCountCon.text) ?? 0,
+                            offerPrice:
+                                double.tryParse(widget.offerPriceCon.text) ?? 0,
+                            priceHistory: [],
+                            endDate: widget.endDate,
+                          );
+                          temp.add(temp2);
+                          Navigator.pop(context);
+                          li.db.insertProducts(products: temp);
+                          sa.refreshProductsList();
+                        } else {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: Colors.brown[200],
+                              icon: const Icon(Icons.error_outline_rounded),
+                              iconColor: Colors.red,
+                              title: const Text(
+                                'أدخل قيم صحيحة',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      }
-                    } else {
-                      if (widget.nameCon.text.isNotEmpty &
-                          widget.buyCon.text.isNotEmpty &
-                          widget.sellCon.text.isNotEmpty &
-                          widget.countCon.text.isNotEmpty) {
-                        Product temp2 = Product(
-                          name: widget.nameCon.text,
-                          barcode: '',
-                          buyprice: double.parse(widget.buyCon.text),
-                          sellprice: double.parse(widget.sellCon.text),
-                          count: int.parse(widget.countCon.text),
-                          ownerName: widget.ownerCon.text,
-                          weightable: widget.weightable,
-                          wholeUnit: widget.wholeUnitCon.text,
-                          offer: widget.offer,
-                          offerCount:
-                              double.tryParse(widget.offerCountCon.text) ?? 0,
-                          offerPrice:
-                              double.tryParse(widget.offerPriceCon.text) ?? 0,
-                          priceHistory: widget.priceHistory,
-                          endDate: widget.endDate,
-                        );
-                        li.updateProduct(temp2);
-                        li.refreshProductsList();
-                        li.refresh();
-                        Navigator.pop(context);
+                          );
+                        }
                       } else {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            backgroundColor: Colors.brown[200],
-                            icon: const Icon(Icons.error_outline_rounded),
-                            iconColor: Colors.red,
-                            title: const Text(
-                              'أدخل قيم صحيحة',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                        if (widget.nameCon.text.isNotEmpty &
+                            widget.buyCon.text.isNotEmpty &
+                            widget.sellCon.text.isNotEmpty &
+                            widget.countCon.text.isNotEmpty) {
+                          Product temp2 = Product(
+                            name: widget.nameCon.text,
+                            barcode: '',
+                            buyprice: double.parse(widget.buyCon.text),
+                            sellprice: double.parse(widget.sellCon.text),
+                            count: int.parse(widget.countCon.text),
+                            ownerName: widget.ownerCon.text,
+                            weightable: widget.weightable,
+                            wholeUnit: widget.wholeUnitCon.text,
+                            offer: widget.offer,
+                            offerCount:
+                                double.tryParse(widget.offerCountCon.text) ?? 0,
+                            offerPrice:
+                                double.tryParse(widget.offerPriceCon.text) ?? 0,
+                            priceHistory: widget.priceHistory,
+                            endDate: widget.endDate,
+                          );
+                          sa.updateProduct(temp2);
+                          sa.refreshProductsList();
+                          li.refresh();
+                          Navigator.pop(context);
+                        } else {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: Colors.brown[200],
+                              icon: const Icon(Icons.error_outline_rounded),
+                              iconColor: Colors.red,
+                              title: const Text(
+                                'أدخل قيم صحيحة',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                        );
+                          );
+                        }
                       }
-                    }
-                  },
-                  icon: const Icon(
-                    Icons.done_all_rounded,
+                    },
+                    icon: const Icon(
+                      Icons.done_all_rounded,
+                    ),
                   ),
                 ),
               ],

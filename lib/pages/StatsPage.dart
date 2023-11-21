@@ -11,6 +11,7 @@ class StatsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // print('list');
     return Consumer<Lists>(
       builder: (context, li, child) {
         return Flex(
@@ -18,6 +19,8 @@ class StatsPage extends StatelessWidget {
           children: [
             Expanded(
               child: ListView(
+                physics: ClampingScrollPhysics(),
+                addAutomaticKeepAlives: true,
                 children: [
                   // الكلية
                   Row(
@@ -132,9 +135,9 @@ class StatsPage extends StatelessWidget {
                     padding: const EdgeInsets.all(10.0),
                     child: Container(
                         height: 300,
-                        constraints: const BoxConstraints(
-                          maxWidth: 200,
-                        ),
+                        // constraints: const BoxConstraints(
+                        //   maxWidth: 200,
+                        // ),
                         decoration: BoxDecoration(
                             color: Colors.brown[200],
                             borderRadius: BorderRadius.circular(12)),
@@ -168,8 +171,9 @@ class StatsPage extends StatelessWidget {
                           maxWidth: 200,
                         ),
                         decoration: BoxDecoration(
-                            color: Colors.brown[200],
-                            borderRadius: BorderRadius.circular(12)),
+                          color: Colors.brown[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: ChangeNotifierProvider.value(
                           value: li,
                           child: const LineChart(),

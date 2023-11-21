@@ -1,3 +1,4 @@
+import 'package:dukkan/salesProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +13,7 @@ class GridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Lists>(
+    return Consumer<SalesProvider>(
       builder: (context, li, child) {
         int index = li.productsList.indexWhere(
           (element) => element.name == name,
