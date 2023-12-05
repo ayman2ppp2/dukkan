@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dukkan/util/Log.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:hive/hive.dart';
@@ -13,13 +16,6 @@ class DB {
     init();
   }
   void init() async {
-    while (await Permission.storage.isDenied ||
-        await Permission.manageExternalStorage.isDenied) {
-      await Permission.manageExternalStorage.request();
-      await Permission.storage.request();
-      // print('here');
-    }
-
     inventory = await Hive.openBox('inventory');
     logs = await Hive.openBox('logs');
     owners = await Hive.openBox('owners');

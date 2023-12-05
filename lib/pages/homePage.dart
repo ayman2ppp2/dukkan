@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dukkan/list.dart';
 import 'package:dukkan/pages/inventoryPage.dart';
 import 'package:dukkan/salesProvider.dart';
@@ -92,22 +94,27 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            Consumer<Lists>(
-              builder: (context, li, child) => IconButton(
-                onPressed: () async {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChangeNotifierProvider.value(
-                        value: li,
-                        child: Logs(),
+            Consumer<SalesProvider>(
+              builder: (context, as, child) => Consumer<Lists>(
+                builder: (context, li, child) => IconButton(
+                  onPressed: () async {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider.value(
+                          value: as,
+                          child: ChangeNotifierProvider.value(
+                            value: li,
+                            child: Logs(),
+                          ),
+                        ),
                       ),
-                    ),
-                  );
-                },
-                icon: Icon(
-                  Icons.receipt_long_sharp,
-                  color: Colors.white,
+                    );
+                  },
+                  icon: Icon(
+                    Icons.receipt_long_sharp,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

@@ -1,8 +1,8 @@
-import 'package:dukkan/list.dart';
+// import 'package:dukkan/list.dart';
 import 'package:dukkan/util/db.dart';
 import 'package:dukkan/util/product.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+// import 'package:provider/provider.dart';
 
 class SalesProvider extends ChangeNotifier {
   var db;

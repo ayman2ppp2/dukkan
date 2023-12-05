@@ -5,13 +5,15 @@ import 'package:dukkan/pages/homePage.dart';
 import 'package:dukkan/salesProvider.dart';
 import 'package:dukkan/util/adapters.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:hive/hive.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  Hive.init('storage/emulated/0/dukkan/V2');
+  var te = await getApplicationDocumentsDirectory();
+  print(te.path);
+  Hive.init(te.path);
 
   Hive.registerAdapter(ProductAdapter());
   Hive.registerAdapter(LogAdapter());

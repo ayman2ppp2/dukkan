@@ -1,8 +1,10 @@
-import 'dart:math';
-
+import 'package:dukkan/salesProvider.dart';
 import 'package:dukkan/util/Log.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../list.dart';
 
 class Receipt extends StatefulWidget {
   final Log log;
@@ -29,8 +31,6 @@ class _ReceiptState extends State<Receipt> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('${DateFormat.yMEd().add_jmv().format(widget.log.date)}'),
-            // widget.log.date.year}-${widget.log.date.month}-${widget.log.date.day}-${widget.log.date.hour}-${widget.log.date.minute}-${widget.log.date.second}'
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -38,6 +38,53 @@ class _ReceiptState extends State<Receipt> {
                     ' : السعر'),
                 Text(NumberFormat.simpleCurrency().format(widget.log.profit) +
                     ' : الربح'),
+                Consumer<Lists>(
+                  builder: (context, li, child) => Consumer<SalesProvider>(
+                    builder: (context, sa, child) => IconButton(
+                      // Provider.of<Lists>(context, listen: false)
+                      //       .cancelReceipt(widget.log.date, widget.log);
+                      //   Provider.of<SalesProvider>(context, listen: false)
+                      //       .refreshProductsList();
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text(
+                                'هل انت متاكد',
+                                style: TextStyle(fontSize: 20),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    li.cancelReceipt(
+                                        widget.log.date, widget.log);
+                                    sa.refreshProductsList();
+                                  },
+                                  child: const Text(
+                                    'نعم',
+                                    style: TextStyle(fontSize: 20),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text(
+                                    'لا',
+                                    style: TextStyle(fontSize: 20),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                      icon: Icon(Icons.keyboard_return_rounded),
+                    ),
+                  ),
+                ),
                 IconButton(
                   onPressed: () {
                     setState(() {
@@ -47,7 +94,7 @@ class _ReceiptState extends State<Receipt> {
                   icon: expand
                       ? Icon(Icons.expand_less_rounded)
                       : Icon(Icons.expand_more_rounded),
-                )
+                ),
               ],
             ),
             expand

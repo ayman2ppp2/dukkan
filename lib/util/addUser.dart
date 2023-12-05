@@ -40,9 +40,13 @@ class AddUser extends StatelessWidget {
                       dueMoney: 0,
                     ),
                   );
+                  li.refreshListOfOwners();
                   Navigator.pop(context);
                 },
-                icon: const Icon(Icons.person_add),
+                icon: const Icon(
+                  Icons.person_add,
+                  color: Colors.black,
+                ),
               ),
             ),
           ],

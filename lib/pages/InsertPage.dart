@@ -67,9 +67,9 @@ class _InPageState extends State<InPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Lists>(
+    return Consumer<SalesProvider>(
       builder: (context, li, child) {
-        li.refreshListOfOwners();
+        // li.refreshListOfOwners();
         return Material(
           borderRadius: BorderRadius.circular(12),
           child: SingleChildScrollView(
@@ -105,8 +105,9 @@ class _InPageState extends State<InPage> {
                 // owner name
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Consumer<Lists>(
-                    builder: (context, li, child) => DropdownMenu(
+                  child: Consumer<Lists>(builder: (context, li, child) {
+                    li.refreshListOfOwners();
+                    return DropdownMenu(
                       initialSelection: widget.ownerCon.text,
                       dropdownMenuEntries: List.generate(
                         Provider.of<Lists>(context).ownersList.length,
@@ -117,8 +118,8 @@ class _InPageState extends State<InPage> {
                       ),
                       controller: widget.ownerCon,
                       label: const Text('المالك'),
-                    ),
-                  ),
+                    );
+                  }),
                 ),
                 //buyPrice
                 Padding(

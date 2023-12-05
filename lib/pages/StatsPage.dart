@@ -166,7 +166,7 @@ class StatsPage extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.all(10.0),
                     child: Container(
-                        height: 500,
+                        // height: 650,
                         constraints: const BoxConstraints(
                           maxWidth: 200,
                         ),

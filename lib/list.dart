@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:cron/cron.dart';
+import 'package:path_provider/path_provider.dart';
 import 'util/Log.dart';
 
 class Lists extends ChangeNotifier {
@@ -68,6 +69,7 @@ class Lists extends ChangeNotifier {
 
   void refreshLogsList() {
     logsList = db.getAllLogs();
+    // notifyListeners();
   }
 
   double getTotalBuyPrice() {
@@ -78,6 +80,32 @@ class Lists extends ChangeNotifier {
     }
     // print(sum);
     return sum;
+  }
+
+  void cancelReceipt(DateTime date, Log log) {
+    for (var product in log.products) {
+      db.inventory.put(
+        product.name,
+        Product(
+          name: product.name,
+          barcode: product.barcode,
+          buyprice: product.buyprice,
+          sellprice: product.sellprice,
+          count: (db.inventory.get(product.name))!.count + product.count,
+          ownerName: product.ownerName,
+          weightable: product.weightable,
+          wholeUnit: product.wholeUnit,
+          offer: product.offer,
+          offerCount: product.offerCount,
+          offerPrice: product.offerPrice,
+          priceHistory: product.priceHistory,
+          endDate: product.endDate,
+        ),
+      );
+    }
+    db.logs.delete(
+        '${date.year}-${date.month}-${date.day}-${date.hour}-${date.minute}-${date.second}');
+    refreshLogsList();
   }
 
   double getAverageProfitPercent() {
@@ -178,12 +206,6 @@ class Lists extends ChangeNotifier {
   }
 
   Future<List<Product>> getSaledProductsByDate(DateTime time) {
-    // return Isolate.run(() => _getSaledProductsByDate(
-    //     time,
-    //     db.getAllLogs().where((element) =>
-    //         element.date.day == time.day &&
-    //         element.date.month == time.month &&
-    //         element.date.year == time.year) as List<Log>));
     Map map = Map();
     map['1'] = time;
     map['2'] = db.getAllLogs().where((element) =>
@@ -225,26 +247,20 @@ class Lists extends ChangeNotifier {
         client.listen(
           (data) async {
             final message = String.fromCharCodes(data);
-
+            var te = await getApplicationDocumentsDirectory();
             if (message == 'send inv') {
-              await File('storage/emulated/0/dukkan/V2/inventory.hive')
-                  .openRead()
-                  .pipe(client);
+              await File('${te.path}/inventory.hive').openRead().pipe(client);
               shareList.add(const Text('Sent inventory'));
               notifyListeners();
               client.close();
             }
             if (message == 'send logs') {
-              await File('storage/emulated/0/dukkan/V2/logs.hive')
-                  .openRead()
-                  .pipe(client);
+              await File('${te.path}/logs.hive').openRead().pipe(client);
               shareList.add(const Text('Sent logs'));
               notifyListeners();
             }
             if (message == 'send owners') {
-              await File('storage/emulated/0/dukkan/V2/owners.hive')
-                  .openRead()
-                  .pipe(client);
+              await File('${te.path}/owners.hive').openRead().pipe(client);
               shareList.add(const Text('Sent owners data'));
               notifyListeners();
             }
@@ -263,6 +279,7 @@ class Lists extends ChangeNotifier {
   void reciveInv() async {
     String? ip = await NetworkInfo().getWifiGatewayIP();
     Socket socket = await Socket.connect(ip, 30000);
+    var te = await getApplicationDocumentsDirectory();
     if (socket.remoteAddress.address != '127.0.0.1') {
       try {
         shareList.add(Text(
@@ -270,8 +287,7 @@ class Lists extends ChangeNotifier {
         notifyListeners();
         socket.write('send inv');
 
-        var file =
-            File('storage/emulated/0/dukkan/V2/inventory.hive').openWrite();
+        var file = File('${te.path}/inventory.hive').openWrite();
         try {
           await socket.map(toIntList).pipe(file);
         } finally {
@@ -294,13 +310,14 @@ class Lists extends ChangeNotifier {
   void reciveLog() async {
     String? ip = await NetworkInfo().getWifiGatewayIP();
     Socket socket = await Socket.connect(ip, 30000);
+    var te = await getApplicationDocumentsDirectory();
     try {
       shareList.add(Text("Connected to :"
           '${socket.remoteAddress.address}:${socket.remotePort}'));
       notifyListeners();
       socket.write('send logs');
 
-      var file = File('storage/emulated/0/dukkan/V2/logs.hive').openWrite();
+      var file = File('${te.path}/logs.hive').openWrite();
       try {
         await socket.map(toIntList).pipe(file);
       } finally {
@@ -316,13 +333,14 @@ class Lists extends ChangeNotifier {
   void reciveOwners() async {
     String? ip = await NetworkInfo().getWifiGatewayIP();
     Socket socket = await Socket.connect(ip, 30000);
+    var te = await getApplicationDocumentsDirectory();
     try {
       shareList.add(Text("Connected to :"
           '${socket.remoteAddress.address}:${socket.remotePort}'));
       notifyListeners();
       socket.write('send owners');
 
-      var file = File('storage/emulated/0/dukkan/V2/owners.hive').openWrite();
+      var file = File('${te.path}/owners.hive').openWrite();
       try {
         await socket.map(toIntList).pipe(file);
       } finally {

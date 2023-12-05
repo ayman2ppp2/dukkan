@@ -24,21 +24,23 @@ class _InvPageState extends State<InvPage> {
             backgroundColor: Colors.brown,
             iconTheme: IconThemeData(color: Colors.brown[50]),
             actions: [
-              IconButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return ChangeNotifierProvider.value(
-                        value: as,
-                        child: AddUser(),
-                      );
-                    },
-                  );
-                },
-                icon: const Icon(Icons.person_add),
-                tooltip: 'إضافة مالك',
-              )
+              Consumer<Lists>(
+                builder: (context, li, child) => IconButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return ChangeNotifierProvider.value(
+                          value: li,
+                          child: AddUser(),
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.person_add),
+                  tooltip: 'إضافة مالك',
+                ),
+              ),
             ],
             title: Center(
               child: Row(
@@ -114,43 +116,48 @@ class _InvPageState extends State<InvPage> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () async {
-              showGeneralDialog(
-                barrierDismissible: true,
-                barrierLabel: 'whatever',
-                context: context,
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return ChangeNotifierProvider.value(
-                    value: as,
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                        left: 20,
-                        right: 20,
-                        top: 100,
-                        bottom: 220,
+          floatingActionButton: Consumer<Lists>(
+            builder: (context, li, child) => FloatingActionButton(
+              onPressed: () async {
+                showGeneralDialog(
+                  barrierDismissible: true,
+                  barrierLabel: 'whatever',
+                  context: context,
+                  pageBuilder: (context, animation, secondaryAnimation) {
+                    return ChangeNotifierProvider.value(
+                      value: li,
+                      child: ChangeNotifierProvider.value(
+                        value: as,
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            left: 20,
+                            right: 20,
+                            top: 100,
+                            bottom: 220,
+                          ),
+                          child: InPage(
+                            buyPrice: 0,
+                            count: 0,
+                            name: '',
+                            sellPrice: 0,
+                            owner: '',
+                            weightable: false,
+                            wholeUnit: '',
+                            index: -1,
+                            offer: false,
+                            offerCount: 0,
+                            offerPrice: 0,
+                            endDate: DateTime.now(),
+                            priceHistory: [],
+                          ),
+                        ),
                       ),
-                      child: InPage(
-                        buyPrice: 0,
-                        count: 0,
-                        name: '',
-                        sellPrice: 0,
-                        owner: '',
-                        weightable: false,
-                        wholeUnit: '',
-                        index: -1,
-                        offer: false,
-                        offerCount: 0,
-                        offerPrice: 0,
-                        endDate: DateTime.now(),
-                        priceHistory: [],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-            child: Icon(Icons.add),
+                    );
+                  },
+                );
+              },
+              child: Icon(Icons.add),
+            ),
           ),
         );
       },

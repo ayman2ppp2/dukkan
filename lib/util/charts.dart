@@ -19,6 +19,7 @@ class _CircularChartState extends State<CircularChart>
     with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // print('daily sales');
     return SingleChildScrollView(
       // physics: NeverScrollableScrollPhysics(),
@@ -84,9 +85,15 @@ class _CircularChartState extends State<CircularChart>
   bool get wantKeepAlive => true;
 }
 
-class BarChart extends StatelessWidget {
+class BarChart extends StatefulWidget {
   const BarChart({super.key});
 
+  @override
+  State<BarChart> createState() => _BarChartState();
+}
+
+class _BarChartState extends State<BarChart>
+    with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
     // print('products sales');
@@ -142,6 +149,10 @@ class BarChart extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
 }
 
 class LineChart extends StatefulWidget {
@@ -175,15 +186,15 @@ class _LineChartState extends State<LineChart>
               }
               if (snapshot.hasData) {
                 return SizedBox(
-                    height: snapshot.data!.length * 60.0,
+                    height: snapshot.data!.length * 350.0,
                     child: SfCartesianChart(
                       title: ChartTitle(
                         text:
                             'الأرباح و المبيعات اليومية لشهر ${DateTime.now().month}',
                       ),
                       primaryXAxis: CategoryAxis(
-                        arrangeByIndex: false,
-                      ),
+                          // arrangeByIndex: false,
+                          ),
                       primaryYAxis: CategoryAxis(
                         minimum: 0,
                       ),
