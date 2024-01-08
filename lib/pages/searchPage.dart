@@ -1,6 +1,6 @@
-import 'package:dukkan/list.dart';
-import 'package:dukkan/salesProvider.dart';
-import 'package:dukkan/util/product.dart';
+import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/salesProvider.dart';
+import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -42,12 +42,15 @@ class _SearchPageState extends State<SearchPage> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TextField(
+                      autofocus: true,
                       textDirection: TextDirection.rtl,
                       decoration: const InputDecoration(
                         hintText: 'ابحث',
                       ),
                       onChanged: (value) {
-                        li.search(value);
+                        // Future.delayed(Duration(milliseconds: 200))
+                        //     .then((gg) => li.search(value, true));
+                        li.search(value, true);
                       },
                     ),
                   ),
@@ -93,6 +96,7 @@ class _SearchPageState extends State<SearchPage> {
                             offerPrice: product.offerPrice,
                             priceHistory: product.priceHistory,
                             endDate: product.endDate,
+                            hot: product.hot,
                           ));
                           Navigator.pop(context);
                           li.searchTemp.clear();

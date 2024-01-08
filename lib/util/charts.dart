@@ -1,12 +1,13 @@
-import 'package:dukkan/util/prodStats.dart';
-import 'package:dukkan/util/product.dart';
+import 'package:dukkan/util/models/prodStats.dart';
+import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-import '../list.dart';
+import '../providers/list.dart';
+import 'models/BC_product.dart';
 
 class CircularChart extends StatefulWidget {
   const CircularChart({super.key});
@@ -19,6 +20,7 @@ class _CircularChartState extends State<CircularChart>
     with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
+    print('here');
     super.build(context);
     // print('daily sales');
     return SingleChildScrollView(
@@ -39,7 +41,9 @@ class _CircularChartState extends State<CircularChart>
                       }
                       if (snapshot.hasData) {
                         return SizedBox(
-                          height: snapshot.data!.length * 30.0,
+                          height: snapshot.data!.length * 30.0 > 200
+                              ? snapshot.data!.length * 60
+                              : 200,
                           child: SfCartesianChart(
                             title: ChartTitle(
                                 text: 'المبيعات اليومية لكل منتج',
@@ -48,14 +52,14 @@ class _CircularChartState extends State<CircularChart>
                                 // labelsExtent: 70 % (MediaQuery.of(context).size.width),
                                 ),
                             // tooltipBehavior: TooltipBehavior(enable: true),
-                            series: <ChartSeries<Product, String>>[
-                              StackedBarSeries<Product, String>(
+                            series: <ChartSeries<BcProduct, String>>[
+                              StackedBarSeries<BcProduct, String>(
                                 // enableTooltip: true,
                                 animationDuration: 0,
-                                borderRadius: BorderRadius.circular(12),
+                                // borderRadius: BorderRadius.circular(12),
                                 dataSource: snapshot.data!,
-                                xValueMapper: (Product data, _) => data.name,
-                                yValueMapper: (Product data, _) => data.count,
+                                xValueMapper: (BcProduct data, _) => data.name,
+                                yValueMapper: (BcProduct data, _) => data.count,
                                 dataLabelSettings: const DataLabelSettings(
                                   isVisible: true,
                                 ),
@@ -82,7 +86,7 @@ class _CircularChartState extends State<CircularChart>
 
   @override
   // TODO: implement wantKeepAlive
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => false;
 }
 
 class BarChart extends StatefulWidget {
@@ -96,6 +100,7 @@ class _BarChartState extends State<BarChart>
     with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // print('products sales');
     return SingleChildScrollView(
       physics: ClampingScrollPhysics(),
@@ -152,7 +157,8 @@ class _BarChartState extends State<BarChart>
 
   @override
   // TODO: implement wantKeepAlive
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => false;
+  // Provider.of<Lists>(context, listen: false).keepAlive;
 }
 
 class LineChart extends StatefulWidget {
@@ -166,6 +172,7 @@ class _LineChartState extends State<LineChart>
     with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // print(' month daily sales');
     return Consumer<Lists>(
       builder: (context, li, child) {
@@ -233,7 +240,8 @@ class _LineChartState extends State<LineChart>
 
   @override
   // TODO: implement wantKeepAlive
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => false;
+  // Provider.of<Lists>(context, listen: false).keepAlive;
 }
 
 class Ownertile extends StatefulWidget {
@@ -249,6 +257,7 @@ class _OwnertileState extends State<Ownertile>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     Provider.of<Lists>(context).refreshListOfOwners();
     return PageView.builder(
       itemBuilder: (context, index) {
@@ -348,5 +357,6 @@ class _OwnertileState extends State<Ownertile>
   }
 
   @override
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => false;
+  // Provider.of<Lists>(context, listen: false).keepAlive;
 }

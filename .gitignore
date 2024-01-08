@@ -42,5 +42,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-test.dart
 test2.dart
+storage/emulated/0/dukkan/v2/inventory.hive
+storage/emulated/0/dukkan/v2/inventory.lock
+storage/emulated/0/dukkan/v2/logs.hive
+storage/emulated/0/dukkan/v2/logs.lock
+storage/emulated/0/dukkan/v2/owners.hive
+storage/emulated/0/dukkan/v2/owners.lock

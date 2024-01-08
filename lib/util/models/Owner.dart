@@ -1,8 +1,17 @@
+import 'package:hive/hive.dart';
+part '../adapters/Owner.g.dart';
+
+@HiveType(typeId: 4)
 class Owner {
+  @HiveField(0)
   late String ownerName;
+  @HiveField(1)
   late DateTime lastPaymentDate;
+  @HiveField(2)
   late double lastPayment;
+  @HiveField(3)
   late double totalPayed;
+  @HiveField(4)
   late double dueMoney;
   Owner({
     required this.ownerName,

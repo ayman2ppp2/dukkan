@@ -1,9 +1,9 @@
-import 'package:dukkan/salesProvider.dart';
+import 'package:dukkan/providers/salesProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../list.dart';
+import '../providers/list.dart';
 import '../pages/InsertPage.dart';
 
 class GridItem extends StatelessWidget {
@@ -140,7 +140,7 @@ class GridItem extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                              '${(100 - (li.productsList[index].buyprice / li.productsList[index].sellprice * 100)).toStringAsFixed(2)}'),
+                              '${(100 * (li.productsList[index].sellprice - li.productsList[index].buyprice) / li.productsList[index].buyprice).toStringAsFixed(2)}%'),
                         ),
                       ),
                       Container(

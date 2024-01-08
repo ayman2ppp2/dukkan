@@ -1,14 +1,18 @@
 // import 'package:dukkan/list.dart';
+import 'package:dukkan/util/models/Loaner.dart';
+import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/db.dart';
-import 'package:dukkan/util/product.dart';
+import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 // import 'package:provider/provider.dart';
 
 class SalesProvider extends ChangeNotifier {
-  var db;
+  late DB db;
   SalesProvider() {
     db = DB();
   }
+  List<Loaner> loanersList = [];
   List<Product> productsList = [];
   List<Product> sellList = [];
   List<Product> searchTemp = [];
@@ -30,6 +34,25 @@ class SalesProvider extends ChangeNotifier {
     'ربع تمنة': 212.5,
     'وزن': 0,
   };
+
+  void refreshLoanersList() {
+    loanersList = db.getLoaners();
+  }
+
+  void payLoaner(double cash, String ID) {
+    db.loaners.put(
+        ID,
+        Loaner(
+          name: db.loaners.get(ID).name,
+          ID: db.loaners.get(ID).ID,
+          phoneNumber: db.loaners.get(ID).phoneNumber,
+          location: db.loaners.get(ID).location,
+          lastPayment: cash,
+          lastPaymentDate: DateTime.now(),
+          loanedAmount: db.loaners.get(ID).loanedAmount - cash,
+        ));
+    refreshLoanersList();
+  }
 
   void updateSellListCount({required int index, required int count}) {
     sellList[index].count = count;
@@ -55,7 +78,7 @@ class SalesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void refreshProductsList() async {
+  Future<void> refreshProductsList() async {
     productsList = db.getAllProducts();
     notifyListeners();
   }
@@ -66,18 +89,64 @@ class SalesProvider extends ChangeNotifier {
     refreshProductsList();
   }
 
-  void search(String keyWord) {
-    print('search');
+  void search(String keyWord, bool sales) {
+    // print('search');
     refreshProductsList();
-    notifyListeners();
+    // notifyListeners();
     searchTemp.clear();
     for (var i = 0; i < productsList.length; i++) {
       if (productsList[i].name.startsWith(keyWord) ||
           productsList[i].name.contains(keyWord)) {
         searchTemp.add(productsList[i]);
+
         notifyListeners();
       }
+      if (sales) {
+        if (searchTemp.isEmpty) {
+          searchTemp.add(
+            Product(
+              name: keyWord,
+              ownerName: '',
+              barcode: 'barcode',
+              buyprice: 1,
+              sellprice: 1,
+              count: 0,
+              weightable: false,
+              wholeUnit: 'wholeUnit',
+              offer: false,
+              offerCount: 0,
+              offerPrice: 0,
+              priceHistory: {},
+              endDate: DateTime.now(),
+              hot: true,
+            ),
+          );
+          notifyListeners();
+        }
+      }
     }
+  }
+
+  void addLoaner(
+    String name,
+    String phone,
+    String location,
+  ) {
+    var uuid = Uuid();
+
+    db.insertLoaner(Loaner(
+      name: name,
+      ID: uuid.v1(),
+      phoneNumber: phone,
+      location: location,
+      lastPayment: 0,
+      lastPaymentDate: DateTime.now(),
+      loanedAmount: 0,
+    ));
+
+    loanersList = db.getLoaners();
+
+    notifyListeners();
   }
 
   int getProductCount(String name) {
@@ -96,8 +165,9 @@ class SalesProvider extends ChangeNotifier {
           offer: false,
           offerCount: 0,
           offerPrice: 0,
-          priceHistory: [],
+          priceHistory: {},
           endDate: DateTime(2024),
+          hot: false,
         ),
       );
       return temp.count;

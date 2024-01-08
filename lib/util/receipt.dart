@@ -1,10 +1,10 @@
-import 'package:dukkan/salesProvider.dart';
-import 'package:dukkan/util/Log.dart';
+import 'package:dukkan/providers/salesProvider.dart';
+import 'package:dukkan/util/models/Log.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../list.dart';
+import '../providers/list.dart';
 
 class Receipt extends StatefulWidget {
   final Log log;
@@ -30,7 +30,7 @@ class _ReceiptState extends State<Receipt> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('${DateFormat.yMEd().add_jmv().format(widget.log.date)}'),
+            Text('${DateFormat.yMEd().add_jmz().format(widget.log.date)}'),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -97,6 +97,16 @@ class _ReceiptState extends State<Receipt> {
                 ),
               ],
             ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Text(NumberFormat.simpleCurrency().format(widget.log.discount) +
+                    ' : الخصم'),
+                Text(NumberFormat.simpleCurrency()
+                        .format(countSpecial(widget.log)) +
+                    ' : سلع خاصة'),
+              ],
+            ),
             expand
                 ? SizedBox(
                     height: 200,
@@ -126,5 +136,15 @@ class _ReceiptState extends State<Receipt> {
         ),
       ),
     );
+  }
+
+  double countSpecial(Log log) {
+    var sum = 0.0;
+    for (var element in widget.log.products) {
+      if (element.hot) {
+        sum += element.sellprice * element.count;
+      }
+    }
+    return sum;
   }
 }

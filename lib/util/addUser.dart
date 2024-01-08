@@ -1,8 +1,8 @@
-import 'package:dukkan/util/Owner.dart';
+import 'package:dukkan/util/models/Owner.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../list.dart';
+import '../providers/list.dart';
 
 class AddUser extends StatelessWidget {
   AddUser({super.key});

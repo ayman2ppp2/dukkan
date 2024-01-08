@@ -1,9 +1,9 @@
-import 'package:dukkan/salesProvider.dart';
+import 'package:dukkan/providers/salesProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../list.dart';
-import '../util/product.dart';
+import '../providers/list.dart';
+import '../util/models/Product.dart';
 
 class InPage extends StatefulWidget {
   String name;
@@ -15,7 +15,7 @@ class InPage extends StatefulWidget {
   int index;
   double offerCount;
   double offerPrice;
-  List<Map<DateTime, double>> priceHistory;
+  Map priceHistory;
   DateTime endDate;
   TextEditingController nameCon = TextEditingController();
   TextEditingController buyCon = TextEditingController();
@@ -286,8 +286,9 @@ class _InPageState extends State<InPage> {
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
                             offerPrice:
                                 double.tryParse(widget.offerPriceCon.text) ?? 0,
-                            priceHistory: [],
+                            priceHistory: {},
                             endDate: widget.endDate,
+                            hot: false,
                           );
                           temp.add(temp2);
                           Navigator.pop(context);
@@ -329,8 +330,9 @@ class _InPageState extends State<InPage> {
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
                             offerPrice:
                                 double.tryParse(widget.offerPriceCon.text) ?? 0,
-                            priceHistory: widget.priceHistory,
+                            priceHistory: {},
                             endDate: widget.endDate,
+                            hot: false,
                           );
                           sa.updateProduct(temp2);
                           sa.refreshProductsList();

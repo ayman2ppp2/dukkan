@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../list.dart';
+import '../providers/list.dart';
 
 class Share extends StatefulWidget {
   const Share({super.key});

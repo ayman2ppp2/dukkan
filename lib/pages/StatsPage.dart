@@ -1,9 +1,10 @@
 import 'package:dukkan/util/statsItem.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../list.dart';
+import '../providers/list.dart';
 import '../util/charts.dart';
 
 class StatsPage extends StatelessWidget {
@@ -26,59 +27,102 @@ class StatsPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Sitem(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Text(
-                              'الأرباح  : \n ${NumberFormat.simpleCurrency().format(li.getAllProfit())}',
-                              //textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Sitem(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Text(
-                              'المبيعات : \n ${NumberFormat.simpleCurrency().format(li.getAllSales())}',
-                              ////textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ),
-                      ),
+                      FutureBuilder(
+                          future: li.getAllProfit(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Sitem(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Text(
+                                      ' الارباح الكلية : \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                      //textDirection: TextDirection.rtl,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            } else {
+                              return SpinKitChasingDots(
+                                color: Colors.brown[200],
+                              );
+                            }
+                          }),
+                      FutureBuilder(
+                        future: li.getAllSales(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Sitem(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Text(
+                                    'المبيعات الكلية  : \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                    //textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return SpinKitChasingDots(
+                              color: Colors.brown[200],
+                            );
+                          }
+                        },
+                      )
                     ],
                   ),
                   // اليومية
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Sitem(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Text(
-                              'الأرباح اليومية: \n ${NumberFormat.simpleCurrency().format(li.getDailyProfits(DateTime.now()))}',
-                              ////textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ),
+                      FutureBuilder(
+                        future: li.getDailyProfits(DateTime.now()),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Sitem(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Text(
+                                    'الأرباح اليومية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                    ////textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return SpinKitChasingDots(
+                              color: Colors.brown[200],
+                            );
+                          }
+                        },
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Sitem(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Text(
-                              'المبيعات اليومية : \n ${NumberFormat.simpleCurrency().format(li.getDailySales(DateTime.now()))}',
-                              ////textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ),
+                      FutureBuilder(
+                        future: li.getDailySales(DateTime.now()),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Sitem(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Text(
+                                    'المبيعات اليومية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                    ////textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return SpinKitChasingDots(
+                              color: Colors.brown[200],
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -86,29 +130,51 @@ class StatsPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Sitem(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Text(
-                              'الأرباح الشهرية : \n ${NumberFormat.simpleCurrency().format(li.getProfitOfTheMonth())}',
-                              ////textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ),
+                      FutureBuilder(
+                        future: li.getProfitOfTheMonth(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Sitem(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Text(
+                                    'الأرباح الشهرية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                    ////textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return SpinKitChasingDots(
+                              color: Colors.brown[200],
+                            );
+                          }
+                        },
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Sitem(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Text(
-                              'المبيعات الشهرية : \n ${NumberFormat.simpleCurrency().format(li.getSalesOfTheMonth())}',
-                              ////textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ),
+                      FutureBuilder(
+                        future: li.getSalesOfTheMonth(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Sitem(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Text(
+                                    'المبيعات الشهرية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                    ////textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return SpinKitChasingDots(
+                              color: Colors.brown[200],
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -116,17 +182,28 @@ class StatsPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Sitem(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Text(
-                              ' متوسط نسبة الأرباح العامة : \n % ${li.getAverageProfitPercent().toStringAsFixed(2)}',
-                              ////textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ),
+                      FutureBuilder(
+                        future: li.getAverageProfitPercent(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Sitem(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Text(
+                                    ' متوسط نسبة الأرباح العامة: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                    ////textDirection: TextDirection.rtl,
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return SpinKitChasingDots(
+                              color: Colors.brown[200],
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),

@@ -1,5 +1,5 @@
-import 'package:dukkan/list.dart';
-import 'package:dukkan/salesProvider.dart';
+import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/receipt.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

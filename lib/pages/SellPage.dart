@@ -1,9 +1,9 @@
-import 'package:dukkan/list.dart';
+import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/CheckOutPage.dart';
-import 'package:dukkan/salesProvider.dart';
+import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/myListItem.dart';
-import 'package:dukkan/util/product.dart';
-import 'package:dukkan/util/searchPage.dart';
+import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/pages/searchPage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -124,6 +124,7 @@ class _SellPageState extends State<SellPage> {
                   child: Consumer<Lists>(
                     builder: (context, li, child) => IconButton.filled(
                       onPressed: () {
+                        sa.refreshLoanersList();
                         showGeneralDialog(
                           context: context,
                           pageBuilder:

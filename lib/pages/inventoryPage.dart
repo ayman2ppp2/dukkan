@@ -1,11 +1,12 @@
 import 'package:dukkan/pages/InsertPage.dart';
-import 'package:dukkan/salesProvider.dart';
+import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/addUser.dart';
 import 'package:dukkan/util/myGridItem.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as ii;
 import 'package:provider/provider.dart';
 
-import '../list.dart';
+import '../providers/list.dart';
 
 class InvPage extends StatefulWidget {
   const InvPage({super.key});
@@ -55,7 +56,7 @@ class _InvPageState extends State<InvPage> {
                   ),
                   Consumer<Lists>(
                     builder: (context, as, child) => Text(
-                      ' رأس المال : ${as.getTotalBuyPrice().toStringAsFixed(2)}',
+                      ' رأس المال : ${ii.NumberFormat.simpleCurrency().format(as.getTotalBuyPrice())}',
                       style: TextStyle(
                           color: Colors.brown[50],
                           fontSize: 15,
@@ -82,7 +83,7 @@ class _InvPageState extends State<InvPage> {
                     child: TextField(
                       textDirection: TextDirection.rtl,
                       decoration: const InputDecoration(hintText: 'إبحث'),
-                      onChanged: (value) => as.search(value),
+                      onChanged: (value) => as.search(value, false),
                     ),
                   ),
                 ),
@@ -148,7 +149,7 @@ class _InvPageState extends State<InvPage> {
                             offerCount: 0,
                             offerPrice: 0,
                             endDate: DateTime.now(),
-                            priceHistory: [],
+                            priceHistory: {},
                           ),
                         ),
                       ),
