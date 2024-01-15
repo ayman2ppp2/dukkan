@@ -149,6 +149,12 @@ class SalesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  double getTotalLoans() {
+    refreshLoanersList();
+    return loanersList.fold(
+        0.0, (previousValue, element) => previousValue + element.loanedAmount);
+  }
+
   int getProductCount(String name) {
     if (productsList.isNotEmpty) {
       Product temp = productsList.firstWhere(

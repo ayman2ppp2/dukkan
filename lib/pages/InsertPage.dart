@@ -15,7 +15,7 @@ class InPage extends StatefulWidget {
   int index;
   double offerCount;
   double offerPrice;
-  Map priceHistory;
+  Map<DateTime, double> priceHistory;
   DateTime endDate;
   TextEditingController nameCon = TextEditingController();
   TextEditingController buyCon = TextEditingController();
@@ -271,6 +271,8 @@ class _InPageState extends State<InPage> {
                             widget.buyCon.text.isNotEmpty &
                             widget.sellCon.text.isNotEmpty &
                             widget.countCon.text.isNotEmpty) {
+                          widget.priceHistory[DateTime.now()] =
+                              double.parse(widget.buyCon.text);
                           List<Product> temp = [];
                           Product temp2 = Product(
                             name: widget.nameCon.text,
@@ -286,7 +288,7 @@ class _InPageState extends State<InPage> {
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
                             offerPrice:
                                 double.tryParse(widget.offerPriceCon.text) ?? 0,
-                            priceHistory: {},
+                            priceHistory: widget.priceHistory,
                             endDate: widget.endDate,
                             hot: false,
                           );
@@ -316,6 +318,9 @@ class _InPageState extends State<InPage> {
                             widget.buyCon.text.isNotEmpty &
                             widget.sellCon.text.isNotEmpty &
                             widget.countCon.text.isNotEmpty) {
+                          widget.priceHistory[DateTime.now()] =
+                              double.parse(widget.buyCon.text);
+                          print(widget.priceHistory);
                           Product temp2 = Product(
                             name: widget.nameCon.text,
                             barcode: '',
@@ -330,7 +335,7 @@ class _InPageState extends State<InPage> {
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
                             offerPrice:
                                 double.tryParse(widget.offerPriceCon.text) ?? 0,
-                            priceHistory: {},
+                            priceHistory: widget.priceHistory,
                             endDate: widget.endDate,
                             hot: false,
                           );

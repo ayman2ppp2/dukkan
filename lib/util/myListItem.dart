@@ -251,7 +251,7 @@ class _MyListTileState extends State<MyListTile> {
                             gg = ((((((double.tryParse(value) ?? 0) ~/
                                             (widget.product.sellprice))) /
                                         5)
-                                    .round()) *
+                                    .ceil()) *
                                 5);
                             sa.updateSellListCount(
                                 index: widget.index, count: gg);

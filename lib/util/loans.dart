@@ -17,12 +17,20 @@ class _LoansState extends State<Loans> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Center(child: Text('الديون')),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Center(child: Text('الديون')),
+            Center(
+                child: Text(
+                    'الديون الكلية : ${Provider.of<SalesProvider>(context).getTotalLoans().ceil().toStringAsFixed(2)}')),
+          ],
+        ),
       ),
       body: Column(
         children: [
           Consumer<SalesProvider>(builder: (context, sa, child) {
-            sa.refreshLoanersList();
+            // sa.refreshLoanersList();
             return Expanded(
               child: ListView.builder(
                 itemCount: sa.loanersList.length,
@@ -35,7 +43,9 @@ class _LoansState extends State<Loans> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: ListTile(
-                          leading: Text(sa.loanersList[index].name),
+                          title: Text(sa.loanersList[index].name),
+                          trailing: Text('المطلوب : ' +
+                              sa.loanersList[index].loanedAmount.toString()),
                           onTap: () {
                             var li = Provider.of<Lists>(context, listen: false);
 

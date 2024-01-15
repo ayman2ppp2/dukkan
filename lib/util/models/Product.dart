@@ -79,7 +79,7 @@ class Product extends HiveObject {
     offer = map['offer'] as bool;
     offerCount = double.parse(map['offerCount'].toString());
     offerPrice = double.parse(map['offerPrice'].toString());
-    priceHistory = {};
+    priceHistory = priceHistory;
     endDate = map['endDate'] as DateTime;
     hot = false;
   }
@@ -97,7 +97,7 @@ class Product extends HiveObject {
       'offer': offer,
       'offerCount': offerCount,
       'offerPrice': offerPrice,
-      'priceHistory': {},
+      'priceHistory': priceHistory,
       'endDate': endDate,
     };
   }

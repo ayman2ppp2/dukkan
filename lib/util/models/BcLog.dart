@@ -1,6 +1,6 @@
-import 'models/BC_product.dart';
-import 'models/Log.dart';
-import 'models/Product.dart';
+import 'BC_product.dart';
+import 'Log.dart';
+import 'Product.dart';
 
 class BcLog {
   late List<BcProduct> products = [];

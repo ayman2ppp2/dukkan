@@ -1,7 +1,7 @@
 import 'package:dukkan/util/models/Product.dart';
 import 'package:hive/hive.dart';
 
-import '../BcLog.dart';
+import 'BcLog.dart';
 part '../adapters/Log.g.dart';
 
 @HiveType(typeId: 10)

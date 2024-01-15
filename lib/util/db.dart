@@ -3,7 +3,7 @@
 // import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dukkan/test.dart' as te;
 import 'package:dukkan/util/models/BC_product.dart';
-import 'package:dukkan/util/BcLog.dart';
+import 'package:dukkan/util/models/BcLog.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
@@ -185,6 +185,8 @@ class DB {
     required double discount,
     required String LoID,
     required bool loaned,
+    required bool edit,
+    required String logID,
   }) async {
     double price = 0;
     double profit = 0;
@@ -222,7 +224,11 @@ class DB {
                     element.count)
                 .round() -
             discount;
-        price += element.sellprice * element.count;
+        price += (((element.offer && element.count % element.offerCount == 0)
+                    ? element.offerPrice
+                    : element.sellprice) *
+                element.count)
+            .round();
       }
     }
 
@@ -236,7 +242,8 @@ class DB {
             location: loaners.get(LoID).location,
             lastPayment: loaners.get(LoID).lastPayment,
             lastPaymentDate: loaners.get(LoID).lastPaymentDate,
-            loanedAmount: loaners.get(LoID).loanedAmount + total,
+            loanedAmount:
+                loaners.get(LoID).loanedAmount + total.round() - discount,
           ));
     }
 
@@ -244,7 +251,7 @@ class DB {
       '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}-${DateTime.now().hour}-${DateTime.now().minute}-${DateTime.now().second}',
       Log(
         products: lst,
-        price: price,
+        price: price - discount,
         profit: profit,
         date: DateTime.now(),
         discount: discount,

@@ -1,5 +1,6 @@
+import 'package:dukkan/util/models/BcLog.dart';
 import 'package:dukkan/util/models/prodStats.dart';
-import 'package:dukkan/util/models/Product.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
@@ -20,7 +21,7 @@ class _CircularChartState extends State<CircularChart>
     with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
-    print('here');
+    // print('here');
     super.build(context);
     // print('daily sales');
     return SingleChildScrollView(
@@ -41,13 +42,14 @@ class _CircularChartState extends State<CircularChart>
                       }
                       if (snapshot.hasData) {
                         return SizedBox(
-                          height: snapshot.data!.length * 30.0 > 200
+                          height: snapshot.data!.length * 60.0 > 200
                               ? snapshot.data!.length * 60
                               : 200,
                           child: SfCartesianChart(
                             title: ChartTitle(
-                                text: 'المبيعات اليومية لكل منتج',
-                                alignment: ChartAlignment.near),
+                              text: 'المبيعات اليومية لكل منتج',
+                              alignment: ChartAlignment.near,
+                            ),
                             primaryXAxis: CategoryAxis(
                                 // labelsExtent: 70 % (MediaQuery.of(context).size.width),
                                 ),

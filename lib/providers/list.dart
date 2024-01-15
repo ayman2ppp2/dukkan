@@ -1,5 +1,6 @@
 import 'package:dukkan/util/models/BC_product.dart';
-import 'package:dukkan/util/BcLog.dart';
+import 'package:dukkan/util/models/BcLog.dart';
+// import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/util/db.dart';
 import 'package:dukkan/util/models/prodStats.dart';
@@ -8,7 +9,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
-import 'package:network_info_plus/network_info_plus.dart';
+// import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../util/models/Log.dart';
 
@@ -16,6 +17,8 @@ class Lists extends ChangeNotifier {
   late DB db;
   late IsolatePool pool;
   bool keepAlive = false;
+  bool editing = false;
+  String logID = '';
   // late Socket socket;
   Lists() {
     init();
@@ -169,16 +172,18 @@ class Lists extends ChangeNotifier {
   }
 
   Future<int> getNumberOfSalesForAproduct({required String key}) {
+    List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
     Map map = Map();
     map['1'] = key;
-    map['2'] = db.getAllLogsPev();
+    map['2'] = logs;
     return pool.scheduleJob(_getNumberOfSalesForAproduct(map: map));
   }
 
   Future<List<BcProduct>> getSaledProductsByDate(DateTime time) {
+    List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
     Map map = Map();
     map['1'] = time;
-    map['2'] = db.getAllLogsPev().where((element) =>
+    map['2'] = logs.where((element) =>
         element.date.day == time.day &&
         element.date.month == time.month &&
         element.date.year == time.year);
@@ -187,178 +192,101 @@ class Lists extends ChangeNotifier {
   }
 
   Future<List<ProdStats>> getSalesPerProduct() async {
+    List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
     Map map = Map();
     map['1'] = db.getAllProductsPev();
-    map['2'] = db.getAllLogsPev();
+    map['2'] = logs;
     // return pool.scheduleJob()
     return pool.scheduleJob(_getSalesPerProduct(map: map));
     // return compute(_getSalesPerProduct, map);
   }
 
   Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) async {
+    List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
     Map map = Map();
-    map['1'] = db.getAllLogsPev();
+    map['1'] = logs;
     map['2'] = month;
     return pool.scheduleJob(_getDailySalesOfTheMonth(map: map));
     // return await compute(_getDailySalesOfTheMonth, map);
   }
 
   Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) async {
+    List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
     Map map = Map();
     map['1'] = month;
-    map['2'] = db.getAllLogsPev();
+    map['2'] = logs;
     return pool.scheduleJob(_getDailyProfitOfTheMont(map: map));
   }
 
   void runServer() async {
-    final server = await ServerSocket.bind('0.0.0.0', 30000);
-    shareList.clear();
-    shareList.add(
-        Text('server listening on : ${server.address.host} : ${server.port}'));
-    notifyListeners();
-    server.listen(
-      (client) async {
-        client.listen(
-          (data) async {
-            final message = String.fromCharCodes(data);
-            var te = await getApplicationDocumentsDirectory();
-            if (message == 'send inv') {
-              await File('${te.path}/inventoryv2.2.0.hive')
-                  .openRead()
-                  .pipe(client);
-              shareList.add(const Text('Sent inventory'));
-              notifyListeners();
-              client.close();
-            }
-            if (message == 'send logs') {
-              await File('${te.path}/logsv2.2.0.hive').openRead().pipe(client);
-              shareList.add(const Text('Sent logs'));
-              notifyListeners();
-            }
-            if (message == 'send owners') {
-              await File('${te.path}/ownersv2.2.0.hive')
-                  .openRead()
-                  .pipe(client);
-              shareList.add(const Text('Sent owners'));
-              notifyListeners();
-            }
-            if (message == 'send loaners') {
-              await File('${te.path}/loanersv2.2.0.hive')
-                  .openRead()
-                  .pipe(client);
-              shareList.add(const Text('Sent loaners'));
-              notifyListeners();
-            }
-          },
-          onDone: () {
-            shareList.add(const Text('Server closed'));
-            notifyListeners();
-            client.destroy();
-            server.close();
-          },
+    var te = await getApplicationDocumentsDirectory();
+    void handleHttpRequest(HttpRequest request) {
+      final filePath = request.uri.pathSegments.last;
+      print('${te.path}/$filePath');
+
+      final file = File('${te.path}/$filePath');
+
+      if (file.existsSync()) {
+        print('Sending file: $filePath');
+        file.openRead().pipe(request.response).then((_) {
+          print('File sent: $filePath');
+        }).catchError((error) {
+          print('Error sending file: $error');
+          request.response.close();
+        });
+      } else {
+        print('File not found: $filePath');
+        request.response.write('File not found: $filePath');
+        request.response.close();
+      }
+    }
+
+    final server = await HttpServer.bind(InternetAddress.anyIPv4, 30000);
+    print('Server listening on ${server.address.address}:${server.port}');
+    // server.sessionTimeout = 300;
+
+    await for (HttpRequest request in server) {
+      if (request.uri.pathSegments.last == 'shutdown') {
+        print('byeee');
+        server.close(force: true);
+      } else {
+        handleHttpRequest(request);
+      }
+    }
+  }
+
+  void client(String ip) async {
+    var te = await getApplicationDocumentsDirectory();
+    final client = HttpClient();
+
+    try {
+      List<String> fileNames = [
+        'inventoryv2.2.0.hive',
+        'logsv2.2.0.hive',
+        'ownersv2.2.0.hive',
+        'loanersv2.2.0.hive',
+        'shutdown',
+      ];
+
+      for (var fileName in fileNames) {
+        var request = await client.getUrl(
+          Uri.parse('$ip:30000/$fileName'),
         );
-      },
-    );
-  }
+        var response = await request.close();
+        if (fileName != 'shutdown') {
+          if (response.statusCode == HttpStatus.ok) {
+            print('Receiving file: $fileName');
 
-  void reciveInv() async {
-    String? ip = await NetworkInfo().getWifiGatewayIP();
-    Socket socket = await Socket.connect(ip, 30000);
-    var te = await getApplicationDocumentsDirectory();
-    if (socket.remoteAddress.address != '127.0.0.1') {
-      try {
-        shareList.add(Text(
-            'Connected to :${socket.remoteAddress.address}:${socket.remotePort}'));
-        notifyListeners();
-        socket.write('send inv');
-
-        var file = File('${te.path}/inventoryv2.2.0.hive').openWrite();
-        try {
-          await socket.map(toIntList).pipe(file);
-        } finally {
-          shareList.add(const Text('inventory received'));
-          notifyListeners();
-          await file.close();
+            await response
+                .pipe(File('${te.path}/$fileName').openWrite())
+                .then((value) => print('File received: $fileName'));
+          } else {
+            print('Error: ${response.statusCode}');
+          }
         }
-      } finally {
-        // socket.destroy();
-        reciveLog();
-      }
-    } else {
-      socket.close();
-      shareList.add(const Text(
-          'you are sending files to your self the operation will be terminated'));
-      notifyListeners();
-    }
-  }
-
-  void reciveLog() async {
-    String? ip = await NetworkInfo().getWifiGatewayIP();
-    Socket socket = await Socket.connect(ip, 30000);
-    var te = await getApplicationDocumentsDirectory();
-    try {
-      shareList.add(Text("Connected to :"
-          '${socket.remoteAddress.address}:${socket.remotePort}'));
-      notifyListeners();
-      socket.write('send logs');
-
-      var file = File('${te.path}/logsv2.2.0.hive').openWrite();
-      try {
-        await socket.map(toIntList).pipe(file);
-      } finally {
-        shareList.add(const Text('logs received'));
-        notifyListeners();
-        await file.close();
       }
     } finally {
-      reciveOwners();
-    }
-  }
-
-  void reciveOwners() async {
-    String? ip = await NetworkInfo().getWifiGatewayIP();
-    Socket socket = await Socket.connect(ip, 30000);
-    var te = await getApplicationDocumentsDirectory();
-    try {
-      shareList.add(Text("Connected to :"
-          '${socket.remoteAddress.address}:${socket.remotePort}'));
-      notifyListeners();
-      socket.write('send owners');
-
-      var file = File('${te.path}/ownersv2.2.0.hive').openWrite();
-      try {
-        await socket.map(toIntList).pipe(file);
-      } finally {
-        shareList.add(const Text('owners data received'));
-        notifyListeners();
-        await file.close();
-      }
-    } finally {
-      reciveLoaners();
-    }
-  }
-
-  void reciveLoaners() async {
-    String? ip = await NetworkInfo().getWifiGatewayIP();
-    Socket socket = await Socket.connect(ip, 30000);
-    var te = await getApplicationDocumentsDirectory();
-    try {
-      shareList.add(Text("Connected to :"
-          '${socket.remoteAddress.address}:${socket.remotePort}'));
-      notifyListeners();
-      socket.write('send loaners');
-
-      var file = File('${te.path}/loanersv2.2.0.hive').openWrite();
-      try {
-        await socket.map(toIntList).pipe(file);
-      } finally {
-        shareList.add(const Text('loaners data received'));
-        notifyListeners();
-        await file.close();
-      }
-    } finally {
-      socket.destroy();
-      socket.destroy();
+      client.close();
     }
   }
 

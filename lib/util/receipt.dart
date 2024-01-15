@@ -105,6 +105,21 @@ class _ReceiptState extends State<Receipt> {
                 Text(NumberFormat.simpleCurrency()
                         .format(countSpecial(widget.log)) +
                     ' : سلع خاصة'),
+                Consumer<Lists>(
+                  builder: (context, li, child) => Consumer<SalesProvider>(
+                    builder: (context, sa, child) => IconButton(
+                      onPressed: () {
+                        li.editing = true;
+                        li.logID =
+                            '${widget.log.date.year}-${widget.log.date.month}-${widget.log.date.day}-${widget.log.date.hour}-${widget.log.date.minute}-${widget.log.date.second}';
+                        sa.sellList.addAll(widget.log.products);
+                        sa.refresh();
+                        Navigator.pop(context);
+                      },
+                      icon: Icon(Icons.edit_note_rounded),
+                    ),
+                  ),
+                ),
               ],
             ),
             expand

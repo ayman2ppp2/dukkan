@@ -180,6 +180,7 @@ class _CheckOutState extends State<CheckOut> {
                                   ),
                                   content: TextFormField(
                                     controller: con,
+                                    keyboardType: TextInputType.number,
                                     onChanged: (value) {
                                       var sum = 0.0;
                                       for (var element in widget.lst) {
@@ -260,6 +261,8 @@ class _CheckOutState extends State<CheckOut> {
                                                           0,
                                                       LoID: loanerID,
                                                       loaned: loan,
+                                                      edit: li.editing,
+                                                      logID: li.logID,
                                                     );
                                                     await sa
                                                         .refreshProductsList();

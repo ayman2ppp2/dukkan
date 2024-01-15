@@ -48,80 +48,82 @@ class _LoanState extends State<Loan> {
           ],
         ),
       ),
-      body: Container(
-          child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Consumer<SalesProvider>(
-                builder: (context, sa, child) => Column(
-                  children: [
-                    Item(
-                      child: Text(
-                          'Phone number : ${sa.loanersList[widget.index].phoneNumber}'),
-                    ),
-                    Item(
-                      child: Text(
-                          'Location : ${sa.loanersList[widget.index].location}'),
-                    ),
-                    Item(
-                      child: Text(
-                          'wanted : ${sa.loanersList[widget.index].loanedAmount}'),
-                    ),
-                    Item(
-                      child: Text(
-                          'Last Payment date : ${DateFormat.yMEd().add_jmz().format(sa.loanersList[widget.index].lastPaymentDate)}'),
-                    ),
-                    Item(
-                      child: Text(
-                          'Last Payment :${sa.loanersList[widget.index].lastPayment}'),
-                    ),
-                    Item(
-                      child: Row(
-                        children: [
-                          Text('Pay : '),
-                          Expanded(
-                            child: TextFormField(
-                              controller: con,
-                              autocorrect: true,
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              sa.payLoaner(double.tryParse(con.text) ?? 0,
-                                  sa.loanersList[widget.index].ID);
-
-                              setState(() {
-                                con.text = '';
-                              });
-                            },
-                            icon: Icon(Icons.payments_rounded),
-                          ),
-                        ],
+      body: SingleChildScrollView(
+        child: Container(
+            child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Consumer<SalesProvider>(
+                  builder: (context, sa, child) => Column(
+                    children: [
+                      Item(
+                        child: Text(
+                            'Phone number : ${sa.loanersList[widget.index].phoneNumber}'),
                       ),
-                    ),
-                    Item(child: Text('history')),
-                    Consumer<Lists>(
-                      builder: (context, li, child) {
-                        var list = li.getPersonsLogs(
-                            Provider.of<SalesProvider>(context)
-                                .loanersList[widget.index]
-                                .ID);
-                        return Item(
-                          child: SizedBox(
-                            height: 260 % MediaQuery.of(context).size.height,
-                            child: ListView.builder(
-                              itemCount: list.length,
-                              itemBuilder: (context, index) => Receipt(
-                                log: list[index],
+                      Item(
+                        child: Text(
+                            'Location : ${sa.loanersList[widget.index].location}'),
+                      ),
+                      Item(
+                        child: Text(
+                            'wanted : ${sa.loanersList[widget.index].loanedAmount}'),
+                      ),
+                      Item(
+                        child: Text(
+                            'Last Payment date : ${DateFormat.yMEd().add_jmz().format(sa.loanersList[widget.index].lastPaymentDate)}'),
+                      ),
+                      Item(
+                        child: Text(
+                            'Last Payment :${sa.loanersList[widget.index].lastPayment}'),
+                      ),
+                      Item(
+                        child: Row(
+                          children: [
+                            Text('Pay : '),
+                            Expanded(
+                              child: TextFormField(
+                                controller: con,
+                                autocorrect: true,
+                                keyboardType: TextInputType.number,
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ))),
+                            IconButton(
+                              onPressed: () {
+                                sa.payLoaner(double.tryParse(con.text) ?? 0,
+                                    sa.loanersList[widget.index].ID);
+
+                                setState(() {
+                                  con.text = '';
+                                });
+                              },
+                              icon: Icon(Icons.payments_rounded),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Item(child: Text('history')),
+                      Consumer<Lists>(
+                        builder: (context, li, child) {
+                          var list = li.getPersonsLogs(
+                              Provider.of<SalesProvider>(context)
+                                  .loanersList[widget.index]
+                                  .ID);
+                          return Item(
+                            child: SizedBox(
+                              height: 260 % MediaQuery.of(context).size.height,
+                              child: ListView.builder(
+                                itemCount: list.length,
+                                itemBuilder: (context, index) => Receipt(
+                                  log: list[index],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ))),
+      ),
     );
   }
 }
