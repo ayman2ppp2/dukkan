@@ -37,6 +37,7 @@ class _CircularChartState extends State<CircularChart>
                 child: FutureBuilder(
                     future: li.getSaledProductsByDate(DateTime.now()),
                     builder: (context, snapshot) {
+                      // li.refreshLogsList();
                       if (snapshot.hasError) {
                         return Text('${snapshot.error.toString()}');
                       }
@@ -212,7 +213,8 @@ class _LineChartState extends State<LineChart>
                           color: Colors.brown[400],
                           dataSource: snapshot.data![0],
                           xValueMapper: (SalesStats data, _) => data.date.day,
-                          yValueMapper: (SalesStats data, _) => data.sales,
+                          yValueMapper: (SalesStats data, _) =>
+                              data.sales.floor(),
                           dataLabelSettings: const DataLabelSettings(
                             isVisible: true,
                           ),
@@ -221,7 +223,8 @@ class _LineChartState extends State<LineChart>
                           color: Colors.brown,
                           dataSource: snapshot.data![1],
                           xValueMapper: (SalesStats data, _) => data.date.day,
-                          yValueMapper: (SalesStats data, _) => data.sales,
+                          yValueMapper: (SalesStats data, _) =>
+                              data.sales.floor(),
                           dataLabelSettings: const DataLabelSettings(
                             isVisible: true,
                           ),

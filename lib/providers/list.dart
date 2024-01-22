@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../util/models/Log.dart';
 
 class Lists extends ChangeNotifier {
@@ -129,21 +130,21 @@ class Lists extends ChangeNotifier {
 
   Future<double> getProfitOfTheMonth() {
     Map map = Map();
-    map['1'] = db.getAllLogsPev();
+    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getProfitOfTheMonth(map: map));
   }
 
   Future<double> getSalesOfTheMonth() {
     Map map = Map();
-    map['1'] = db.getAllLogsPev();
+    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getSalesOfTheMonth(map: map));
   }
 
   Future<double> getDailySales(DateTime time) {
     Map map = Map();
-    map['1'] = db.getAllLogsPev();
+    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
     map['2'] = time;
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getDailySales(map: map));
@@ -151,7 +152,7 @@ class Lists extends ChangeNotifier {
 
   Future<double> getDailyProfits(DateTime time) {
     Map map = Map();
-    map['1'] = db.getAllLogsPev();
+    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
     map['2'] = time;
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getDailyProfit(map: map));
@@ -159,14 +160,15 @@ class Lists extends ChangeNotifier {
 
   Future<double> getAllProfit() {
     Map map = Map();
-    map['1'] = db.getAllLogsPev();
+    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getTotalProfit(map: map));
   }
 
   Future<double> getAllSales() {
+    // refreshLogsList();
     Map map = Map();
-    map['1'] = db.getAllLogsPev();
+    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getAllSales(map: map));
   }
@@ -219,19 +221,43 @@ class Lists extends ChangeNotifier {
   }
 
   void runServer() async {
+    shareList = [];
+    NetworkInterface.list()
+        .then((value) => value
+            .firstWhere((element) =>
+                element.name.toLowerCase() == 'wi-fi' ||
+                element.name.toLowerCase() == 'wlan0')
+            .addresses[0]
+            .address)
+        .then(
+      (value) {
+        // print(value);
+        shareList.add(QrImageView(data: '$value:30000'));
+        notifyListeners();
+      },
+    );
+
     var te = await getApplicationDocumentsDirectory();
     void handleHttpRequest(HttpRequest request) {
       final filePath = request.uri.pathSegments.last;
-      print('${te.path}/$filePath');
+      // print('${te.path}/$filePath');
+      // shareList.add(Text('${te.path}/$filePath'));
+      // notifyListeners();
 
       final file = File('${te.path}/$filePath');
 
       if (file.existsSync()) {
-        print('Sending file: $filePath');
+        // print('Sending file: $filePath');
+        shareList.add(Text('Sending file: $filePath'));
+        notifyListeners();
         file.openRead().pipe(request.response).then((_) {
-          print('File sent: $filePath');
+          // print('File sent: $filePath');
+          shareList.add(Text('File sent: $filePath'));
+          notifyListeners();
         }).catchError((error) {
           print('Error sending file: $error');
+          shareList.add(Text('Error sending file: $error'));
+          notifyListeners();
           request.response.close();
         });
       } else {
@@ -241,9 +267,19 @@ class Lists extends ChangeNotifier {
       }
     }
 
-    final server = await HttpServer.bind(InternetAddress.anyIPv4, 30000);
-    print('Server listening on ${server.address.address}:${server.port}');
-    // server.sessionTimeout = 300;
+    final server = await HttpServer.bind(
+        await NetworkInterface.list().then((value) => value
+            .firstWhere((element) =>
+                element.name.toLowerCase() == 'wi-fi' ||
+                element.name.toLowerCase() == 'wlan0')
+            .addresses[0]
+            .address),
+        30000);
+
+    // print('Server listening on ${server.address.address}:${server.port}');
+    shareList.add(
+        Text('Server listening on ${server.address.address}:${server.port}'));
+    notifyListeners();
 
     await for (HttpRequest request in server) {
       if (request.uri.pathSegments.last == 'shutdown') {
@@ -270,21 +306,32 @@ class Lists extends ChangeNotifier {
 
       for (var fileName in fileNames) {
         var request = await client.getUrl(
-          Uri.parse('$ip:30000/$fileName'),
+          Uri.parse('http://$ip/$fileName'),
         );
         var response = await request.close();
         if (fileName != 'shutdown') {
           if (response.statusCode == HttpStatus.ok) {
-            print('Receiving file: $fileName');
+            shareList.add(Text('Receiving file: $fileName'));
+            notifyListeners();
+            // print('Receiving file: $fileName');
 
             await response
                 .pipe(File('${te.path}/$fileName').openWrite())
-                .then((value) => print('File received: $fileName'));
+                .then((value) {
+              shareList.add(Text('File received: $fileName'));
+              notifyListeners();
+            });
           } else {
-            print('Error: ${response.statusCode}');
+            shareList.add(Text('Error: ${response.statusCode}'));
+            notifyListeners();
+            // print('Error: ${response.statusCode}');
           }
         }
       }
+    } catch (e) {
+      shareList.add(Text(e.toString()));
+      notifyListeners();
+      client.close();
     } finally {
       client.close();
     }

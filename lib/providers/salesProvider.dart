@@ -98,31 +98,30 @@ class SalesProvider extends ChangeNotifier {
       if (productsList[i].name.startsWith(keyWord) ||
           productsList[i].name.contains(keyWord)) {
         searchTemp.add(productsList[i]);
-
         notifyListeners();
       }
-      if (sales) {
-        if (searchTemp.isEmpty) {
-          searchTemp.add(
-            Product(
-              name: keyWord,
-              ownerName: '',
-              barcode: 'barcode',
-              buyprice: 1,
-              sellprice: 1,
-              count: 0,
-              weightable: false,
-              wholeUnit: 'wholeUnit',
-              offer: false,
-              offerCount: 0,
-              offerPrice: 0,
-              priceHistory: {},
-              endDate: DateTime.now(),
-              hot: true,
-            ),
-          );
-          notifyListeners();
-        }
+    }
+    if (sales) {
+      if (searchTemp.isEmpty) {
+        searchTemp.add(
+          Product(
+            name: keyWord,
+            ownerName: '',
+            barcode: 'barcode',
+            buyprice: 1,
+            sellprice: 1,
+            count: 0,
+            weightable: false,
+            wholeUnit: 'wholeUnit',
+            offer: false,
+            offerCount: 0,
+            offerPrice: 0,
+            priceHistory: {},
+            endDate: DateTime.now(),
+            hot: true,
+          ),
+        );
+        notifyListeners();
       }
     }
   }

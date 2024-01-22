@@ -15,6 +15,7 @@ class StatsPage extends StatelessWidget {
     // print('list');
     return Consumer<Lists>(
       builder: (context, li, child) {
+        li.refreshLogsList();
         return Flex(
           direction: Axis.vertical,
           children: [

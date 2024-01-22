@@ -49,3 +49,9 @@ storage/emulated/0/dukkan/v2/logs.hive
 storage/emulated/0/dukkan/v2/logs.lock
 storage/emulated/0/dukkan/v2/owners.hive
 storage/emulated/0/dukkan/v2/owners.lock
+
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
