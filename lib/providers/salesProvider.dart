@@ -89,39 +89,45 @@ class SalesProvider extends ChangeNotifier {
     refreshProductsList();
   }
 
-  void search(String keyWord, bool sales) {
-    // print('search');
+  void search(String keyWord, bool sales, bool barcode) {
     refreshProductsList();
-    // notifyListeners();
-    searchTemp.clear();
-    for (var i = 0; i < productsList.length; i++) {
-      if (productsList[i].name.startsWith(keyWord) ||
-          productsList[i].name.contains(keyWord)) {
-        searchTemp.add(productsList[i]);
-        notifyListeners();
+    if (barcode) {
+      searchTemp.clear();
+      searchTemp.add(productsList
+          .firstWhere((element) => element.barcode == keyWord, orElse: null));
+    } else {
+      // print('search');
+      // notifyListeners();
+      searchTemp.clear();
+      for (var i = 0; i < productsList.length; i++) {
+        if (productsList[i].name.startsWith(keyWord) ||
+            productsList[i].name.contains(keyWord)) {
+          searchTemp.add(productsList[i]);
+          notifyListeners();
+        }
       }
-    }
-    if (sales) {
-      if (searchTemp.isEmpty) {
-        searchTemp.add(
-          Product(
-            name: keyWord,
-            ownerName: '',
-            barcode: 'barcode',
-            buyprice: 1,
-            sellprice: 1,
-            count: 0,
-            weightable: false,
-            wholeUnit: 'wholeUnit',
-            offer: false,
-            offerCount: 0,
-            offerPrice: 0,
-            priceHistory: {},
-            endDate: DateTime.now(),
-            hot: true,
-          ),
-        );
-        notifyListeners();
+      if (sales) {
+        if (searchTemp.isEmpty) {
+          searchTemp.add(
+            Product(
+              name: keyWord,
+              ownerName: '',
+              barcode: 'barcode',
+              buyprice: 1,
+              sellprice: 1,
+              count: 0,
+              weightable: false,
+              wholeUnit: 'wholeUnit',
+              offer: false,
+              offerCount: 0,
+              offerPrice: 0,
+              priceHistory: {},
+              endDate: DateTime.now(),
+              hot: true,
+            ),
+          );
+          notifyListeners();
+        }
       }
     }
   }

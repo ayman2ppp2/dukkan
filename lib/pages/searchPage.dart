@@ -2,6 +2,7 @@
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 class SearchPage extends StatefulWidget {
@@ -41,17 +42,64 @@ class _SearchPageState extends State<SearchPage> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: TextField(
-                      autofocus: true,
-                      textDirection: TextDirection.rtl,
-                      decoration: const InputDecoration(
-                        hintText: 'ابحث',
-                      ),
-                      onChanged: (value) {
-                        // Future.delayed(Duration(milliseconds: 200))
-                        //     .then((gg) => li.search(value, true));
-                        li.search(value, true);
-                      },
+                    child: Flex(
+                      direction: Axis.horizontal,
+                      children: [
+                        Expanded(
+                          flex: 6,
+                          child: TextField(
+                            autofocus: true,
+                            textDirection: TextDirection.rtl,
+                            decoration: const InputDecoration(
+                              hintText: 'ابحث',
+                            ),
+                            onChanged: (value) {
+                              // Future.delayed(Duration(milliseconds: 200))
+                              //     .then((gg) => li.search(value, true));
+                              li.search(value, true, false);
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: IconButton(
+                            onPressed: () {
+                              MobileScannerController con =
+                                  MobileScannerController();
+                              var ip;
+                              showGeneralDialog(
+                                context: context,
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        Material(
+                                  child: MobileScanner(
+                                    fit: BoxFit.contain,
+                                    controller: con,
+                                    onDetect: (capture) {
+                                      final List<Barcode> barcodes =
+                                          capture.barcodes;
+                                      for (final barcode in barcodes) {
+                                        li.search(
+                                            barcode.rawValue!, true, true);
+                                        ip = barcode.rawValue;
+                                        debugPrint(
+                                            'Barcode found! ${barcode.rawValue}');
+                                      }
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                              SnackBar(content: Text(ip)));
+                                      // li.client(ip);
+                                      Navigator.pop(context);
+                                      con.stop();
+                                      con.dispose();
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: Icon(Icons.qr_code_scanner),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

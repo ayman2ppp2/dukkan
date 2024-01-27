@@ -90,6 +90,16 @@ class DB {
     // }
   }
 
+  void closeAll() {
+    inventory.close();
+    logs.close();
+    owners.close();
+    loaners.close();
+    invBack.close();
+    logBack.close();
+    ownersBack.close();
+  }
+
   Future<void> useBackup() async {
     await te.gg().then((value) {
       for (var element in invBack.values) {
@@ -218,12 +228,12 @@ class DB {
           ),
         );
         profit += ((((element.offer && element.count % element.offerCount == 0)
-                            ? (element.offerPrice)
-                            : (element.sellprice)) -
-                        element.buyprice) *
-                    element.count)
-                .round() -
-            discount;
+                        ? (element.offerPrice)
+                        : (element.sellprice)) -
+                    element.buyprice) *
+                element.count)
+            .round();
+
         price += (((element.offer && element.count % element.offerCount == 0)
                     ? element.offerPrice
                     : element.sellprice) *
@@ -252,7 +262,7 @@ class DB {
       Log(
         products: lst,
         price: price - discount,
-        profit: profit,
+        profit: profit - discount,
         date: DateTime.now(),
         discount: discount,
         loaned: loaned,

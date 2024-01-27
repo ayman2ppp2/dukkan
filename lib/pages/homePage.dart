@@ -154,6 +154,7 @@ class _HomePageState extends State<HomePage> {
                   return IconButton(
                     onPressed: () {
                       showGeneralDialog(
+                        useRootNavigator: true,
                         barrierDismissible: true,
                         barrierLabel: 'gg',
                         context: context,

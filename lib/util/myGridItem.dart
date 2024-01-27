@@ -103,6 +103,8 @@ class GridItem extends StatelessWidget {
                                               li.productsList[index].buyprice,
                                           count: li.productsList[index].count,
                                           name: li.productsList[index].name,
+                                          barcode:
+                                              li.productsList[index].barcode,
                                           sellPrice:
                                               li.productsList[index].sellprice,
                                           index: index,

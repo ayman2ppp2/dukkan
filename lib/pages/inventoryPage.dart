@@ -83,7 +83,7 @@ class _InvPageState extends State<InvPage> {
                     child: TextField(
                       textDirection: TextDirection.rtl,
                       decoration: const InputDecoration(hintText: 'إبحث'),
-                      onChanged: (value) => as.search(value, false),
+                      onChanged: (value) => as.search(value, false, false),
                     ),
                   ),
                 ),
@@ -140,6 +140,7 @@ class _InvPageState extends State<InvPage> {
                             buyPrice: 0,
                             count: 0,
                             name: '',
+                            barcode: '',
                             sellPrice: 0,
                             owner: '',
                             weightable: false,

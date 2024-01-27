@@ -186,7 +186,7 @@ class _CheckOutState extends State<CheckOut> {
                                       for (var element in widget.lst) {
                                         sum += element.buyprice * element.count;
                                       }
-                                      if ((double.tryParse(value) ?? 0) >=
+                                      if ((double.tryParse(value) ?? 0) >
                                           widget.total - sum) {
                                         con.text = (widget.total - sum)
                                             .toStringAsFixed(2);

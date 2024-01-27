@@ -1,5 +1,7 @@
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/list.dart';
@@ -7,6 +9,7 @@ import '../util/models/Product.dart';
 
 class InPage extends StatefulWidget {
   String name;
+  String barcode;
   String wholeUnit;
   String owner;
   double buyPrice;
@@ -25,6 +28,7 @@ class InPage extends StatefulWidget {
   TextEditingController offerCountCon = TextEditingController();
   TextEditingController offerPriceCon = TextEditingController();
   TextEditingController wholeUnitCon = TextEditingController();
+  TextEditingController BarcodeCon = TextEditingController();
   // TextEditingController endDateCon = TextEditingController();
   bool weightable = false;
   bool offer = false;
@@ -43,6 +47,7 @@ class InPage extends StatefulWidget {
     required this.offerPrice,
     required this.endDate,
     required this.priceHistory,
+    required this.barcode,
   });
 
   @override
@@ -54,6 +59,7 @@ class _InPageState extends State<InPage> {
   void initState() {
     if (widget.index != -1) {
       widget.nameCon.text = widget.name;
+      widget.BarcodeCon.text = widget.barcode;
       widget.ownerCon.text = widget.owner;
       widget.buyCon.text = widget.buyPrice.toString();
       widget.sellCon.text = widget.sellPrice.toString();
@@ -79,9 +85,9 @@ class _InPageState extends State<InPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // add new Item
-                const Text(
+                Text(
                   textDirection: TextDirection.rtl,
-                  'إضافة منتج جديد',
+                  widget.index == -1 ? 'إضافة منتج جديد' : 'تعديل منتج',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -121,6 +127,67 @@ class _InPageState extends State<InPage> {
                     );
                   }),
                 ),
+                // barcode
+                Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Consumer<SalesProvider>(
+                      builder: (context, value, child) => Flex(
+                        direction: Axis.horizontal,
+                        children: [
+                          Expanded(
+                            flex: 6,
+                            child: TextFormField(
+                              controller: widget.BarcodeCon,
+                              decoration: InputDecoration(
+                                hintText: 'الباركود',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                              child: IconButton(
+                                  onPressed: () {
+                                    MobileScannerController con =
+                                        MobileScannerController();
+                                    showGeneralDialog(
+                                      useRootNavigator: false,
+                                      context: context,
+                                      pageBuilder: (context, animation,
+                                          secondaryAnimation) {
+                                        return MobileScanner(
+                                          fit: BoxFit.contain,
+                                          controller: con,
+                                          onDetect: (capture) async {
+                                            final List<Barcode> barcodes =
+                                                capture.barcodes;
+                                            // final Uint8List? image = capture.image;
+                                            for (final barcode in barcodes) {
+                                              // ip = barcode.rawValue;
+                                              await SystemSound.play(
+                                                  SystemSoundType.click);
+                                              widget.BarcodeCon.text =
+                                                  barcode.rawValue!;
+                                              debugPrint(
+                                                  'Barcode found! ${barcode.rawValue}');
+                                            }
+                                            // ScaffoldMessenger.of(context)
+                                            //     .showSnackBar(SnackBar(content: Text(ip)));
+                                            // li.client(ip);
+                                            Navigator.pop(context);
+                                            Navigator.pop(context);
+                                            // con.stop();
+                                            // con.dispose();
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
+                                  icon: Icon(Icons.qr_code_scanner))),
+                        ],
+                      ),
+                    )),
                 //buyPrice
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -135,6 +202,7 @@ class _InPageState extends State<InPage> {
                     ),
                   ),
                 ),
+
                 //sellPrice
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -276,7 +344,7 @@ class _InPageState extends State<InPage> {
                           List<Product> temp = [];
                           Product temp2 = Product(
                             name: widget.nameCon.text,
-                            barcode: '',
+                            barcode: widget.BarcodeCon.text,
                             buyprice: double.parse(widget.buyCon.text),
                             sellprice: double.parse(widget.sellCon.text),
                             count: int.parse(widget.countCon.text),
@@ -323,7 +391,7 @@ class _InPageState extends State<InPage> {
                           print(widget.priceHistory);
                           Product temp2 = Product(
                             name: widget.nameCon.text,
-                            barcode: '',
+                            barcode: widget.BarcodeCon.text,
                             buyprice: double.parse(widget.buyCon.text),
                             sellprice: double.parse(widget.sellCon.text),
                             count: int.parse(widget.countCon.text),

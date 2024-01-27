@@ -87,7 +87,7 @@ class _ShareState extends State<Share> {
                     );
 
                     print(ip);
-                    // Provider.of<Lists>(context, listen: false).client(ip);
+                    // Provider.of<Lists>(context, listen: false).client('ip');
                   },
                   icon: const Icon(Icons.call_received_rounded),
                 ),

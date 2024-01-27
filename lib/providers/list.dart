@@ -1,5 +1,6 @@
 import 'package:dukkan/util/models/BC_product.dart';
 import 'package:dukkan/util/models/BcLog.dart';
+import 'package:dukkan/util/models/Loaner.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/util/db.dart';
@@ -8,6 +9,7 @@ import 'package:dukkan/util/models/Product.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -27,7 +29,8 @@ class Lists extends ChangeNotifier {
   }
 
   void init() async {
-    pool = IsolatePool(Platform.numberOfProcessors ~/ 2);
+    pool = IsolatePool((Platform.numberOfProcessors ~/ 2) - 1);
+
     await pool.start();
   }
 
@@ -91,6 +94,27 @@ class Lists extends ChangeNotifier {
   }
 
   void cancelReceipt(DateTime date, Log log) {
+    double sum = 0;
+    for (var product in log.products) {
+      if (product.hot) {
+        sum += product.buyprice * product.count;
+      }
+    }
+    if (log.loaned) {
+      Loaner temp = db.loaners.get(log.loanerID);
+      db.loaners.put(
+        log.loanerID,
+        Loaner(
+          name: temp.name,
+          ID: temp.ID,
+          phoneNumber: temp.phoneNumber,
+          location: temp.location,
+          lastPayment: temp.lastPayment,
+          lastPaymentDate: temp.lastPaymentDate,
+          loanedAmount: temp.loanedAmount - (log.price + sum),
+        ),
+      );
+    }
     for (var product in log.products) {
       if (!product.hot) {
         db.inventory.put(
@@ -136,6 +160,7 @@ class Lists extends ChangeNotifier {
   }
 
   Future<double> getSalesOfTheMonth() {
+    // db.closeAll();
     Map map = Map();
     map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
@@ -351,6 +376,20 @@ class _getSalesOfTheMonth extends PooledJob<double> {
   _getSalesOfTheMonth({required this.map});
   @override
   Future<double> job() async {
+    // print('here1');
+    // var te = await getApplicationDocumentsDirectory();
+    // // print('storage/emulated/0/dukkan/V2');
+    // // 'storage/emulated/0/dukkan/v2'
+    // Hive.init(te.path);
+    // print('here');
+    // Hive.registerAdapter(ProductAdapter());
+    // Hive.registerAdapter(LogAdapter());
+    // Hive.registerAdapter(OwnerAdapter());
+    // Hive.registerAdapter(LoanerAdapter());
+
+    // DB db = DB();
+    // print(db.getAllLogsPev());
+
     List<BcLog> temp = map['1'];
     double sales = 0;
     for (var log in temp) {

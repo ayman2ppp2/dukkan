@@ -125,41 +125,47 @@ class _SellPageState extends State<SellPage> {
                     builder: (context, li, child) => IconButton.filled(
                       onPressed: () {
                         sa.refreshLoanersList();
-                        showGeneralDialog(
-                          context: context,
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) {
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                left: 20,
-                                right: 20,
-                                top: 100,
-                              ),
-                              child: ChangeNotifierProvider.value(
-                                value: sa,
+                        if (sa.productsList.isNotEmpty) {
+                          showGeneralDialog(
+                            context: context,
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) {
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20,
+                                  right: 20,
+                                  top: 100,
+                                ),
                                 child: ChangeNotifierProvider.value(
-                                  value: li,
-                                  child: CheckOut(
-                                    lst: sa.sellList,
-                                    total: (sa.sellList.fold(
-                                      00.0,
-                                      (previousValue, element) =>
-                                          previousValue +
-                                          ((element.offer &&
-                                                  element.count %
-                                                          element.offerCount ==
-                                                      0)
-                                              ? (element.offerPrice *
-                                                  element.count)
-                                              : (element.sellprice *
-                                                  element.count)),
-                                    )),
+                                  value: sa,
+                                  child: ChangeNotifierProvider.value(
+                                    value: li,
+                                    child: CheckOut(
+                                      lst: sa.sellList,
+                                      total: (sa.sellList.fold(
+                                        00.0,
+                                        (previousValue, element) =>
+                                            previousValue +
+                                            ((element.offer &&
+                                                    element.count %
+                                                            element
+                                                                .offerCount ==
+                                                        0)
+                                                ? (element.offerPrice *
+                                                    element.count)
+                                                : (element.sellprice *
+                                                    element.count)),
+                                      )),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
+                              );
+                            },
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('يجب تحديد منتجات اولآ ')));
+                        }
                       },
                       icon: const Icon(
                         Icons.price_check_outlined,

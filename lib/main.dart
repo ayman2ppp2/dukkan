@@ -17,7 +17,7 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   var te = await getApplicationDocumentsDirectory();
-  // print('storage/emulated/0/dukkan/V2');
+  print(te.path);
   // 'storage/emulated/0/dukkan/v2'
   Hive.initFlutter(te.path);
 
