@@ -54,6 +54,10 @@ class _CircularChartState extends State<CircularChart>
                             primaryXAxis: CategoryAxis(
                                 // labelsExtent: 70 % (MediaQuery.of(context).size.width),
                                 ),
+                            primaryYAxis: NumericAxis(
+                              numberFormat: NumberFormat.compact(),
+                              isVisible: true,
+                            ),
                             // tooltipBehavior: TooltipBehavior(enable: true),
                             series: <ChartSeries<BcProduct, String>>[
                               StackedBarSeries<BcProduct, String>(
@@ -127,6 +131,10 @@ class _BarChartState extends State<BarChart>
                               text: 'المبيعات لكل منتج',
                               alignment: ChartAlignment.near),
                           primaryXAxis: CategoryAxis(),
+                          primaryYAxis: NumericAxis(
+                            numberFormat: NumberFormat.compact(),
+                            isVisible: true,
+                          ),
                           tooltipBehavior: TooltipBehavior(enable: true),
                           series: <ChartSeries>[
                             StackedBarSeries<ProdStats, String>(
