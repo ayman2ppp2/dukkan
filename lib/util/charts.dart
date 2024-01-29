@@ -203,10 +203,12 @@ class _LineChartState extends State<LineChart>
                             'الأرباح و المبيعات اليومية لشهر ${DateTime.now().month}',
                       ),
                       primaryXAxis: CategoryAxis(
-                          // arrangeByIndex: false,
-                          ),
-                      primaryYAxis: CategoryAxis(
-                        minimum: 0,
+                        // arrangeByIndex: false,
+                        isInversed: true,
+                      ),
+                      primaryYAxis: NumericAxis(
+                        numberFormat: NumberFormat.compact(),
+                        isVisible: true,
                       ),
                       series: <ChartSeries>[
                         StackedBarSeries<SalesStats, int>(

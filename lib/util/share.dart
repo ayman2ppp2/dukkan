@@ -61,6 +61,7 @@ class _ShareState extends State<Share> {
                   onPressed: () async {
                     MobileScannerController con = MobileScannerController();
                     var ip;
+                    // li.client('ip');
                     showGeneralDialog(
                       context: context,
                       pageBuilder: (context, animation, secondaryAnimation) =>
@@ -85,9 +86,6 @@ class _ShareState extends State<Share> {
                         ),
                       ),
                     );
-
-                    print(ip);
-                    // Provider.of<Lists>(context, listen: false).client('ip');
                   },
                   icon: const Icon(Icons.call_received_rounded),
                 ),

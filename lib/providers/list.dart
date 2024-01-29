@@ -154,7 +154,13 @@ class Lists extends ChangeNotifier {
 
   Future<double> getProfitOfTheMonth() {
     Map map = Map();
-    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
+    map['1'] = logsList
+        .map((e) => BcLog.fromLog(e))
+        .toList()
+        .takeWhile((value) =>
+            value.date.month == DateTime.now().month &&
+            value.date.year == DateTime.now().year)
+        .toList();
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getProfitOfTheMonth(map: map));
   }
@@ -162,14 +168,27 @@ class Lists extends ChangeNotifier {
   Future<double> getSalesOfTheMonth() {
     // db.closeAll();
     Map map = Map();
-    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
+    map['1'] = logsList
+        .map((e) => BcLog.fromLog(e))
+        .toList()
+        .takeWhile((value) =>
+            value.date.month == DateTime.now().month &&
+            value.date.year == DateTime.now().year)
+        .toList();
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getSalesOfTheMonth(map: map));
   }
 
   Future<double> getDailySales(DateTime time) {
     Map map = Map();
-    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
+    map['1'] = logsList
+        .map((e) => BcLog.fromLog(e))
+        .toList()
+        .takeWhile((value) =>
+            value.date.day == DateTime.now().day &&
+            value.date.month == DateTime.now().month &&
+            value.date.year == DateTime.now().year)
+        .toList();
     map['2'] = time;
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getDailySales(map: map));
@@ -177,7 +196,14 @@ class Lists extends ChangeNotifier {
 
   Future<double> getDailyProfits(DateTime time) {
     Map map = Map();
-    map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
+    map['1'] = logsList
+        .map((e) => BcLog.fromLog(e))
+        .toList()
+        .takeWhile((value) =>
+            value.date.day == DateTime.now().day &&
+            value.date.month == DateTime.now().month &&
+            value.date.year == DateTime.now().year)
+        .toList();
     map['2'] = time;
     // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
     return pool.scheduleJob(_getDailyProfit(map: map));
@@ -229,7 +255,13 @@ class Lists extends ChangeNotifier {
   }
 
   Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) async {
-    List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
+    List<BcLog> logs = logsList
+        .map((e) => BcLog.fromLog(e))
+        .toList()
+        .takeWhile((value) =>
+            value.date.month == DateTime.now().month &&
+            value.date.year == DateTime.now().year)
+        .toList();
     Map map = Map();
     map['1'] = logs;
     map['2'] = month;
@@ -238,7 +270,13 @@ class Lists extends ChangeNotifier {
   }
 
   Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) async {
-    List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
+    List<BcLog> logs = logsList
+        .map((e) => BcLog.fromLog(e))
+        .toList()
+        .takeWhile((value) =>
+            value.date.month == DateTime.now().month &&
+            value.date.year == DateTime.now().year)
+        .toList();
     Map map = Map();
     map['1'] = month;
     map['2'] = logs;
@@ -331,7 +369,7 @@ class Lists extends ChangeNotifier {
 
       for (var fileName in fileNames) {
         var request = await client.getUrl(
-          Uri.parse('http://$ip/$fileName'),
+          Uri.parse('http://192.168.8.102:30000/$fileName'),
         );
         var response = await request.close();
         if (fileName != 'shutdown') {

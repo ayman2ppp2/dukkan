@@ -83,6 +83,28 @@ class _SearchPageState extends State<SearchPage> {
                                         ip = barcode.rawValue;
                                         debugPrint(
                                             'Barcode found! ${barcode.rawValue}');
+                                        if (li.searchTemp.isNotEmpty) {
+                                          product = li.searchTemp[0];
+                                          li.sellList.add(Product(
+                                            barcode: product.barcode,
+                                            name: product.name,
+                                            buyprice: product.buyprice,
+                                            sellprice: product.sellprice,
+                                            count: 1,
+                                            ownerName: product.ownerName,
+                                            weightable: product.weightable,
+                                            wholeUnit: product.wholeUnit,
+                                            offer: product.offer,
+                                            offerCount: product.offerCount,
+                                            offerPrice: product.offerPrice,
+                                            priceHistory: product.priceHistory,
+                                            endDate: product.endDate,
+                                            hot: product.hot,
+                                          ));
+                                          Navigator.pop(context);
+                                          li.searchTemp.clear();
+                                          li.refresh();
+                                        }
                                       }
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(

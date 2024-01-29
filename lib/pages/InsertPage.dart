@@ -152,34 +152,36 @@ class _InPageState extends State<InPage> {
                                     MobileScannerController con =
                                         MobileScannerController();
                                     showGeneralDialog(
-                                      useRootNavigator: false,
+                                      // useRootNavigator: false,
                                       context: context,
                                       pageBuilder: (context, animation,
                                           secondaryAnimation) {
-                                        return MobileScanner(
-                                          fit: BoxFit.contain,
-                                          controller: con,
-                                          onDetect: (capture) async {
-                                            final List<Barcode> barcodes =
-                                                capture.barcodes;
-                                            // final Uint8List? image = capture.image;
-                                            for (final barcode in barcodes) {
-                                              // ip = barcode.rawValue;
-                                              await SystemSound.play(
-                                                  SystemSoundType.click);
-                                              widget.BarcodeCon.text =
-                                                  barcode.rawValue!;
-                                              debugPrint(
-                                                  'Barcode found! ${barcode.rawValue}');
-                                            }
-                                            // ScaffoldMessenger.of(context)
-                                            //     .showSnackBar(SnackBar(content: Text(ip)));
-                                            // li.client(ip);
-                                            Navigator.pop(context);
-                                            Navigator.pop(context);
-                                            // con.stop();
-                                            // con.dispose();
-                                          },
+                                        return Material(
+                                          child: MobileScanner(
+                                            fit: BoxFit.contain,
+                                            controller: con,
+                                            onDetect: (capture) async {
+                                              final List<Barcode> barcodes =
+                                                  capture.barcodes;
+                                              // final Uint8List? image = capture.image;
+                                              for (final barcode in barcodes) {
+                                                // ip = barcode.rawValue;
+                                                // await SystemSound.play(
+                                                //     SystemSoundType.click);
+                                                widget.BarcodeCon.text =
+                                                    barcode.rawValue!;
+                                                debugPrint(
+                                                    'Barcode found! ${barcode.rawValue}');
+                                              }
+                                              // ScaffoldMessenger.of(context)
+                                              //     .showSnackBar(SnackBar(content: Text(ip)));
+                                              // li.client(ip);
+                                              Navigator.pop(context);
+                                              // Navigator.pop(context);
+                                              // con.stop();
+                                              // con.dispose();
+                                            },
+                                          ),
                                         );
                                       },
                                     );
