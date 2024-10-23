@@ -16,15 +16,30 @@ class LoanerAdapter extends TypeAdapter<Loaner> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Loaner(
+    return Loaner.named(
       name: fields[0] as String,
-      ID: fields[1] as String,
+      ID: fastHash(fields[1] as String),
       phoneNumber: fields[2] as String,
       location: fields[3] as String,
-      lastPayment: fields[4] as double,
+      lastPaymentTemp: fields[4] as double,
       lastPaymentDate: fields[6] as DateTime,
       loanedAmount: fields[5] as double,
     );
+  }
+
+  int fastHash(String string) {
+    var hash = 0xcbf29ce484222325;
+
+    var i = 0;
+    while (i < string.length) {
+      final codeUnit = string.codeUnitAt(i++);
+      hash ^= codeUnit >> 8;
+      hash *= 0x100000001b3;
+      hash ^= codeUnit & 0xFF;
+      hash *= 0x100000001b3;
+    }
+
+    return hash;
   }
 
   @override

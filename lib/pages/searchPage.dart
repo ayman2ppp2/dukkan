@@ -1,6 +1,7 @@
 // import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/util/scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
@@ -19,11 +20,13 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+  TextEditingController controller = TextEditingController();
   late Product product;
   @override
   Widget build(BuildContext context) {
     return Consumer<SalesProvider>(
       builder: (context, li, child) {
+        li.initializeStream();
         return Material(
           borderRadius: BorderRadius.circular(12),
           child: Container(
@@ -48,6 +51,7 @@ class _SearchPageState extends State<SearchPage> {
                         Expanded(
                           flex: 6,
                           child: TextField(
+                            controller: controller,
                             autofocus: true,
                             textDirection: TextDirection.rtl,
                             decoration: const InputDecoration(
@@ -56,65 +60,24 @@ class _SearchPageState extends State<SearchPage> {
                             onChanged: (value) {
                               // Future.delayed(Duration(milliseconds: 200))
                               //     .then((gg) => li.search(value, true));
-                              li.search(value, true, false);
+                              li
+                                  .search(controller.text, true, false)
+                                  .then((value) {
+                                setState(() {});
+                              });
                             },
                           ),
                         ),
                         Expanded(
                           child: IconButton(
                             onPressed: () {
-                              MobileScannerController con =
-                                  MobileScannerController();
-                              var ip;
                               showGeneralDialog(
                                 context: context,
                                 pageBuilder:
                                     (context, animation, secondaryAnimation) =>
-                                        Material(
-                                  child: MobileScanner(
-                                    fit: BoxFit.contain,
-                                    controller: con,
-                                    onDetect: (capture) {
-                                      final List<Barcode> barcodes =
-                                          capture.barcodes;
-                                      for (final barcode in barcodes) {
-                                        li.search(
-                                            barcode.rawValue!, true, true);
-                                        ip = barcode.rawValue;
-                                        debugPrint(
-                                            'Barcode found! ${barcode.rawValue}');
-                                        if (li.searchTemp.isNotEmpty) {
-                                          product = li.searchTemp[0];
-                                          li.sellList.add(Product(
-                                            barcode: product.barcode,
-                                            name: product.name,
-                                            buyprice: product.buyprice,
-                                            sellprice: product.sellprice,
-                                            count: 1,
-                                            ownerName: product.ownerName,
-                                            weightable: product.weightable,
-                                            wholeUnit: product.wholeUnit,
-                                            offer: product.offer,
-                                            offerCount: product.offerCount,
-                                            offerPrice: product.offerPrice,
-                                            priceHistory: product.priceHistory,
-                                            endDate: product.endDate,
-                                            hot: product.hot,
-                                          ));
-                                          Navigator.pop(context);
-                                          li.searchTemp.clear();
-                                          li.refresh();
-                                        }
-                                      }
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                              SnackBar(content: Text(ip)));
-                                      // li.client(ip);
-                                      Navigator.pop(context);
-                                      con.stop();
-                                      con.dispose();
-                                    },
-                                  ),
+                                        ChangeNotifierProvider.value(
+                                  value: li,
+                                  child: Scanner(),
                                 ),
                               );
                             },
@@ -126,56 +89,102 @@ class _SearchPageState extends State<SearchPage> {
                   ),
                 ),
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: li.searchTemp.isEmpty
-                        ? li.productsList.length
-                        : li.searchTemp.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        enabled: li.searchTemp.isEmpty
-                            ? li.isProductOutOFStock(
-                                li.productsList[index].name)
-                            : li.isProductOutOFStock(li.searchTemp[index].name),
-                        title: Text(
-                          li.searchTemp.isEmpty
-                              ? li.productsList[index].name
-                              : li.searchTemp[index].name,
+                    child: FutureBuilder(
+                  future: li.search(controller.text, true, false),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    }
+                    if (!snapshot.hasData) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    // for (var product in snapshot.data!) {
+                    //   print(product.toJson());
+                    // }
+                    List<Product> products = snapshot.data!;
+
+                    for (var element in products) {
+                      print(element.toJson());
+                    }
+
+                    // Implement the sorting logic here
+                    products.sort((a, b) {
+                      if (a.count == 0 && b.count != 0) {
+                        return 1; // a should come after b
+                      } else if (a.count != 0 && b.count == 0) {
+                        return -1; // a should come before b
+                      } else {
+                        return 0; // if both have stock or both are out of stock, leave them in the same order
+                      }
+                    });
+
+                    // Check if products are empty and sales is true
+                    if (products.isEmpty) {
+                      products.add(
+                        Product.named(
+                          name: controller.text,
+                          ownerName: '',
+                          barcode: 'barcode',
+                          buyprice: 1,
+                          sellPrice: 1,
+                          count: 0,
+                          weightable: false,
+                          wholeUnit: 'wholeUnit',
+                          offer: false,
+                          offerCount: 0,
+                          offerPrice: 0,
+                          priceHistory: [],
+                          endDate: DateTime.now(),
+                          hot: true,
                         ),
-                        trailing: Text(
-                          li.searchTemp.isEmpty
-                              ? li.productsList[index].sellprice
-                                  .toStringAsFixed(2)
-                              : li.searchTemp[index].sellprice
-                                  .toStringAsFixed(2),
-                        ),
-                        onTap: () {
-                          li.searchTemp.isEmpty
-                              ? product = li.productsList[index]
-                              : product = li.searchTemp[index];
-                          li.sellList.add(Product(
-                            barcode: product.barcode,
-                            name: product.name,
-                            buyprice: product.buyprice,
-                            sellprice: product.sellprice,
-                            count: 1,
-                            ownerName: product.ownerName,
-                            weightable: product.weightable,
-                            wholeUnit: product.wholeUnit,
-                            offer: product.offer,
-                            offerCount: product.offerCount,
-                            offerPrice: product.offerPrice,
-                            priceHistory: product.priceHistory,
-                            endDate: product.endDate,
-                            hot: product.hot,
-                          ));
-                          Navigator.pop(context);
-                          li.searchTemp.clear();
-                          li.refresh();
-                        },
                       );
-                    },
-                  ),
-                )
+                    }
+
+                    // Now display the products, which includes the hot product if applicable
+                    return ListView.builder(
+                      itemCount: products.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          color: li.isProductOutOfDate(products[index].name!)
+                              ? Colors.red[100]
+                              : Colors.transparent,
+                          child: ListTile(
+                            enabled:
+                                li.isProductOutOFStock(products[index].name!),
+                            title: Text(products[index].name!),
+                            trailing: Text(
+                                products[index].sellPrice!.toStringAsFixed(2)),
+                            onTap: () {
+                              li.searchTemp.isEmpty
+                                  ? product = products[index]
+                                  : product = products[index];
+                              li.sellList.add(Product.named2(
+                                id: product.id,
+                                barcode: product.barcode,
+                                name: product.name,
+                                buyprice: product.buyprice,
+                                sellPrice: product.sellPrice,
+                                count: 1,
+                                ownerName: product.ownerName,
+                                weightable: product.weightable,
+                                wholeUnit: product.wholeUnit,
+                                offer: product.offer,
+                                offerCount: product.offerCount,
+                                offerPrice: product.offerPrice,
+                                priceHistory: product.priceHistory,
+                                endDate: product.endDate,
+                                hot: product.hot,
+                              ));
+                              Navigator.pop(context);
+                              li.searchTemp.clear();
+                              li.refresh();
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ))
               ],
             ),
           ),

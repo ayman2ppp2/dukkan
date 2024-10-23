@@ -1,8 +1,10 @@
 import 'package:dukkan/pages/InsertPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/addUser.dart';
+import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/util/myGridItem.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as ii;
 import 'package:provider/provider.dart';
 
@@ -16,10 +18,12 @@ class InvPage extends StatefulWidget {
 }
 
 class _InvPageState extends State<InvPage> {
+  TextEditingController controller = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Consumer<SalesProvider>(
       builder: (context, as, child) {
+        as.initializeStream();
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.brown,
@@ -55,12 +59,30 @@ class _InvPageState extends State<InvPage> {
                         fontWeight: FontWeight.bold),
                   ),
                   Consumer<Lists>(
-                    builder: (context, as, child) => Text(
-                      ' رأس المال : ${ii.NumberFormat.simpleCurrency().format(as.getTotalBuyPrice())}',
-                      style: TextStyle(
+                    builder: (context, as, child) => StreamBuilder(
+                      stream: as.getTotalBuyPrice(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Text(
+                              style: TextStyle(
+                                  color: Colors.brown[50],
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold),
+                              '${snapshot.error.toString()}');
+                        }
+                        if (snapshot.hasData) {
+                          return Text(
+                            ' رأس المال : ${ii.NumberFormat.simpleCurrency().format(snapshot.data!.fold(0.0, (previousValue, element) => previousValue + element.buyprice! * element.count!))}',
+                            style: TextStyle(
+                                color: Colors.brown[50],
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold),
+                          );
+                        }
+                        return SpinKitChasingDots(
                           color: Colors.brown[50],
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -81,40 +103,83 @@ class _InvPageState extends State<InvPage> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TextField(
-                      textDirection: TextDirection.rtl,
-                      decoration: const InputDecoration(hintText: 'إبحث'),
-                      onChanged: (value) => as.search(value, false, false),
-                    ),
+                        controller: controller,
+                        textDirection: TextDirection.rtl,
+                        decoration: const InputDecoration(hintText: 'إبحث'),
+                        onChanged: (value) {
+                          as.search(value, false, false).then((value) {
+                            setState(() {});
+                          });
+                        }),
                   ),
                 ),
               ),
               Expanded(
-                child: as.searchTemp.isNotEmpty
-                    ? GridView.builder(
-                        itemCount: as.searchTemp.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2),
-                        itemBuilder: (context, index) {
-                          return GridItem(
-                            name: as.searchTemp.elementAt(index).name,
-                          );
-                        },
-                      )
-                    : GridView.builder(
-                        itemCount: as.productsList.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2),
-                        itemBuilder: (context, index) {
-                          // Provider.of<Lists>(context).refreshListOfOwners();
-                          // debugPrint(Provider.of<Lists>(context).ownersList.toString());
-                          return GridItem(
-                            name: as.productsList.elementAt(index).name,
-                          );
-                        },
-                      ),
-              ),
+                  child: FutureBuilder(
+                future: as.search(controller.text, false, false),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  }
+                  if (!snapshot.hasData) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  List<Product> products = snapshot.data!;
+
+                  if (products.isEmpty) {
+                    return Center(child: Text('No Products found'));
+                  }
+                  // Implement the sorting logic here
+                  // products.sort((a, b) {
+                  //   if (a.count == 0 && b.count != 0) {
+                  //     return 1; // a should come after b
+                  //   } else if (a.count != 0 && b.count == 0) {
+                  //     return -1; // a should come before b
+                  //   } else {
+                  //     return 0; // if both have stock or both are out of stock, leave them in the same order
+                  //   }
+                  // });
+
+                  // Check if products are empty and sales is true
+                  // if (products.isEmpty) {
+                  //   if (sales) {
+                  //     products.add(
+                  //       Product.named(
+                  //         name: keyWord,
+                  //         ownerName: '',
+                  //         barcode: 'barcode',
+                  //         buyprice: 1,
+                  //         sellPrice: 1,
+                  //         count: 0,
+                  //         weightable: false,
+                  //         wholeUnit: 'wholeUnit',
+                  //         offer: false,
+                  //         offerCount: 0,
+                  //         offerPrice: 0,
+                  //         priceHistory: [],
+                  //         endDate: DateTime.now(),
+                  //         hot: true,
+                  //       ),
+                  //     );
+                  //   }
+                  // }
+
+                  // Now display the products, which includes the hot product if applicable
+                  return GridView.builder(
+                    itemCount: products.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                    ),
+                    itemBuilder: (context, index) {
+                      return GridItem(
+                        id: products[index].id,
+                      );
+                    },
+                  );
+                },
+              )),
             ],
           ),
           floatingActionButton: Consumer<Lists>(
@@ -134,9 +199,10 @@ class _InvPageState extends State<InvPage> {
                             left: 20,
                             right: 20,
                             top: 100,
-                            bottom: 220,
+                            bottom: 200,
                           ),
                           child: InPage(
+                            id: null,
                             buyPrice: 0,
                             count: 0,
                             name: '',
@@ -150,7 +216,7 @@ class _InvPageState extends State<InvPage> {
                             offerCount: 0,
                             offerPrice: 0,
                             endDate: DateTime.now(),
-                            priceHistory: {},
+                            priceHistory: [],
                           ),
                         ),
                       ),

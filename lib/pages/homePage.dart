@@ -1,16 +1,19 @@
 // import 'dart:io';
 
+import 'package:dukkan/pages/spendings.dart';
+import 'package:dukkan/providers/expenseProvider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/inventoryPage.dart';
+import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:dukkan/providers/salesProvider.dart';
-import 'package:dukkan/util/loans.dart';
-import 'package:dukkan/util/models/Owner.dart';
+import 'package:dukkan/pages/loans.dart';
 import 'package:dukkan/util/share.dart';
 import 'package:flutter/material.dart';
+import 'package:isar/isar.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 // import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:hive_ui/hive_ui.dart';
-import '../util/Logs.dart';
+import 'Logs.dart';
 import '../util/models/Product.dart';
 import 'SellPage.dart';
 import 'StatsPage.dart';
@@ -56,20 +59,73 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             actions: [
-              Consumer<Lists>(
+              Consumer<SalesProvider>(
                 builder: (context, li, child) => IconButton(
                   onPressed: () async {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => HiveBoxesView(
-                                  hiveBoxes: {
-                                    li.db.inventory: (json) => Product.fromJson,
-                                    li.db.owners: (json) => Owner.fromJson
-                                  },
-                                  onError: (String errorMessage) =>
-                                      {print(errorMessage)})),
+                    MobileScannerController con = MobileScannerController();
+                    var ip;
+                    showGeneralDialog(
+                      context: context,
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          Padding(
+                        padding: const EdgeInsets.fromLTRB(100, 20, 10, 420),
+                        child: Material(
+                          child: MobileScanner(
+                            fit: BoxFit.contain,
+                            controller: con,
+                            onDetect: (capture) {
+                              final List<Barcode> barcodes = capture.barcodes;
+                              for (final barcode in barcodes) {
+                                li.search(barcode.rawValue!, true, true);
+                                ip = barcode.rawValue;
+                                debugPrint(
+                                    'Barcode found! ${barcode.rawValue}');
+                                if (li.searchTemp.isNotEmpty) {
+                                  Product product = li.searchTemp[0];
+                                  li.sellList.add(Product.named(
+                                    // id: product.id,
+                                    barcode: product.barcode,
+                                    name: product.name,
+                                    buyprice: product.buyprice,
+                                    sellPrice: product.sellPrice,
+                                    count: 1,
+                                    ownerName: product.ownerName,
+                                    weightable: product.weightable,
+                                    wholeUnit: product.wholeUnit,
+                                    offer: product.offer,
+                                    offerCount: product.offerCount,
+                                    offerPrice: product.offerPrice,
+                                    priceHistory: product.priceHistory,
+                                    endDate: product.endDate,
+                                    hot: product.hot,
+                                  ));
+                                  // Navigator.pop(context);
+                                  li.searchTemp.clear();
+                                  li.refresh();
+                                }
+                              }
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(content: Text(ip)));
+                              // li.client(ip);
+                              // Navigator.pop(context);
+                              // con.stop();
+                              // con.dispose();
+                            },
+                          ),
+                        ),
+                      ),
                     );
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //       builder: (context) => HiveBoxesView(
+                    //               hiveBoxes: {
+                    //                 li.db.inventory: (json) => Product.fromJson,
+                    //                 li.db.owners: (json) => Owner.fromJson
+                    //               },
+                    //               onError: (String errorMessage) =>
+                    //                   {print(errorMessage)})),
+                    // );
                     // print(await Navigator.of(context).push(
                     //   MaterialPageRoute(
                     //     builder: (context) => AiBarcodeScanner(
@@ -174,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   );
                 },
-              )
+              ),
             ],
           ),
           body: Column(
@@ -214,8 +270,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+                // 0116219798
                 ListTile(
-                  leading: Icon(Icons.message),
+                  leading: Icon(Icons.receipt_long_rounded),
                   title: Text(
                     'الديون',
                     style: TextStyle(fontSize: 15),
@@ -223,14 +280,43 @@ class _HomePageState extends State<HomePage> {
                   onTap: () {
                     var li = Provider.of<Lists>(context, listen: false);
                     var as = Provider.of<SalesProvider>(context, listen: false);
+                    var exp =
+                        Provider.of<ExpenseProvider>(context, listen: false);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider.value(
+                          value: exp,
+                          child: ChangeNotifierProvider.value(
+                            value: li,
+                            child: ChangeNotifierProvider.value(
+                              value: as,
+                              child: Loans(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.manage_accounts_rounded),
+                  title: Text(
+                    'المنصرفات',
+                    style: TextStyle(fontSize: 15),
+                  ),
+                  onTap: () {
+                    var li = Provider.of<Lists>(context, listen: false);
+                    var exp =
+                        Provider.of<ExpenseProvider>(context, listen: false);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ChangeNotifierProvider.value(
                             value: li,
                             child: ChangeNotifierProvider.value(
-                              value: as,
-                              child: Loans(),
+                              value: exp,
+                              child: Spendings(),
                             ),
                           ),
                         ));
@@ -250,6 +336,34 @@ class _HomePageState extends State<HomePage> {
                   },
                   leading: Icon(Icons.restart_alt_rounded),
                   title: Text('تحويل'),
+                  enabled: false,
+                ),
+                ListTile(
+                  onTap: () async {
+                    var li = Provider.of<Lists>(context, listen: false);
+
+                    li.db.exportData().then((value) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text('export done')));
+                      li.db.importData().then((value) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('import done')));
+                      });
+                      Navigator.pop(context);
+                    });
+                    // await li.db.isar.writeTxn(() async {
+                    //   await li.db.isar.products.verify(await li.db.isar.products
+                    //       .where()
+                    //       .findAll()); // Rebuild indexes to ensure consistency
+                    // }).then((value) => ScaffoldMessenger.of(context)
+                    //     .showSnackBar(
+                    //         SnackBar(content: Text(value.toString()))));
+                    // // var temp = await li.signOut();
+                    // // await li.account.deleteSession(sessionId: temp.$id);
+                    // Navigator.pop(context);
+                  },
+                  leading: Icon(Icons.logout_rounded),
+                  title: Text('try rebuild logs'),
                   enabled: true,
                 ),
               ],

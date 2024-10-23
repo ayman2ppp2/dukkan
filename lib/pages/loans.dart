@@ -1,6 +1,8 @@
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loan.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:intl/intl.dart' as int;
 import 'package:provider/provider.dart';
 
 import '../providers/list.dart';
@@ -22,55 +24,88 @@ class _LoansState extends State<Loans> {
           children: [
             Center(child: Text('الديون')),
             Center(
-                child: Text(
-                    'الديون الكلية : ${Provider.of<SalesProvider>(context).getTotalLoans().ceil().toStringAsFixed(2)}')),
+              child: StreamBuilder(
+                stream: Provider.of<SalesProvider>(context, listen: false)
+                    .getLoanersStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Text(snapshot.error.toString());
+                  }
+                  if (snapshot.hasData) {
+                    return Text(
+                      textDirection: TextDirection.rtl,
+                      'الديون الكلية : ${int.NumberFormat.simpleCurrency().format(snapshot.data!.fold(0.0, (previousValue, element) => previousValue + element.loanedAmount!))}',
+                    );
+                  }
+                  return SpinKitChasingDots(
+                    color: Colors.brown[200],
+                  );
+                },
+              ),
+            )
           ],
         ),
       ),
       body: Column(
         children: [
-          Consumer<SalesProvider>(builder: (context, sa, child) {
-            // sa.refreshLoanersList();
-            return Expanded(
-              child: ListView.builder(
-                itemCount: sa.loanersList.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.brown[200],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                          title: Text(sa.loanersList[index].name),
-                          trailing: Text('المطلوب : ' +
-                              sa.loanersList[index].loanedAmount.toString()),
-                          onTap: () {
-                            var li = Provider.of<Lists>(context, listen: false);
+          // sa.refreshLoanersList();FutureBuilder(
+          StreamBuilder(
+            stream: Provider.of<SalesProvider>(context, listen: false)
+                .getLoanersStream(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Text('Error : ${snapshot.error}');
+              }
+              if (snapshot.hasData) {
+                return Expanded(
+                  child: ListView.builder(
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.brown[200],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                              title: Text(snapshot.data![index].name!),
+                              trailing: Text('المطلوب : ' +
+                                  snapshot.data![index].loanedAmount
+                                      .toString()),
+                              onTap: () {
+                                var sa = Provider.of<SalesProvider>(context,
+                                    listen: false);
+                                var li =
+                                    Provider.of<Lists>(context, listen: false);
 
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChangeNotifierProvider.value(
-                                  value: sa,
-                                  child: ChangeNotifierProvider.value(
-                                    value: li,
-                                    child: Loan(
-                                      index: index,
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ChangeNotifierProvider.value(
+                                      value: sa,
+                                      child: ChangeNotifierProvider.value(
+                                        value: li,
+                                        child: Loan(
+                                          loaner: snapshot.data![index],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                            );
-                          }),
-                    ),
-                  );
-                },
-              ),
-            );
-          }),
+                                );
+                              }),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+              return SpinKitChasingDots(
+                color: Colors.brown,
+              );
+            },
+          )
         ],
       ),
       floatingActionButton: FloatingActionButton(

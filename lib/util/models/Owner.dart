@@ -1,17 +1,20 @@
 import 'package:hive/hive.dart';
+import 'package:isar/isar.dart';
 part '../adapters/Owner.g.dart';
+part 'Owner.g.dart';
 
-@HiveType(typeId: 4)
+@collection
 class Owner {
-  @HiveField(0)
+  Id id = Isar.autoIncrement;
+  @Index(type: IndexType.value)
   late String ownerName;
-  @HiveField(1)
+
   late DateTime lastPaymentDate;
-  @HiveField(2)
+
   late double lastPayment;
-  @HiveField(3)
+
   late double totalPayed;
-  @HiveField(4)
+
   late double dueMoney;
   Owner({
     required this.ownerName,

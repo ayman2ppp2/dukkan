@@ -5,12 +5,10 @@ import 'package:intl/intl.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/list.dart';
-
 class MyListTile extends StatefulWidget {
-  late Product product;
-  int nmPicker = 1;
-  late int index;
+  late final Product product;
+  // int nmPicker = 1;
+  late final int index;
   MyListTile({super.key, required this.product, required this.index});
 
   @override
@@ -28,25 +26,25 @@ class _MyListTileState extends State<MyListTile> {
     return Consumer<SalesProvider>(
       builder: (context, li, child) {
         return ListTile(
-          leading: !widget.product.hot
-              ? (widget.product.offer &&
-                      widget.product.count % widget.product.offerCount == 0)
+          leading: !widget.product.hot!
+              ? (widget.product.offer! &&
+                      widget.product.count! % widget.product.offerCount! == 0)
                   ? Text(NumberFormat.simpleCurrency()
                       .format(widget.product.offerPrice))
                   : Text(NumberFormat.simpleCurrency()
-                      .format(widget.product.sellprice))
+                      .format(widget.product.sellPrice))
               : SizedBox(),
           title: Flex(
             mainAxisSize: MainAxisSize.min,
             direction: Axis.horizontal,
             children: [
               Center(
-                child: Text(widget.product.name),
+                child: Text(widget.product.name!),
               ),
             ],
           ),
-          trailing: !widget.product.hot
-              ? widget.product.weightable
+          trailing: !widget.product.hot!
+              ? widget.product.weightable!
                   ? Container(
                       constraints: BoxConstraints(
                           maxWidth: 140 % MediaQuery.of(context).size.width),
@@ -100,7 +98,7 @@ class _MyListTileState extends State<MyListTile> {
                                         li.kg.length,
                                         (index) => PopupMenuItem(
                                           enabled: li.getProductCount(
-                                                  widget.product.name) >=
+                                                  widget.product.name!) >=
                                               li.kg.values.elementAt(index),
                                           value: li.kg.values.elementAt(index),
                                           child: Text(
@@ -114,7 +112,7 @@ class _MyListTileState extends State<MyListTile> {
                                         li.kg.length,
                                         (index) => PopupMenuItem(
                                           enabled: li.getProductCount(
-                                                  widget.product.name) >=
+                                                  widget.product.name!) >=
                                               li.toumna.values.elementAt(index),
                                           value:
                                               li.toumna.values.elementAt(index),
@@ -128,7 +126,7 @@ class _MyListTileState extends State<MyListTile> {
                                         li.pound.length,
                                         (index) => PopupMenuItem(
                                           enabled: li.getProductCount(
-                                                  widget.product.name) >=
+                                                  widget.product.name!) >=
                                               li.pound.values.elementAt(index),
                                           value:
                                               li.pound.values.elementAt(index),
@@ -143,13 +141,16 @@ class _MyListTileState extends State<MyListTile> {
                               ),
                             ),
                           ),
-                          widget.product.weightable && !(weight == 'وزن')
+                          widget.product.weightable! && !(weight == 'وزن')
                               ? Expanded(
-                                  flex: 1,
+                                  flex: 2,
                                   child: Consumer<SalesProvider>(
                                     builder: (context, sa, child) => Center(
                                       child: PopupMenuButton(
+                                        constraints:
+                                            BoxConstraints(maxHeight: 300),
                                         child: Text(
+                                          maxLines: 1,
                                           '$_multiplyer',
                                           style: TextStyle(fontSize: 15),
                                         ),
@@ -223,8 +224,8 @@ class _MyListTileState extends State<MyListTile> {
                     )
                   : Consumer<SalesProvider>(
                       builder: (context, sa, child) => NumberPicker(
-                        value: widget.product.count,
-                        maxValue: li.getProductCount(widget.product.name),
+                        value: widget.product.count!,
+                        maxValue: li.getProductCount(widget.product.name!),
                         minValue: 1,
                         onChanged: (int value) {
                           sa.updateSellListCount(
@@ -237,8 +238,8 @@ class _MyListTileState extends State<MyListTile> {
                       ),
                     )
               : SizedBox(),
-          subtitle: !widget.product.hot
-              ? widget.product.weightable && weight == 'وزن'
+          subtitle: !widget.product.hot!
+              ? widget.product.weightable! && weight == 'وزن'
                   ? Consumer<SalesProvider>(
                       builder: (context, sa, child) => TextFormField(
                         autofocus: true,
@@ -249,7 +250,7 @@ class _MyListTileState extends State<MyListTile> {
                         onChanged: (value) {
                           if (value.isNotEmpty) {
                             gg = ((((((double.tryParse(value) ?? 0) ~/
-                                            (widget.product.sellprice))) /
+                                            (widget.product.sellPrice!))) /
                                         5)
                                     .ceil()) *
                                 5);
@@ -257,16 +258,17 @@ class _MyListTileState extends State<MyListTile> {
                                 index: widget.index, count: gg);
                           }
                           if ((double.tryParse(value) ?? 0) >=
-                              li.getProductCount(widget.product.name) *
-                                  widget.product.sellprice) {
+                              li.getProductCount(widget.product.name!) *
+                                  widget.product.sellPrice!) {
                             // setState(() {
                             con.text =
-                                (li.getProductCount(widget.product.name) *
-                                        widget.product.sellprice)
+                                (li.getProductCount(widget.product.name!) *
+                                        widget.product.sellPrice!)
                                     .toStringAsFixed(2);
                             sa.updateSellListCount(
                                 index: widget.index,
-                                count: li.getProductCount(widget.product.name));
+                                count:
+                                    li.getProductCount(widget.product.name!));
                             // });
                           }
                         },
@@ -277,18 +279,19 @@ class _MyListTileState extends State<MyListTile> {
                       mainAxisSize: MainAxisSize.min,
                       direction: Axis.horizontal,
                       children: [
-                        (widget.product.offer &&
-                                widget.product.count %
-                                        widget.product.offerCount ==
+                        (widget.product.offer! &&
+                                widget.product.count! %
+                                        widget.product.offerCount! ==
                                     0)
-                            ? Center(
+                            ? Expanded(
+                                flex: 0,
                                 child: Text(
-                                    "total : ${NumberFormat.simpleCurrency().format((widget.product.count * widget.product.offerPrice))}"),
+                                    "total : ${NumberFormat.simpleCurrency().format((widget.product.count! * widget.product.offerPrice!))}"))
+                            : Expanded(
+                                flex: 0,
+                                child: Text(
+                                    "total : ${NumberFormat.simpleCurrency().format((widget.product.count! * widget.product.sellPrice!))}"),
                               )
-                            : Center(
-                                child: Text(
-                                    "total : ${NumberFormat.simpleCurrency().format((widget.product.count * widget.product.sellprice))}"),
-                              ),
                       ],
                     )
               : Consumer<SalesProvider>(
@@ -300,7 +303,7 @@ class _MyListTileState extends State<MyListTile> {
                     onChanged: (value) {
                       if (value.isNotEmpty) {
                         gg = (((double.tryParse(value) ?? 0) ~/
-                                (widget.product.sellprice)))
+                                (widget.product.sellPrice!)))
                             .toInt();
                         sa.updateSellListCount(index: widget.index, count: gg);
                       }

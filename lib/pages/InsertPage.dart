@@ -1,12 +1,14 @@
 import 'package:dukkan/providers/salesProvider.dart';
+import 'package:dukkan/util/models/Emap.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/list.dart';
 import '../util/models/Product.dart';
 
+// ignore: must_be_immutable
 class InPage extends StatefulWidget {
   String name;
   String barcode;
@@ -18,7 +20,7 @@ class InPage extends StatefulWidget {
   int index;
   double offerCount;
   double offerPrice;
-  Map<DateTime, double> priceHistory;
+  List<Emap> priceHistory = List.empty(growable: true);
   DateTime endDate;
   TextEditingController nameCon = TextEditingController();
   TextEditingController buyCon = TextEditingController();
@@ -32,8 +34,10 @@ class InPage extends StatefulWidget {
   // TextEditingController endDateCon = TextEditingController();
   bool weightable = false;
   bool offer = false;
+  int? id;
   InPage({
     super.key,
+    required this.id,
     required this.buyPrice,
     required this.count,
     required this.name,
@@ -97,7 +101,7 @@ class _InPageState extends State<InPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextFormField(
-                    enabled: widget.index == -1 ? true : false,
+                    // enabled: widget.index == -1 ? true : false,
                     textDirection: TextDirection.rtl,
                     controller: widget.nameCon,
                     decoration: InputDecoration(
@@ -113,18 +117,39 @@ class _InPageState extends State<InPage> {
                   padding: const EdgeInsets.all(8.0),
                   child: Consumer<Lists>(builder: (context, li, child) {
                     li.refreshListOfOwners();
-                    return DropdownMenu(
-                      initialSelection: widget.ownerCon.text,
-                      dropdownMenuEntries: List.generate(
-                        Provider.of<Lists>(context).ownersList.length,
-                        (index) => DropdownMenuEntry(
-                          value: li.ownersList.elementAt(index).ownerName,
-                          label: li.ownersList.elementAt(index).ownerName,
-                        ),
-                      ),
-                      controller: widget.ownerCon,
-                      label: const Text('المالك'),
-                    );
+                    return FutureBuilder(
+                        future: li.refreshListOfOwners(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return Text(snapshot.error.toString());
+                          }
+                          if (snapshot.hasData) {
+                            var temp = snapshot.data!
+                                .map((e) => DropdownMenuEntry(
+                                    value: e.ownerName, label: e.ownerName))
+                                .toList();
+                            return DropdownMenu(
+                              onSelected: (value) {
+                                widget.ownerCon.text = value!;
+                              },
+                              initialSelection: widget.ownerCon.text,
+                              controller: widget.ownerCon,
+                              dropdownMenuEntries: temp,
+                              label: Text(
+                                'المالك',
+                                //
+                              ),
+                              width: 114,
+                              menuHeight: 300,
+                              menuStyle: MenuStyle(
+                                  visualDensity: VisualDensity.compact),
+                            );
+                          }
+                          return SpinKitChasingDots(
+                            color: Colors.white,
+                            size: 50,
+                          );
+                        });
                   }),
                 ),
                 // barcode
@@ -341,14 +366,14 @@ class _InPageState extends State<InPage> {
                             widget.buyCon.text.isNotEmpty &
                             widget.sellCon.text.isNotEmpty &
                             widget.countCon.text.isNotEmpty) {
-                          widget.priceHistory[DateTime.now()] =
-                              double.parse(widget.buyCon.text);
+                          // widget.priceHistory[DateTime.now()] =
+                          //     double.parse(widget.buyCon.text);
                           List<Product> temp = [];
-                          Product temp2 = Product(
+                          Product temp2 = Product.named(
                             name: widget.nameCon.text,
                             barcode: widget.BarcodeCon.text,
                             buyprice: double.parse(widget.buyCon.text),
-                            sellprice: double.parse(widget.sellCon.text),
+                            sellPrice: double.parse(widget.sellCon.text),
                             count: int.parse(widget.countCon.text),
                             ownerName: widget.ownerCon.text,
                             weightable: widget.weightable,
@@ -358,7 +383,7 @@ class _InPageState extends State<InPage> {
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
                             offerPrice:
                                 double.tryParse(widget.offerPriceCon.text) ?? 0,
-                            priceHistory: widget.priceHistory,
+                            priceHistory: [],
                             endDate: widget.endDate,
                             hot: false,
                           );
@@ -366,6 +391,7 @@ class _InPageState extends State<InPage> {
                           Navigator.pop(context);
                           li.db.insertProducts(products: temp);
                           sa.refreshProductsList();
+                          // sa.refresh();
                         } else {
                           showDialog(
                             context: context,
@@ -388,14 +414,20 @@ class _InPageState extends State<InPage> {
                             widget.buyCon.text.isNotEmpty &
                             widget.sellCon.text.isNotEmpty &
                             widget.countCon.text.isNotEmpty) {
-                          widget.priceHistory[DateTime.now()] =
-                              double.parse(widget.buyCon.text);
-                          print(widget.priceHistory);
-                          Product temp2 = Product(
+                          // widget.priceHistory[DateTime.now()] =
+                          //     double.parse(widget.buyCon.text);
+                          // print(widget.priceHistory);
+                          Emap emap = Emap()
+                            ..buyPrice = widget.buyPrice
+                            ..sellPrice = widget.offerPrice
+                            ..date = DateTime.now();
+                          widget.priceHistory.add(emap);
+                          Product temp2 = Product.named2(
+                            id: widget.id!,
                             name: widget.nameCon.text,
                             barcode: widget.BarcodeCon.text,
                             buyprice: double.parse(widget.buyCon.text),
-                            sellprice: double.parse(widget.sellCon.text),
+                            sellPrice: double.parse(widget.sellCon.text),
                             count: int.parse(widget.countCon.text),
                             ownerName: widget.ownerCon.text,
                             weightable: widget.weightable,

@@ -6,6 +6,11 @@ class ProdStats {
 }
 
 class SalesStats {
+  @override
+  String toString() {
+    return '$date:$sales';
+  }
+
   final DateTime date;
   final double sales;
   SalesStats({required this.date, required this.sales});

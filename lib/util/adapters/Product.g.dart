@@ -16,12 +16,12 @@ class ProductAdapter extends TypeAdapter<Product> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Product(
+    return Product.named(
       name: fields[0] == null ? '' : fields[0] as String,
       ownerName: fields[1] == null ? '' : fields[1] as String,
       barcode: fields[4] == null ? '' : fields[4] as String,
       buyprice: fields[2] == null ? 0 : fields[2] as double,
-      sellprice: fields[3] == null ? 0 : fields[3] as double,
+      sellPrice: fields[3] == null ? 0 : fields[3] as double,
       count: fields[5] == null ? 0 : fields[5] as int,
       weightable: fields[6] == null ? false : fields[6] as bool,
       wholeUnit: fields[7] == null ? '' : fields[7] as String,
@@ -29,8 +29,14 @@ class ProductAdapter extends TypeAdapter<Product> {
       offerCount: fields[9] == null ? 0 : fields[9] as double,
       offerPrice: fields[10] == null ? 0 : fields[10] as double,
       priceHistory: fields[11] == null
-          ? {}
-          : (fields[11] as Map).cast<DateTime, double>(),
+          ? []
+          : (fields[11] as Map)
+              .entries
+              .map((e) => Emap()
+                ..buyPrice = e.value
+                ..date = e.key
+                ..sellPrice = 0)
+              .toList(),
       endDate: fields[12] as DateTime,
       hot: fields[13] == null ? false : fields[13] as bool,
     );
@@ -47,7 +53,7 @@ class ProductAdapter extends TypeAdapter<Product> {
       ..writeByte(2)
       ..write(obj.buyprice)
       ..writeByte(3)
-      ..write(obj.sellprice)
+      ..write(obj.sellPrice)
       ..writeByte(4)
       ..write(obj.barcode)
       ..writeByte(5)

@@ -1,6 +1,8 @@
+import 'package:dukkan/providers/expenseProvider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/CheckOutPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
+// import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/myListItem.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/pages/searchPage.dart';
@@ -76,6 +78,20 @@ class _SellPageState extends State<SellPage> {
                   padding: const EdgeInsets.only(bottom: 20, top: 10),
                   child: IconButton.filled(
                     onPressed: () {
+                      // var LoID = '1e88c930-7a71-1e48-bab5-1de85dfff6fa';
+                      // print(sa.db.loaners.values.elementAt(2).ID);
+                      // sa.db.loaners.put(
+                      //     LoID,
+                      //     Loaner(
+                      //       name: sa.db.loaners.get(LoID).name,
+                      //       ID: sa.db.loaners.get(LoID).ID,
+                      //       phoneNumber: sa.db.loaners.get(LoID).phoneNumber,
+                      //       location: sa.db.loaners.get(LoID).location,
+                      //       lastPayment: sa.db.loaners.get(LoID).lastPayment,
+                      //       lastPaymentDate:
+                      //           sa.db.loaners.get(LoID).lastPaymentDate,
+                      //       loanedAmount: 5450,
+                      //     ));
                       sa.refreshProductsList();
                       showGeneralDialog(
                         barrierDismissible: true,
@@ -115,7 +131,7 @@ class _SellPageState extends State<SellPage> {
                     ),
                     child: Center(
                         child: Text(
-                            'total : ${NumberFormat.simpleCurrency().format((sa.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer && element.count % element.offerCount == 0) ? (element.offerPrice * element.count) : (element.sellprice * element.count)))))}')),
+                            'total : ${NumberFormat.simpleCurrency().format((sa.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer! && element.count! % element.offerCount! == 0) ? (element.offerPrice! * element.count!) : (element.sellPrice! * element.count!)))))}')),
                   ),
                 ),
                 // 2nd button
@@ -124,8 +140,10 @@ class _SellPageState extends State<SellPage> {
                   child: Consumer<Lists>(
                     builder: (context, li, child) => IconButton.filled(
                       onPressed: () {
+                        var exp = Provider.of<ExpenseProvider>(context,
+                            listen: false);
                         sa.refreshLoanersList();
-                        if (sa.productsList.isNotEmpty) {
+                        if (sa.sellList.isNotEmpty) {
                           showGeneralDialog(
                             context: context,
                             pageBuilder:
@@ -137,25 +155,28 @@ class _SellPageState extends State<SellPage> {
                                   top: 100,
                                 ),
                                 child: ChangeNotifierProvider.value(
-                                  value: sa,
+                                  value: exp,
                                   child: ChangeNotifierProvider.value(
-                                    value: li,
-                                    child: CheckOut(
-                                      lst: sa.sellList,
-                                      total: (sa.sellList.fold(
-                                        00.0,
-                                        (previousValue, element) =>
-                                            previousValue +
-                                            ((element.offer &&
-                                                    element.count %
-                                                            element
-                                                                .offerCount ==
-                                                        0)
-                                                ? (element.offerPrice *
-                                                    element.count)
-                                                : (element.sellprice *
-                                                    element.count)),
-                                      )),
+                                    value: sa,
+                                    child: ChangeNotifierProvider.value(
+                                      value: li,
+                                      child: CheckOut(
+                                        lst: sa.sellList,
+                                        total: (sa.sellList.fold(
+                                          00.0,
+                                          (previousValue, element) =>
+                                              previousValue +
+                                              ((element.offer! &&
+                                                      element.count! %
+                                                              element
+                                                                  .offerCount! ==
+                                                          0)
+                                                  ? (element.offerPrice! *
+                                                      element.count!)
+                                                  : (element.sellPrice! *
+                                                      element.count!)),
+                                        )),
+                                      ),
                                     ),
                                   ),
                                 ),

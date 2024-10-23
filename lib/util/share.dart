@@ -1,11 +1,8 @@
-import 'dart:io';
-import 'dart:typed_data';
-
+import 'package:dukkan/util/scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import '../providers/list.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 class Share extends StatefulWidget {
   const Share({super.key});
@@ -46,12 +43,6 @@ class _ShareState extends State<Share> {
             children: [
               IconButton(
                 onPressed: () async {
-                  // print(await NetworkInterface.list().then((value) => value
-                  //     .firstWhere((element) =>
-                  //         element.name.toLowerCase() == 'wi-fi' ||
-                  //         element.name.toLowerCase() == 'wlan0')
-                  //     .addresses[0]
-                  //     .address));
                   Provider.of<Lists>(context, listen: false).runServer();
                 },
                 icon: const Icon(Icons.send),
@@ -59,31 +50,14 @@ class _ShareState extends State<Share> {
               Consumer<Lists>(
                 builder: (context, li, child) => IconButton(
                   onPressed: () async {
-                    MobileScannerController con = MobileScannerController();
-                    var ip;
-                    // li.client('ip');
+                    // li.client('j');
+
                     showGeneralDialog(
                       context: context,
                       pageBuilder: (context, animation, secondaryAnimation) =>
-                          Material(
-                        child: MobileScanner(
-                          fit: BoxFit.contain,
-                          controller: con,
-                          onDetect: (capture) {
-                            final List<Barcode> barcodes = capture.barcodes;
-                            final Uint8List? image = capture.image;
-                            for (final barcode in barcodes) {
-                              ip = barcode.rawValue;
-                              debugPrint('Barcode found! ${barcode.rawValue}');
-                            }
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(SnackBar(content: Text(ip)));
-                            li.client(ip);
-                            Navigator.pop(context);
-                            con.stop();
-                            con.dispose();
-                          },
-                        ),
+                          ChangeNotifierProvider.value(
+                        value: li,
+                        child: Scanner2(),
                       ),
                     );
                   },

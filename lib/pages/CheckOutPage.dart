@@ -1,9 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:dukkan/providers/expenseProvider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
+import 'package:dukkan/util/loadingOverlay.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -18,8 +21,9 @@ class CheckOut extends StatefulWidget {
 }
 
 class _CheckOutState extends State<CheckOut> {
-  bool loan = false;
-  String loanerID = '';
+  int radio = 0;
+  int? loanerID;
+  int? expenseID;
   TextEditingController con = TextEditingController();
 
   String discount = '';
@@ -36,50 +40,179 @@ class _CheckOutState extends State<CheckOut> {
             color: Colors.white,
           ),
         ),
-        title: Row(
+        title: Flex(
+          direction: Axis.horizontal,
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            const Text(
-              'الفاتورة',
-              style: TextStyle(color: Colors.white, fontSize: 20),
+            Expanded(
+              flex: 0,
+              child: const Text(
+                'الفاتورة',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
             ),
             Consumer<SalesProvider>(
               builder: (context, sa, child) => Expanded(
+                flex: 5,
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    loan
-                        ? DropdownMenu(
-                            onSelected: (value) {
-                              loanerID = value ?? '';
-                            },
-                            dropdownMenuEntries: sa.loanersList
-                                .map((e) => DropdownMenuEntry(
-                                    value: e.ID, label: e.name))
-                                .toList(),
-                            label: Text(
-                              'الدائن',
-                              style: TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                            width: 114,
-                            menuStyle:
-                                MenuStyle(visualDensity: VisualDensity.compact),
+                    radio == 1
+                        ? Expanded(
+                            flex: 4,
+                            child: FutureBuilder(
+                                future: sa.refreshLoanersList(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasError) {
+                                    return Text(snapshot.error.toString());
+                                  }
+                                  if (snapshot.hasData) {
+                                    var temp = snapshot.data!
+                                        .map((e) => DropdownMenuEntry(
+                                            value: e.ID, label: e.name!))
+                                        .toList();
+                                    return DropdownMenu(
+                                      onSelected: (value) {
+                                        loanerID = value;
+                                      },
+                                      dropdownMenuEntries: temp,
+                                      label: Text(
+                                        'الدائن',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      width: 114,
+                                      menuHeight: 300,
+                                      menuStyle: MenuStyle(
+                                          visualDensity: VisualDensity.compact),
+                                    );
+                                  }
+                                  return SpinKitChasingDots(
+                                    color: Colors.white,
+                                    size: 50,
+                                  );
+                                }),
                           )
                         : SizedBox(),
-                    Text(
-                      'دين',
-                      style: TextStyle(
-                        color: Colors.white,
+                    radio == 2
+                        ? Consumer<ExpenseProvider>(
+                            builder: (context, exp, child) => Expanded(
+                              flex: 4,
+                              child: StreamBuilder(
+                                  stream:
+                                      exp.getIndvidualExpenses(fixed: false),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasError) {
+                                      return Text(snapshot.error.toString());
+                                    }
+                                    if (snapshot.hasData) {
+                                      var temp = snapshot.data!
+                                          .map((e) => DropdownMenuEntry(
+                                              value: e.ID, label: e.name!))
+                                          .toList();
+                                      return DropdownMenu(
+                                        onSelected: (value) {
+                                          expenseID = value;
+                                        },
+                                        dropdownMenuEntries: temp,
+                                        label: Text(
+                                          'المنصرف',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        // width: 114,
+                                        // menuHeight: 300,
+                                        menuStyle: MenuStyle(
+                                            visualDensity:
+                                                VisualDensity.compact),
+                                      );
+                                    }
+                                    return SpinKitChasingDots(
+                                      color: Colors.white,
+                                      size: 50,
+                                    );
+                                  }),
+                            ),
+                          )
+                        : SizedBox(),
+                    Expanded(
+                      flex: 0,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 0,
+                                child: Text(
+                                  'دين',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize:
+                                        17 % MediaQuery.of(context).size.width,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                  flex: 0,
+                                  child: Radio(
+                                    value: 1,
+                                    groupValue: radio,
+                                    onChanged: (value) => setState(() {
+                                      radio = value!;
+                                    }),
+                                  )
+                                  //  Checkbox(
+                                  //     value: loan,
+                                  //     onChanged: (boo) {
+                                  //       setState(() {
+                                  //         loan = !loan;
+                                  //       });
+                                  //     }),
+                                  ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                flex: 0,
+                                child: Text(
+                                  'منصرف',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize:
+                                        15 % MediaQuery.of(context).size.width,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                  flex: 0,
+                                  child: Radio(
+                                    value: 2,
+                                    groupValue: radio,
+                                    onChanged: (value) => setState(() {
+                                      radio = value!;
+                                    }),
+                                  )
+                                  //  Checkbox(
+                                  //     value: loan,
+                                  //     onChanged: (boo) {
+                                  //       setState(() {
+                                  //         loan = !loan;
+                                  //       });
+                                  //     }),
+                                  ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    Checkbox(
-                        value: loan,
-                        onChanged: (boo) {
-                          setState(() {
-                            loan = !loan;
-                          });
-                        }),
                   ],
                 ),
               ),
@@ -106,27 +239,27 @@ class _CheckOutState extends State<CheckOut> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: ListTile(
-                          leading: (widget.lst[index].offer &&
-                                  widget.lst[index].count %
-                                          widget.lst[index].offerCount ==
+                          leading: (widget.lst[index].offer! &&
+                                  widget.lst[index].count! %
+                                          widget.lst[index].offerCount! ==
                                       0)
                               ? Text(NumberFormat.simpleCurrency()
                                   .format(widget.lst[index].offerPrice))
                               : Text(NumberFormat.simpleCurrency()
-                                  .format(widget.lst[index].sellprice)),
-                          title: Text(widget.lst[index].name),
+                                  .format(widget.lst[index].sellPrice)),
+                          title: Text(widget.lst[index].name!),
                           trailing: Text(widget.lst[index].count.toString()),
                           subtitle: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              (widget.lst[index].offer &&
-                                      widget.lst[index].count %
-                                              widget.lst[index].offerCount ==
+                              (widget.lst[index].offer! &&
+                                      widget.lst[index].count! %
+                                              widget.lst[index].offerCount! ==
                                           0)
                                   ? Text(
-                                      "${NumberFormat.simpleCurrency().format((widget.lst[index].count * widget.lst[index].offerPrice))}")
+                                      "${NumberFormat.simpleCurrency().format((widget.lst[index].count! * widget.lst[index].offerPrice!))}")
                                   : Text(
-                                      "${NumberFormat.simpleCurrency().format((widget.lst[index].count * widget.lst[index].sellprice))}"),
+                                      "${NumberFormat.simpleCurrency().format((widget.lst[index].count! * widget.lst[index].sellPrice!))}"),
                             ],
                           ),
                         ),
@@ -184,7 +317,8 @@ class _CheckOutState extends State<CheckOut> {
                                     onChanged: (value) {
                                       var sum = 0.0;
                                       for (var element in widget.lst) {
-                                        sum += element.buyprice * element.count;
+                                        sum +=
+                                            element.buyprice! * element.count!;
                                       }
                                       if ((double.tryParse(value) ?? 0) >
                                           widget.total - sum) {
@@ -237,7 +371,7 @@ class _CheckOutState extends State<CheckOut> {
                           child: Consumer<SalesProvider>(
                             builder: (context, sa, child) => IconButton.filled(
                               onPressed: () async {
-                                !(loanerID.isEmpty && loan)
+                                !(loanerID == null && radio == 1)
                                     ? showDialog(
                                         context: context,
                                         builder: (context) {
@@ -251,24 +385,38 @@ class _CheckOutState extends State<CheckOut> {
                                               actions: [
                                                 TextButton(
                                                   onPressed: () async {
-                                                    Navigator.pop(context);
-                                                    Navigator.pop(context);
-                                                    await li.db.checkOut(
-                                                      lst: widget.lst,
-                                                      total: widget.total,
-                                                      discount: double.tryParse(
-                                                              discount) ??
-                                                          0,
-                                                      LoID: loanerID,
-                                                      loaned: loan,
-                                                      edit: li.editing,
-                                                      logID: li.logID,
+                                                    showGeneralDialog(
+                                                      context: context,
+                                                      pageBuilder: (context,
+                                                              animation,
+                                                              secondaryAnimation) =>
+                                                          LoadingOverlay(),
                                                     );
+                                                    await li.db
+                                                        .checkOut(
+                                                            lst: widget.lst,
+                                                            total: widget.total,
+                                                            discount:
+                                                                double.tryParse(
+                                                                        discount) ??
+                                                                    0,
+                                                            LoID: loanerID,
+                                                            loaned: radio == 1,
+                                                            edit: li.editing,
+                                                            logID: li.logID,
+                                                            expense: radio == 2,
+                                                            expenseId:
+                                                                expenseID)
+                                                        .then((value) =>
+                                                            li.editing = false);
                                                     await sa
                                                         .refreshProductsList();
                                                     await li.refresh();
                                                     li.refreshListOfOwners();
                                                     sa.defaultSellList();
+                                                    Navigator.pop(context);
+                                                    Navigator.pop(context);
+                                                    Navigator.pop(context);
                                                   },
                                                   child: const Text(
                                                     'نعم',
