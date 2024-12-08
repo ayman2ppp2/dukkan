@@ -191,8 +191,8 @@ class AuthAPI extends ChangeNotifier {
 
   Future<int> verifyUser({required String email}) async {
     int temp = Random().nextInt(9999);
-    String username = 'dukkansud@gmail.com';
-    String password = 'tfty ilep oxxt kuzb';
+    String username = '';
+    String password = '';
     final smtpServer = gmail(username, password);
     final message = Message()
       ..from = Address(username, 'Dukkan')
