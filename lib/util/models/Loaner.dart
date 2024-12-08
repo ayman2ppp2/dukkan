@@ -48,6 +48,8 @@ class Loaner {
 
   double? loanedAmount;
 
+  DateTime? zeroingDate;
+
   Loaner.fromMap({required Map map}) {
     name = map['name'];
     phoneNumber = map['phoneNumber'];
@@ -95,6 +97,7 @@ class Loaner {
 class EmbeddedMap {
   String? key;
   String? value;
+  double? remaining;
   EmbeddedMap();
   EmbeddedMap.named({required this.key, required this.value});
 }

@@ -42,6 +42,11 @@ const LoanerSchema = CollectionSchema(
       id: 4,
       name: r'phoneNumber',
       type: IsarType.string,
+    ),
+    r'zeroingDate': PropertySchema(
+      id: 5,
+      name: r'zeroingDate',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _loanerEstimateSize,
@@ -129,6 +134,7 @@ void _loanerSerialize(
   writer.writeString(offsets[2], object.location);
   writer.writeString(offsets[3], object.name);
   writer.writeString(offsets[4], object.phoneNumber);
+  writer.writeDateTime(offsets[5], object.zeroingDate);
 }
 
 Loaner _loanerDeserialize(
@@ -150,6 +156,7 @@ Loaner _loanerDeserialize(
     phoneNumber: reader.readStringOrNull(offsets[4]),
   );
   object.ID = id;
+  object.zeroingDate = reader.readDateTimeOrNull(offsets[5]);
   return object;
 }
 
@@ -175,6 +182,8 @@ P _loanerDeserializeProp<P>(
       return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
+    case 5:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1097,6 +1106,75 @@ extension LoanerQueryFilter on QueryBuilder<Loaner, Loaner, QFilterCondition> {
       ));
     });
   }
+
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> zeroingDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'zeroingDate',
+      ));
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> zeroingDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'zeroingDate',
+      ));
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> zeroingDateEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'zeroingDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> zeroingDateGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'zeroingDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> zeroingDateLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'zeroingDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> zeroingDateBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'zeroingDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension LoanerQueryObject on QueryBuilder<Loaner, Loaner, QFilterCondition> {
@@ -1156,6 +1234,18 @@ extension LoanerQuerySortBy on QueryBuilder<Loaner, Loaner, QSortBy> {
   QueryBuilder<Loaner, Loaner, QAfterSortBy> sortByPhoneNumberDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'phoneNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QAfterSortBy> sortByZeroingDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zeroingDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QAfterSortBy> sortByZeroingDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zeroingDate', Sort.desc);
     });
   }
 }
@@ -1220,6 +1310,18 @@ extension LoanerQuerySortThenBy on QueryBuilder<Loaner, Loaner, QSortThenBy> {
       return query.addSortBy(r'phoneNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<Loaner, Loaner, QAfterSortBy> thenByZeroingDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zeroingDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QAfterSortBy> thenByZeroingDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zeroingDate', Sort.desc);
+    });
+  }
 }
 
 extension LoanerQueryWhereDistinct on QueryBuilder<Loaner, Loaner, QDistinct> {
@@ -1247,6 +1349,12 @@ extension LoanerQueryWhereDistinct on QueryBuilder<Loaner, Loaner, QDistinct> {
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'phoneNumber', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Loaner, Loaner, QDistinct> distinctByZeroingDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'zeroingDate');
     });
   }
 }
@@ -1288,6 +1396,12 @@ extension LoanerQueryProperty on QueryBuilder<Loaner, Loaner, QQueryProperty> {
       return query.addPropertyName(r'phoneNumber');
     });
   }
+
+  QueryBuilder<Loaner, DateTime?, QQueryOperations> zeroingDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'zeroingDate');
+    });
+  }
 }
 
 // **************************************************************************
@@ -1306,8 +1420,13 @@ const EmbeddedMapSchema = Schema(
       name: r'key',
       type: IsarType.string,
     ),
-    r'value': PropertySchema(
+    r'remaining': PropertySchema(
       id: 1,
+      name: r'remaining',
+      type: IsarType.double,
+    ),
+    r'value': PropertySchema(
+      id: 2,
       name: r'value',
       type: IsarType.string,
     )
@@ -1346,7 +1465,8 @@ void _embeddedMapSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.key);
-  writer.writeString(offsets[1], object.value);
+  writer.writeDouble(offsets[1], object.remaining);
+  writer.writeString(offsets[2], object.value);
 }
 
 EmbeddedMap _embeddedMapDeserialize(
@@ -1357,7 +1477,8 @@ EmbeddedMap _embeddedMapDeserialize(
 ) {
   final object = EmbeddedMap();
   object.key = reader.readStringOrNull(offsets[0]);
-  object.value = reader.readStringOrNull(offsets[1]);
+  object.remaining = reader.readDoubleOrNull(offsets[1]);
+  object.value = reader.readStringOrNull(offsets[2]);
   return object;
 }
 
@@ -1371,6 +1492,8 @@ P _embeddedMapDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 2:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1522,6 +1645,90 @@ extension EmbeddedMapQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'key',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      remainingIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'remaining',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      remainingIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'remaining',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      remainingEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'remaining',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      remainingGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'remaining',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      remainingLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'remaining',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      remainingBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'remaining',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
       ));
     });
   }

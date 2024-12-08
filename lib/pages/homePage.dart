@@ -340,30 +340,15 @@ class _HomePageState extends State<HomePage> {
                 ),
                 ListTile(
                   onTap: () async {
-                    var li = Provider.of<Lists>(context, listen: false);
-
-                    li.db.exportData().then((value) {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(SnackBar(content: Text('export done')));
-                      li.db.importData().then((value) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('import done')));
-                      });
-                      Navigator.pop(context);
-                    });
-                    // await li.db.isar.writeTxn(() async {
-                    //   await li.db.isar.products.verify(await li.db.isar.products
-                    //       .where()
-                    //       .findAll()); // Rebuild indexes to ensure consistency
-                    // }).then((value) => ScaffoldMessenger.of(context)
-                    //     .showSnackBar(
-                    //         SnackBar(content: Text(value.toString()))));
-                    // // var temp = await li.signOut();
-                    // // await li.account.deleteSession(sessionId: temp.$id);
-                    // Navigator.pop(context);
+                    var li = Provider.of<AuthAPI>(context, listen: false);
+                    li.signOut();
+                    // li.db.importData().then((value) {
+                    //   ScaffoldMessenger.of(context)
+                    //       .showSnackBar(SnackBar(content: Text('import done')));
+                    // });
                   },
                   leading: Icon(Icons.logout_rounded),
-                  title: Text('try rebuild logs'),
+                  title: Text('تسجيل الخروج'),
                   enabled: true,
                 ),
               ],

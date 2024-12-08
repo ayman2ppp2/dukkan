@@ -14,16 +14,6 @@ class SalesProvider extends ChangeNotifier {
   late DB db;
   SalesProvider() {
     db = DB();
-    // initializeStream();
-  }
-  late Stream<List<Product>> _ResultsStream;
-  late Stream<List<Product>> _searchResultsStream;
-  late Stream<List<Product>> _fallbackStream;
-  Stream<List<Product>> get searchResultsStream => _searchResultsStream;
-
-  void initializeStream() {
-    _searchResultsStream =
-        db.isar.products.where().watch(fireImmediately: true);
   }
 
   List<Loaner> loanersList = [];
@@ -59,7 +49,8 @@ class SalesProvider extends ChangeNotifier {
     list.add(
       EmbeddedMap()
         ..key = DateTime.now().toIso8601String()
-        ..value = cash.toString(),
+        ..value = cash.toString()
+        ..remaining = temp.loanedAmount! - cash,
     );
     return db.insertLoaner(Loaner(
       name: temp.name,
@@ -93,15 +84,11 @@ class SalesProvider extends ChangeNotifier {
     return getProductCount(name) == 0 ? false : true;
   }
 
-  bool isProductOutOfDate(String name) {
+  bool isProductOutOfDate(DateTime endDate) {
     try {
-      final product =
-          productsList.firstWhere((element) => element.name == name);
-      return product.endDate!
-          .isBefore(DateTime.now()); // Check if the product is out of date
+      return endDate.isBefore(DateTime.now());
     } catch (e) {
-      // If no product is found, handle it (for example, return true or false, or throw an error)
-      return false; // Or handle it as needed
+      return false;
     }
   }
 
@@ -122,72 +109,26 @@ class SalesProvider extends ChangeNotifier {
     refreshProductsList();
   }
 
-  // searchTemp.clear();
-  // searchTemp.insert(
-  //     0,
-  //     productsList.firstWhere((element) => element.barcode == keyWord,
-  //         orElse: null));
   Future<List<Product>> search(String keyWord, bool sales, bool barcode) {
-    if (keyWord.isEmpty) {
-      return db.isar.products.where().findAll();
+    final searchTerm = keyWord.trim().toLowerCase();
+
+    if (searchTerm.isEmpty) {
+      return db.isar.products.where().sortByName().findAll();
     }
+
     if (barcode) {
       return db.isar.products.filter().barcodeEqualTo(keyWord).findAll();
     }
+
     return db.isar.products
         .filter()
-        .nameEqualTo(keyWord) // Exact match
+        .nameContains(searchTerm, caseSensitive: false)
         .or()
-        .nameStartsWith(keyWord) // Products starting with keyword
-        .or()
-        .nameContains(keyWord)
-        .sortByName()
-        .thenByCount()
-        .thenByOffer() // Partial match
-        // Sorting as described earlier
+        .barcodeContains(searchTerm, caseSensitive: false)
+        .sortByCountDesc()
+        .thenByName()
         .findAll();
   }
-
-  // for (var i = 0; i < productsList.length; i++) {
-  //   if (productsList[i].name!.startsWith(keyWord) ||
-  //       productsList[i].name!.contains(keyWord)) {
-  //     searchTemp.insert(0, productsList[i]);
-  //     searchTemp.sort((a, b) {
-  //       if (a.count == 0 && b.count != 0) {
-  //         return 1; // a should come after b
-  //       } else if (a.count != 0 && b.count == 0) {
-  //         return -1; // a should come before b
-  //       } else {
-  //         return 0; // if both have stock or both are out of stock, leave them in the same order
-  //       }
-  //     });
-  //     // searchTemp.
-  //     notifyListeners();
-  //   }
-  // }
-  // if (sales) {
-  //   if (searchTemp.isEmpty) {
-  //     searchTemp.add(
-  //       Product.named(
-  //         name: keyWord,
-  //         ownerName: '',
-  //         barcode: 'barcode',
-  //         buyprice: 1,
-  //         sellPrice: 1,
-  //         count: 0,
-  //         weightable: false,
-  //         wholeUnit: 'wholeUnit',
-  //         offer: false,
-  //         offerCount: 0,
-  //         offerPrice: 0,
-  //         priceHistory: [],
-  //         endDate: DateTime.now(),
-  //         hot: true,
-  //       ),
-  //     );
-  //     notifyListeners();
-  //   }
-  // }
 
   Future<void> addLoaner(
     String name,
@@ -239,6 +180,7 @@ class SalesProvider extends ChangeNotifier {
   }
 
   int getProductCount(String name) {
+    refreshProductsList();
     if (productsList.isNotEmpty) {
       Product temp = productsList.firstWhere(
         (element) => element.name == name,

@@ -4,7 +4,6 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/test.dart';
@@ -624,6 +623,63 @@ class DB {
         .limit(chunkSize)
         .findAll();
   }
+
+  Future<Map<String, dynamic>> getAccountStatementData(int loanerId) async {
+    final loaner = await isar.loaners.get(loanerId);
+    if (loaner == null) throw Exception('Loaner with ID $loanerId not found');
+
+    final loanReceipts = await isar.logs
+        .filter()
+        .loanerIDEqualTo(loanerId)
+        .and()
+        .loanedEqualTo(true)
+        .findAll();
+
+    List<Map<String, dynamic>> transactions = [];
+    double totalLoaned = 0.0;
+    double totalPaid = 0.0;
+
+    // Add loan receipts
+    for (var receipt in loanReceipts) {
+      double amount = receipt.products
+          .fold(0.0, (sum, p) => sum + (p.sellPrice ?? 0) * (p.count ?? 0));
+      totalLoaned += amount;
+      transactions.add({
+        'date': receipt.date,
+        'amount': amount,
+        'type': 'loan',
+        'description': '${receipt.products.length} items'
+      });
+    }
+
+    // Add payments
+    if (loaner.lastPayment != null) {
+      for (var payment in loaner.lastPayment!) {
+        double amount = double.tryParse(payment.value ?? '0') ?? 0;
+        totalPaid += amount;
+        transactions.add({
+          'date': DateTime.parse(payment.key!),
+          'amount': amount,
+          'type': 'payment',
+          'description': 'Payment'
+        });
+      }
+    }
+
+    // Sort by date
+    transactions.sort(
+        (a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
+
+    return {
+      'customerName': loaner.name ?? 'Unknown',
+      'phoneNumber': loaner.phoneNumber ?? 'Unknown',
+      'location': loaner.location ?? 'Unknown',
+      'totalLoaned': totalLoaned,
+      'totalPaidAmount': totalPaid,
+      'currentBalance': totalLoaned - totalPaid,
+      'transactionHistory': transactions,
+    };
+  }
 }
 
 class CgetSalesOfTheMonth extends PooledJob<double> {
@@ -692,7 +748,7 @@ class CgetProfitOfTheMonth extends PooledJob<double> {
         );
       } catch (e) {
         // print(e);
-        isar = Isar.getInstance('isarInstance')!;
+        isar = await Isar.getInstance('isarInstance')!;
       }
       List<Log> temp = await isar.logs.where().anyId().findAll();
       temp = temp
@@ -730,7 +786,7 @@ class CgetDailyProfit extends PooledJob<double> {
         );
       } catch (e) {
         // print(e);
-        isar = Isar.getInstance('isarInstance')!;
+        isar = await Isar.getInstance('isarInstance')!;
       }
       List<Log> temp = await isar.logs.where().anyId().findAll();
       double profit = 0;
@@ -1225,7 +1281,7 @@ class CgetMonthlySalesOfTheyear extends PooledJob<List<SalesStats>> {
       //     tt = log.date;
       //   }
       // }
-
+      // Set<SalesStats> temp = {};
       Map<String, double> monthlySales = {};
 
       for (var receipt in logs) {
@@ -1325,66 +1381,78 @@ class CgetMonthlyloans extends PooledJob<double> {
   Map map;
   CgetMonthlyloans({required this.map});
 
+  Future<double> _calculateTotalPayments(Isar isar, int year, int month) async {
+    try {
+      List<Loaner> loaners = await isar.loaners.where().findAll();
+
+      return loaners.fold<double>(0.0, (total, loaner) {
+        if (loaner.lastPayment == null) return total;
+
+        return total +
+            (loaner.lastPayment ?? []).where((value) {
+              if (value.key == null) return false;
+              try {
+                final paymentDate = DateTime.parse(value.key!);
+                return paymentDate.year == year && paymentDate.month == month;
+              } catch (e) {
+                debugPrint('Error parsing payment date: $e');
+                return false;
+              }
+            }).fold(
+                0.0,
+                (previousValue, element) =>
+                    double.parse(element.value ?? '0') + previousValue);
+      });
+    } catch (e) {
+      debugPrint('Error calculating total payments: $e');
+      return 0.0;
+    }
+  }
+
   @override
   Future<double> job() async {
     try {
       BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
       final dir = await getApplicationDocumentsDirectory();
-      Isar isar;
-      try {
-        isar = await Isar.open(
-          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-          directory: dir.path,
-          name: 'isarInstance',
-        );
-      } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
-      }
 
-      DateTime startOfMonth =
-          DateTime(DateTime.now().year, DateTime.now().month, 1);
-      DateTime endOfMonth =
-          DateTime(DateTime.now().year, DateTime.now().month + 1, 1)
-              .subtract(Duration(seconds: 1));
+      final isar = await Isar.getInstance('isarInstance') ??
+          await Isar.open(
+            [
+              LogSchema,
+              ProductSchema,
+              LoanerSchema,
+              OwnerSchema,
+              ExpenseSchema
+            ],
+            directory: dir.path,
+            name: 'isarInstance',
+          );
 
-      List<Log> receipts = await isar.logs
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final endOfMonth = DateTime(now.year, now.month + 1, 1)
+          .subtract(Duration(milliseconds: 1));
+
+      final receipts = await isar.logs
           .filter()
           .loanedEqualTo(true)
           .dateBetween(startOfMonth, endOfMonth)
           .findAll();
 
-      double totalUnpaidLoans = 0.0;
-      for (var receipt in receipts) {
-        totalUnpaidLoans += receipt.products.fold(
-                0.0,
-                (previousValue, element) =>
-                    (element.count ?? 0) * (element.sellPrice ?? 0)) -
-            (receipt.discount);
-      }
+      final totalUnpaidLoans = receipts.fold<double>(0.0, (total, receipt) {
+        final receiptTotal = receipt.products.fold<double>(
+            0.0,
+            (subtotal, product) =>
+                subtotal + ((product.count ?? 0) * (product.sellPrice ?? 0)));
+        return total + receiptTotal - (receipt.discount);
+      });
 
-      Future<double> calculateTotalPayments(int year, int month) async {
-        double totalPayments = 0.0;
-        List<Loaner> loaners = await isar.loaners.where().findAll();
+      final totalPayments =
+          await _calculateTotalPayments(isar, now.year, now.month);
 
-        for (var loaner in loaners) {
-          totalPayments += loaner.lastPayment!
-              .where((value) =>
-                  DateTime.parse(value.key!).year == year &&
-                  DateTime.parse(value.key!).month == month)
-              .fold(
-                  0.0,
-                  (previousValue, element) =>
-                      double.parse(element.value ?? '0') + previousValue);
-        }
-
-        return totalPayments;
-      }
-
-      return totalUnpaidLoans -
-          await calculateTotalPayments(
-              DateTime.now().year, DateTime.now().month);
+      return totalUnpaidLoans - totalPayments;
     } catch (e) {
-      debugPrint(e.toString() + ' here');
+      debugPrint('Error in CgetMonthlyloans.job: $e');
       return -1;
     }
   }
@@ -1446,40 +1514,44 @@ class CgetDailyloans extends PooledJob<double> {
     try {
       BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
       final dir = await getApplicationDocumentsDirectory();
-      Isar isar;
-      try {
-        isar = await Isar.open(
-          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-          directory: dir.path,
-          name: 'isarInstance',
-        );
-      } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
-      }
+      final isar = await Isar.getInstance('isarInstance') ??
+          await Isar.open(
+            [
+              LogSchema,
+              ProductSchema,
+              LoanerSchema,
+              OwnerSchema,
+              ExpenseSchema
+            ],
+            directory: dir.path,
+            name: 'isarInstance',
+          );
 
-      DateTime startOfDay = DateTime(
-          DateTime.now().year, DateTime.now().month, DateTime.now().day);
-      DateTime endOfDay = DateTime(DateTime.now().year, DateTime.now().month,
-          DateTime.now().day, 23, 59, 59, 999);
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay =
+          startOfDay.add(Duration(days: 1)).subtract(Duration(milliseconds: 1));
 
-      List<Log> receipts = await isar.logs
+      final receipts = await isar.logs
           .filter()
           .loanedEqualTo(true)
           .dateBetween(startOfDay, endOfDay)
           .findAll();
 
-      double totalUnpaidLoans = 0.0;
-      for (var receipt in receipts) {
-        totalUnpaidLoans += receipt.products.fold(
-                0.0,
-                (previousValue, element) =>
-                    (element.count ?? 0) * (element.sellPrice ?? 0)) -
-            (receipt.discount);
-      }
+      final totalUnpaidLoans = receipts.fold<double>(
+          0.0,
+          (total, receipt) =>
+              total +
+              receipt.products.fold<double>(
+                  0.0,
+                  (subtotal, product) =>
+                      subtotal +
+                      (product.count ?? 0) * (product.sellPrice ?? 0)) -
+              receipt.discount);
 
       return totalUnpaidLoans;
     } catch (e) {
-      debugPrint(e.toString() + ' here');
+      debugPrint('Error in CgetDailyloans.job: $e');
       return -1;
     }
   }

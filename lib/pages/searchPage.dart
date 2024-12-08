@@ -1,4 +1,6 @@
 // import 'package:dukkan/providers/list.dart';
+import 'dart:async';
+
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/util/scanner.dart';
@@ -21,175 +23,213 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   TextEditingController controller = TextEditingController();
-  late Product product;
+  Future<List<Product>>? productsList;
+  Timer? _debounce;
+  late SalesProvider li;
+
+  @override
+  void initState() {
+    li = Provider.of<SalesProvider>(context, listen: false);
+    super.initState();
+    productsList = li.search('', true, false);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    controller.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query, SalesProvider li) {
+    setState(() {
+      productsList = li.search(query.trim(), true, false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<SalesProvider>(
-      builder: (context, li, child) {
-        li.initializeStream();
-        return Material(
+    return Material(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.brown[200],
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Flex(
-                      direction: Axis.horizontal,
-                      children: [
-                        Expanded(
-                          flex: 6,
-                          child: TextField(
-                            controller: controller,
-                            autofocus: true,
-                            textDirection: TextDirection.rtl,
-                            decoration: const InputDecoration(
-                              hintText: 'ابحث',
-                            ),
-                            onChanged: (value) {
-                              // Future.delayed(Duration(milliseconds: 200))
-                              //     .then((gg) => li.search(value, true));
-                              li
-                                  .search(controller.text, true, false)
-                                  .then((value) {
-                                setState(() {});
-                              });
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: IconButton(
-                            onPressed: () {
-                              showGeneralDialog(
-                                context: context,
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        ChangeNotifierProvider.value(
-                                  value: li,
-                                  child: Scanner(),
-                                ),
-                              );
-                            },
-                            icon: Icon(Icons.qr_code_scanner),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.brown[200],
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
                 ),
-                Expanded(
-                    child: FutureBuilder(
-                  future: li.search(controller.text, true, false),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    }
-                    if (!snapshot.hasData) {
-                      return Center(child: CircularProgressIndicator());
-                    }
-                    // for (var product in snapshot.data!) {
-                    //   print(product.toJson());
-                    // }
-                    List<Product> products = snapshot.data!;
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Flex(
+                  direction: Axis.horizontal,
+                  children: [
+                    Expanded(
+                      flex: 6,
+                      child: TextField(
+                        controller: controller,
+                        autofocus: true,
+                        textDirection: TextDirection.rtl,
+                        decoration: const InputDecoration(
+                          hintText: 'ابحث',
+                        ),
+                        onChanged: (value) => _onSearchChanged(value,
+                            Provider.of<SalesProvider>(context, listen: false)),
+                      ),
+                    ),
+                    Expanded(
+                      child: IconButton(
+                        onPressed: () {
+                          showGeneralDialog(
+                            context: context,
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    ChangeNotifierProvider.value(
+                              value: li,
+                              child: Scanner(),
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.qr_code_scanner),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: FutureBuilder<List<Product>>(
+                key: ValueKey(controller.text),
+                future: productsList,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text('Error: ${snapshot.error}',
+                          style: TextStyle(color: Colors.red)),
+                    );
+                  }
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  // for (var product in snapshot.data!) {
+                  //   print(product.toJson());
+                  // }
+                  List<Product> products = snapshot.data!;
 
-                    for (var element in products) {
-                      print(element.toJson());
+                  // for (var element in products) {
+                  // print(element.toJson());
+                  // }
+
+                  // Implement the sorting logic here
+                  products.sort((a, b) {
+                    if (a.count == 0 && b.count != 0) {
+                      return 1; // a should come after b
+                    } else if (a.count != 0 && b.count == 0) {
+                      return -1; // a should come before b
+                    } else {
+                      return 0; // if both have stock or both are out of stock, leave them in the same order
                     }
+                  });
 
-                    // Implement the sorting logic here
-                    products.sort((a, b) {
-                      if (a.count == 0 && b.count != 0) {
-                        return 1; // a should come after b
-                      } else if (a.count != 0 && b.count == 0) {
-                        return -1; // a should come before b
-                      } else {
-                        return 0; // if both have stock or both are out of stock, leave them in the same order
-                      }
-                    });
+                  // Check if products are empty and sales is true
+                  if (products.isEmpty) {
+                    products.add(
+                      Product.named(
+                        name: controller.text,
+                        ownerName: '',
+                        barcode: 'barcode',
+                        buyprice: 1,
+                        sellPrice: 1,
+                        count: 0,
+                        weightable: false,
+                        wholeUnit: 'wholeUnit',
+                        offer: false,
+                        offerCount: 0,
+                        offerPrice: 0,
+                        priceHistory: [],
+                        endDate: DateTime.now(),
+                        hot: true,
+                      ),
+                    );
+                  }
 
-                    // Check if products are empty and sales is true
-                    if (products.isEmpty) {
-                      products.add(
-                        Product.named(
-                          name: controller.text,
-                          ownerName: '',
-                          barcode: 'barcode',
-                          buyprice: 1,
-                          sellPrice: 1,
-                          count: 0,
-                          weightable: false,
-                          wholeUnit: 'wholeUnit',
-                          offer: false,
-                          offerCount: 0,
-                          offerPrice: 0,
-                          priceHistory: [],
-                          endDate: DateTime.now(),
-                          hot: true,
+                  // Now display the products, which includes the hot product if applicable
+                  return ListView.builder(
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      var li =
+                          Provider.of<SalesProvider>(context, listen: false);
+                      return Container(
+                        color: li.isProductOutOfDate(products[index].endDate!)
+                            ? Colors.red[100]
+                            : Colors.transparent,
+                        child: ListTile(
+                          enabled:
+                              li.isProductOutOFStock(products[index].name!),
+                          title: Text(products[index].name!),
+                          trailing: Text(
+                              products[index].sellPrice!.toStringAsFixed(2)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'المخزون: ${products[index].count}',
+                                style: TextStyle(
+                                  color: products[index].count == 0
+                                      ? Colors.red
+                                      : Colors.green,
+                                ),
+                              ),
+                              if (products[index].offer!)
+                                Text(
+                                  'عرض: ${products[index].offerCount} بسعر ${(products[index].offerPrice! * products[index].offerCount!).toStringAsFixed(0)}',
+                                  style: TextStyle(color: Colors.blue),
+                                ),
+                            ],
+                          ),
+                          onTap: () {
+                            final selectedProduct = products[index];
+                            li.sellList.add(Product.named2(
+                              id: selectedProduct.id,
+                              barcode: selectedProduct.barcode,
+                              name: selectedProduct.name,
+                              buyprice: selectedProduct.buyprice,
+                              sellPrice: selectedProduct.sellPrice,
+                              count: 1,
+                              ownerName: selectedProduct.ownerName,
+                              weightable: selectedProduct.weightable,
+                              wholeUnit: selectedProduct.wholeUnit,
+                              offer: selectedProduct.offer,
+                              offerCount: selectedProduct.offerCount,
+                              offerPrice: selectedProduct.offerPrice,
+                              priceHistory: selectedProduct.priceHistory,
+                              endDate: selectedProduct.endDate,
+                              hot: selectedProduct.hot,
+                            ));
+
+                            // Clear search and notify
+                            controller.clear();
+                            li.searchTemp.clear();
+                            li.refresh();
+
+                            Navigator.pop(context);
+                          },
                         ),
                       );
-                    }
-
-                    // Now display the products, which includes the hot product if applicable
-                    return ListView.builder(
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          color: li.isProductOutOfDate(products[index].name!)
-                              ? Colors.red[100]
-                              : Colors.transparent,
-                          child: ListTile(
-                            enabled:
-                                li.isProductOutOFStock(products[index].name!),
-                            title: Text(products[index].name!),
-                            trailing: Text(
-                                products[index].sellPrice!.toStringAsFixed(2)),
-                            onTap: () {
-                              li.searchTemp.isEmpty
-                                  ? product = products[index]
-                                  : product = products[index];
-                              li.sellList.add(Product.named2(
-                                id: product.id,
-                                barcode: product.barcode,
-                                name: product.name,
-                                buyprice: product.buyprice,
-                                sellPrice: product.sellPrice,
-                                count: 1,
-                                ownerName: product.ownerName,
-                                weightable: product.weightable,
-                                wholeUnit: product.wholeUnit,
-                                offer: product.offer,
-                                offerCount: product.offerCount,
-                                offerPrice: product.offerPrice,
-                                priceHistory: product.priceHistory,
-                                endDate: product.endDate,
-                                hot: product.hot,
-                              ));
-                              Navigator.pop(context);
-                              li.searchTemp.clear();
-                              li.refresh();
-                            },
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ))
-              ],
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

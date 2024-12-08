@@ -88,10 +88,15 @@ class _SpendingsState extends State<Spendings> {
                                     builder: (context, snapshot) {
                                       if (snapshot.hasData) {
                                         totalprofit = snapshot.data!;
-                                        return Text(
-                                          NumberFormat.simpleCurrency()
-                                              .format(snapshot.data),
-                                          style: TextStyle(fontSize: 18),
+                                        return FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            NumberFormat.simpleCurrency()
+                                                .format(snapshot.data),
+                                            style: TextStyle(fontSize: 18),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
                                         );
                                       } else {
                                         return Center(
@@ -125,33 +130,82 @@ class _SpendingsState extends State<Spendings> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    'الديون',
-                                    style: TextStyle(fontSize: 18),
-                                  ),
-                                  Consumer<ExpenseProvider>(
-                                    builder: (context, li, child) {
-                                      // Assuming getLoansOfMonth() returns a Future<double>
-                                      return FutureBuilder<double>(
-                                        future: li.getDailyLoans(),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.hasData) {
-                                            loans = snapshot.data!;
-                                            return Text(
-                                              NumberFormat.simpleCurrency()
-                                                  .format(loans),
-                                              style: TextStyle(fontSize: 18),
-                                            );
-                                          } else {
-                                            return Center(
-                                              child: SpinKitChasingDots(
-                                                color: Colors.brown[200],
-                                              ),
-                                            );
-                                          }
+                                  Column(
+                                    children: [
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          'الديون الشهرية',
+                                          // style: TextStyle(fontSize: 18),
+                                        ),
+                                      ),
+                                      Consumer<ExpenseProvider>(
+                                        builder: (context, li, child) {
+                                          return FutureBuilder<double>(
+                                            future: li.getLoansOfMonth(),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.hasData) {
+                                                return FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Text(
+                                                    NumberFormat
+                                                            .simpleCurrency()
+                                                        .format(snapshot.data),
+                                                    style:
+                                                        TextStyle(fontSize: 13),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
+                                                  ),
+                                                );
+                                              } else {
+                                                return SpinKitChasingDots(
+                                                  color: Colors.brown[200],
+                                                  size: 20,
+                                                );
+                                              }
+                                            },
+                                          );
                                         },
-                                      );
-                                    },
+                                      ),
+                                      // SizedBox(height: 8),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          'الديون اليومية',
+                                          // style: TextStyle(fontSize: ),
+                                        ),
+                                      ),
+                                      Consumer<ExpenseProvider>(
+                                        builder: (context, li, child) {
+                                          return FutureBuilder<double>(
+                                            future: li.getDailyLoans(),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.hasData) {
+                                                return FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Text(
+                                                    NumberFormat
+                                                            .simpleCurrency()
+                                                        .format(snapshot.data),
+                                                    style:
+                                                        TextStyle(fontSize: 13),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
+                                                  ),
+                                                );
+                                              } else {
+                                                return SpinKitChasingDots(
+                                                  color: Colors.brown[200],
+                                                  size: 20,
+                                                );
+                                              }
+                                            },
+                                          );
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -188,10 +242,15 @@ class _SpendingsState extends State<Spendings> {
                                                 style: TextStyle(fontSize: 18),
                                               ),
                                             ),
-                                            Text(
-                                              NumberFormat.simpleCurrency()
-                                                  .format(snapshot.data),
-                                              style: TextStyle(fontSize: 18),
+                                            FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                NumberFormat.simpleCurrency()
+                                                    .format(snapshot.data),
+                                                style: TextStyle(fontSize: 18),
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -248,10 +307,17 @@ class _SpendingsState extends State<Spendings> {
                                         );
                                       },
                                       title: Text(snapshot.data![index].name!),
-                                      trailing: Text(
+                                      trailing: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
                                           NumberFormat.simpleCurrency(name: "")
                                               .format(snapshot
-                                                  .data![index].amount!)),
+                                                  .data![index].amount!),
+                                          style: TextStyle(fontSize: 16),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),

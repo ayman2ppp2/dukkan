@@ -52,169 +52,167 @@ class _CheckOutState extends State<CheckOut> {
                 style: TextStyle(color: Colors.white, fontSize: 18),
               ),
             ),
-            Consumer<SalesProvider>(
-              builder: (context, sa, child) => Expanded(
-                flex: 5,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    radio == 1
-                        ? Expanded(
-                            flex: 4,
-                            child: FutureBuilder(
-                                future: sa.refreshLoanersList(),
-                                builder: (context, snapshot) {
-                                  if (snapshot.hasError) {
-                                    return Text(snapshot.error.toString());
-                                  }
-                                  if (snapshot.hasData) {
-                                    var temp = snapshot.data!
-                                        .map((e) => DropdownMenuEntry(
-                                            value: e.ID, label: e.name!))
-                                        .toList();
-                                    return DropdownMenu(
-                                      onSelected: (value) {
-                                        loanerID = value;
-                                      },
-                                      dropdownMenuEntries: temp,
-                                      label: Text(
-                                        'الدائن',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                        ),
+            Expanded(
+              flex: 5,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  radio == 1
+                      ? Expanded(
+                          flex: 4,
+                          child: FutureBuilder(
+                              future: Provider.of<SalesProvider>(context,
+                                      listen: false)
+                                  .refreshLoanersList(),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasError) {
+                                  return Text(snapshot.error.toString());
+                                }
+                                if (snapshot.hasData) {
+                                  var temp = snapshot.data!
+                                      .map((e) => DropdownMenuEntry(
+                                          value: e.ID, label: e.name!))
+                                      .toList();
+                                  return DropdownMenu(
+                                    onSelected: (value) {
+                                      loanerID = value;
+                                    },
+                                    dropdownMenuEntries: temp,
+                                    label: Text(
+                                      'الدائن',
+                                      style: TextStyle(
+                                        color: Colors.white,
                                       ),
-                                      width: 114,
-                                      menuHeight: 300,
-                                      menuStyle: MenuStyle(
-                                          visualDensity: VisualDensity.compact),
-                                    );
-                                  }
-                                  return SpinKitChasingDots(
-                                    color: Colors.white,
-                                    size: 50,
+                                    ),
+                                    width: 114,
+                                    menuHeight: 300,
+                                    menuStyle: MenuStyle(
+                                        visualDensity: VisualDensity.compact),
                                   );
-                                }),
-                          )
-                        : SizedBox(),
-                    radio == 2
-                        ? Consumer<ExpenseProvider>(
-                            builder: (context, exp, child) => Expanded(
-                              flex: 4,
-                              child: StreamBuilder(
-                                  stream:
-                                      exp.getIndvidualExpenses(fixed: false),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasError) {
-                                      return Text(snapshot.error.toString());
-                                    }
-                                    if (snapshot.hasData) {
-                                      var temp = snapshot.data!
-                                          .map((e) => DropdownMenuEntry(
-                                              value: e.ID, label: e.name!))
-                                          .toList();
-                                      return DropdownMenu(
-                                        onSelected: (value) {
-                                          expenseID = value;
-                                        },
-                                        dropdownMenuEntries: temp,
-                                        label: Text(
-                                          'المنصرف',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        // width: 114,
-                                        // menuHeight: 300,
-                                        menuStyle: MenuStyle(
-                                            visualDensity:
-                                                VisualDensity.compact),
-                                      );
-                                    }
-                                    return SpinKitChasingDots(
-                                      color: Colors.white,
-                                      size: 50,
-                                    );
-                                  }),
+                                }
+                                return SpinKitChasingDots(
+                                  color: Colors.white,
+                                  size: 50,
+                                );
+                              }),
+                        )
+                      : SizedBox(),
+                  radio == 2
+                      ? Expanded(
+                          flex: 4,
+                          child: StreamBuilder(
+                              stream: Provider.of<ExpenseProvider>(context,
+                                      listen: false)
+                                  .getIndvidualExpenses(fixed: false),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasError) {
+                                  return Text(snapshot.error.toString());
+                                }
+                                if (snapshot.hasData) {
+                                  var temp = snapshot.data!
+                                      .map((e) => DropdownMenuEntry(
+                                          value: e.ID, label: e.name!))
+                                      .toList();
+                                  return DropdownMenu(
+                                    onSelected: (value) {
+                                      expenseID = value;
+                                    },
+                                    dropdownMenuEntries: temp,
+                                    label: Text(
+                                      'المنصرف',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    // width: 114,
+                                    // menuHeight: 300,
+                                    menuStyle: MenuStyle(
+                                        visualDensity: VisualDensity.compact),
+                                  );
+                                }
+                                return SpinKitChasingDots(
+                                  color: Colors.white,
+                                  size: 50,
+                                );
+                              }),
+                        )
+                      : SizedBox(),
+                  Expanded(
+                    flex: 0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 0,
+                              child: Text(
+                                'دين',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize:
+                                      17 % MediaQuery.of(context).size.width,
+                                ),
+                              ),
                             ),
-                          )
-                        : SizedBox(),
-                    Expanded(
-                      flex: 0,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Expanded(
+                            Expanded(
                                 flex: 0,
-                                child: Text(
-                                  'دين',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize:
-                                        17 % MediaQuery.of(context).size.width,
-                                  ),
+                                child: Radio(
+                                  value: 1,
+                                  groupValue: radio,
+                                  onChanged: (value) => setState(() {
+                                    radio = value!;
+                                  }),
+                                )
+                                //  Checkbox(
+                                //     value: loan,
+                                //     onChanged: (boo) {
+                                //       setState(() {
+                                //         loan = !loan;
+                                //       });
+                                //     }),
+                                ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              flex: 0,
+                              child: Text(
+                                'منصرف',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize:
+                                      15 % MediaQuery.of(context).size.width,
                                 ),
                               ),
-                              Expanded(
-                                  flex: 0,
-                                  child: Radio(
-                                    value: 1,
-                                    groupValue: radio,
-                                    onChanged: (value) => setState(() {
-                                      radio = value!;
-                                    }),
-                                  )
-                                  //  Checkbox(
-                                  //     value: loan,
-                                  //     onChanged: (boo) {
-                                  //       setState(() {
-                                  //         loan = !loan;
-                                  //       });
-                                  //     }),
-                                  ),
-                            ],
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Expanded(
+                            ),
+                            Expanded(
                                 flex: 0,
-                                child: Text(
-                                  'منصرف',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize:
-                                        15 % MediaQuery.of(context).size.width,
-                                  ),
+                                child: Radio(
+                                  value: 2,
+                                  groupValue: radio,
+                                  onChanged: (value) => setState(() {
+                                    radio = value!;
+                                  }),
+                                )
+                                //  Checkbox(
+                                //     value: loan,
+                                //     onChanged: (boo) {
+                                //       setState(() {
+                                //         loan = !loan;
+                                //       });
+                                //     }),
                                 ),
-                              ),
-                              Expanded(
-                                  flex: 0,
-                                  child: Radio(
-                                    value: 2,
-                                    groupValue: radio,
-                                    onChanged: (value) => setState(() {
-                                      radio = value!;
-                                    }),
-                                  )
-                                  //  Checkbox(
-                                  //     value: loan,
-                                  //     onChanged: (boo) {
-                                  //       setState(() {
-                                  //         loan = !loan;
-                                  //       });
-                                  //     }),
-                                  ),
-                            ],
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

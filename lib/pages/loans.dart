@@ -1,8 +1,10 @@
+import 'package:dukkan/pages/accountStatement.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as int;
+
 import 'package:provider/provider.dart';
 
 import '../providers/list.dart';
@@ -34,7 +36,7 @@ class _LoansState extends State<Loans> {
                   if (snapshot.hasData) {
                     return Text(
                       textDirection: TextDirection.rtl,
-                      'الديون الكلية : ${int.NumberFormat.simpleCurrency().format(snapshot.data!.fold(0.0, (previousValue, element) => previousValue + element.loanedAmount!))}',
+                      'الديون الكلية : ${int.NumberFormat.simpleCurrency(name: ' ').format(snapshot.data!.fold(0.0, (previousValue, element) => previousValue + element.loanedAmount!))}',
                     );
                   }
                   return SpinKitChasingDots(
@@ -71,8 +73,9 @@ class _LoansState extends State<Loans> {
                           child: ListTile(
                               title: Text(snapshot.data![index].name!),
                               trailing: Text('المطلوب : ' +
-                                  snapshot.data![index].loanedAmount
-                                      .toString()),
+                                  int.NumberFormat.simpleCurrency(name: '')
+                                      .format(
+                                          snapshot.data![index].loanedAmount)),
                               onTap: () {
                                 var sa = Provider.of<SalesProvider>(context,
                                     listen: false);

@@ -470,7 +470,7 @@ class Lists extends ChangeNotifier {
           'loanersv2.2.0.hive',
           'shutdown'
         ];
-      } else if (version.startsWith('2.3.')) {
+      } else if (version.startsWith('2.3.') || version.startsWith('2.4.')) {
         fileNames = ['isarInstance.isar', 'shutdown'];
       } else {
         shareList.add(Text('Unsupported version: $version'));

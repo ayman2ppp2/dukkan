@@ -1,3 +1,4 @@
+import 'package:dukkan/pages/accountStatement.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loadingOverlay.dart';
@@ -168,19 +169,41 @@ class _LoanState extends State<Loan> {
                                         bottom: 200,
                                       ),
                                       child: Material(
+                                        borderRadius: BorderRadius.circular(12),
                                         child: ListView.builder(
                                           itemCount: snapshot
-                                              .data!.lastPayment!.length,
-                                          itemBuilder: (context, index) =>
-                                              ListTile(
-                                            leading: Text(
-                                              '${snapshot.data!.lastPayment!.isEmpty ? 0.toString() : snapshot.data!.lastPayment![index].value!}        : ',
-                                            ),
-                                            trailing: Text(
+                                                  .data?.lastPayment?.length ??
+                                              0,
+                                          itemBuilder: (context, index) {
+                                            final payment = snapshot
+                                                .data?.lastPayment?[index];
+
+                                            return ListTile(
+                                              leading: Text(
+                                                '${payment?.value ?? '0'}        :',
+                                              ),
+                                              subtitle: Text(
+                                                intl.DateFormat.yMEd()
+                                                    .add_jm()
+                                                    .format(
+                                                      payment != null
+                                                          ? DateTime.parse(
+                                                              payment.key ?? DateTime.now().toString())
+                                                          : DateTime.now(),
+                                                    ),
                                                 textDirection:
                                                     TextDirection.rtl,
-                                                '${intl.DateFormat.yMEd().add_jmz().format(DateTime.parse(snapshot.data!.lastPayment!.isEmpty ? DateTime.now().toString() : snapshot.data!.lastPayment![index].key!.toString()))}'),
-                                          ),
+                                              ),
+                                              trailing: Text(
+                                                payment?.remaining != null
+                                                    ? intl.NumberFormat
+                                                            .simpleCurrency()
+                                                        .format(
+                                                            payment!.remaining!)
+                                                    : 'N/A',
+                                              ),
+                                            );
+                                          },
                                         ),
                                       ),
                                     ),
@@ -212,8 +235,7 @@ class _LoanState extends State<Loan> {
                                       (double.tryParse(con.text) ?? 0) <=
                                                   snapshot
                                                       .data!.loanedAmount! &&
-                                              (double.tryParse(con.text) ??
-                                                      0) !=
+                                              (double.tryParse(con.text) ?? 0) !=
                                                   0
                                           ? showDialog(
                                               context: context,
@@ -338,15 +360,41 @@ class _LoanState extends State<Loan> {
                                 );
                               },
                             ),
+                            Item(
+                                child: TextButton(
+                                    onPressed: () async {
+                                      try {
+                                        Map<String, dynamic> accountData =
+                                            await Provider.of<SalesProvider>(context, listen: false)
+                                                .db
+                                                .getAccountStatementData(widget.loaner.ID);
+
+                                        // Pass the data to the AccountStatementPage
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                               Provider.value(value: Provider.of<Lists>(context),child:  AccountStatementPage(
+                                              loaner: snapshot.data!,
+                                            ),)
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        // Handle error (e.g., loaner not found)
+                                        print(
+                                            'Error loading account statement: $e');
+                                      }
+                                    },
+                                    child: Text('account statement')))
                           ],
                         );
                       }
                       return SpinKitChasingDots(
-                        color: Colors.brown[200],
+                        color: Colors.brown[500],
                       );
-                    }))),
-      ),
-    );
+                    })))),
+      );
+    
   }
 }
 

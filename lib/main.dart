@@ -1,5 +1,6 @@
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:dukkan/pages/LoginPage.dart';
 // import 'package:appwrite/appwrite.dart';
 // import 'package:dukkan/pages/LoginPage.dart';
 import 'package:dukkan/providers/expenseProvider.dart';
@@ -201,30 +202,21 @@ class MyApp extends StatelessWidget {
             )
           ],
           builder: (context, child) {
-            // final value = context.watch<AuthAPI>().status;
-            return FutureBuilder(
-              future: context.watch<AuthAPI>().account.get(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  if (snapshot.data!.emailVerification) {
-                    return HomePage();
-                  }
+            return Consumer<AuthAPI>(
+              builder: (context, auth, child) {
+                print('Auth Status: ${auth.status}');
+                
+                if (auth.status == AuthStatus.uninitialized) {
+                  return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                } else {
+                
+                if (auth.status == AuthStatus.authenticated) {
                   return HomePage();
                 }
+                
+                return LoginPage();
               },
             );
-            // HomePage();
-            // value == AuthStatus.uninitialized
-            //     ? const Scaffold(
-            //         body: Center(child: CircularProgressIndicator()),
-            //       )
-            //     : value == AuthStatus.authenticated
-            //         ? const HomePage()
-            //         : const LoginPage();
           },
         ),
       ),

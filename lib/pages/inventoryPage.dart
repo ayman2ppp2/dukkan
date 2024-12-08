@@ -23,7 +23,7 @@ class _InvPageState extends State<InvPage> {
   Widget build(BuildContext context) {
     return Consumer<SalesProvider>(
       builder: (context, as, child) {
-        as.initializeStream();
+        // as.initializeStream();
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.brown,

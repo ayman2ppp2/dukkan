@@ -36,11 +36,13 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
-      await appwrite.createEmailSession(
-        email: emailTextController.text,
-        password: passwordTextController.text,
-      );
-      Navigator.pop(context);
+      await appwrite
+          .createEmailSession(
+            email: emailTextController.text,
+            password: passwordTextController.text,
+          )
+          .then((value) => Navigator.pop(context));
+      // Navigator.pop(context);
     } on AppwriteException catch (e) {
       Navigator.pop(context);
       showAlert(title: 'Login failed', text: e.message.toString());
