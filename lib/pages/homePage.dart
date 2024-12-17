@@ -9,7 +9,6 @@ import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/pages/loans.dart';
 import 'package:dukkan/util/share.dart';
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 // import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';

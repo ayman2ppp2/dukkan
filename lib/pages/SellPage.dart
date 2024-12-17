@@ -113,10 +113,10 @@ class _SellPageState extends State<SellPage> {
                     ),
                     iconSize: 40,
                     style: ButtonStyle(
-                      backgroundColor: MaterialStatePropertyAll(
+                      backgroundColor: WidgetStatePropertyAll(
                         Colors.brown[400],
                       ),
-                      elevation: const MaterialStatePropertyAll(20),
+                      elevation: const WidgetStatePropertyAll(20),
                     ),
                   ),
                 ),
@@ -194,10 +194,10 @@ class _SellPageState extends State<SellPage> {
                       ),
                       iconSize: 40,
                       style: ButtonStyle(
-                        backgroundColor: MaterialStatePropertyAll(
+                        backgroundColor: WidgetStatePropertyAll(
                           Colors.brown[400],
                         ),
-                        elevation: const MaterialStatePropertyAll(20),
+                        elevation: const WidgetStatePropertyAll(20),
                       ),
                     ),
                   ),

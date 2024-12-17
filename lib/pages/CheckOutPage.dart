@@ -277,8 +277,8 @@ class _CheckOutState extends State<CheckOut> {
                         Expanded(
                           child: TextButton(
                             style: ButtonStyle(
-                                backgroundColor: MaterialStatePropertyAll(
-                                    Colors.brown[200])),
+                                backgroundColor:
+                                    WidgetStatePropertyAll(Colors.brown[200])),
                             onPressed: () {
                               showDialog(
                                 context: context,
@@ -445,10 +445,10 @@ class _CheckOutState extends State<CheckOut> {
                                 size: 40,
                               ),
                               style: ButtonStyle(
-                                backgroundColor: MaterialStatePropertyAll(
+                                backgroundColor: WidgetStatePropertyAll(
                                   Colors.green[500],
                                 ),
-                                elevation: const MaterialStatePropertyAll(20),
+                                elevation: const WidgetStatePropertyAll(20),
                               ),
                             ),
                           ),

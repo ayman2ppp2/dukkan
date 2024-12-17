@@ -1,9 +1,7 @@
 // import 'package:dukkan/list.dart';
-import 'dart:math';
 
 import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/core/db.dart';
-import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
@@ -137,15 +135,17 @@ class SalesProvider extends ChangeNotifier {
   ) async {
     var uuid = Uuid();
 
-    db.insertLoaner(Loaner(
-      name: name,
-      // ID: uuid.v1(),
-      phoneNumber: phone,
-      location: location,
-      lastPayment: [],
-      // lastPaymentDate: DateTime.now(),
-      loanedAmount: 0,
-    )..ID);
+    db.insertLoaner(
+      Loaner(
+        name: name,
+        // ID: uuid.v1(),
+        phoneNumber: phone,
+        location: location,
+        lastPayment: [],
+        // lastPaymentDate: DateTime.now(),
+        loanedAmount: 0,
+      ),
+    );
 
     loanersList = await db.getLoaners();
 
@@ -153,18 +153,7 @@ class SalesProvider extends ChangeNotifier {
   }
 
   int generateLoanerId() {
-    // Get the current time in milliseconds since epoch
-    int millisecondsSinceEpoch = DateTime.now().millisecondsSinceEpoch;
-
-    // Create an instance of the Random class with a time-based seed
-    Random random = Random(millisecondsSinceEpoch);
-
-    // Generate a random 4-digit number
-    int min = 1000;
-    int max = 9999;
-    int random4DigitNumber = min + random.nextInt(max - min + 1);
-
-    return random4DigitNumber;
+    return DateTime.now().millisecondsSinceEpoch.remainder(10000);
   }
 
   Stream<List<Loaner>> getLoanersStream() {

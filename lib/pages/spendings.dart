@@ -1,16 +1,8 @@
 import 'package:dukkan/pages/addExpense.dart';
 import 'package:dukkan/providers/expenseProvider.dart';
-import 'package:dukkan/util/charts.dart';
-import 'package:flutter/foundation.dart';
 import 'package:dukkan/pages/spending.dart';
-import 'package:dukkan/providers/list.dart';
-import 'package:dukkan/providers/salesProvider.dart';
-import 'package:dukkan/util/myListItem.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server.dart';
-import 'package:percent_indicator/percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 

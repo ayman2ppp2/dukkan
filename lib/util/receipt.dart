@@ -227,7 +227,7 @@ class _ReceiptState extends State<Receipt> {
 
   double countSpecial(Log log) {
     var sum = 0.0;
-    for (var element in widget.log.products!) {
+    for (var element in widget.log.products) {
       if (element.hot!) {
         sum += element.sellPrice! * element.count!;
       }

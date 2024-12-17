@@ -1172,35 +1172,8 @@ class CgetDailySalesOfTheMonth extends PooledJob<List<SalesStats>> {
           .sortByDateDesc()
           .findAll();
 
-      // double getDailySales(DateTime time) {
-      //   // List<BcLog> temp = map['1'];
-      //   double sales = 0;
-      //   for (var log in temp) {
-      //     if (log.date.day == time.day &&
-      //         log.date.month == time.month &&
-      //         log.date.year == time.year) {
-      //       sales += log.price;
-      //     }
-      //   }
-      // return sales;
-      // }
-
       List<SalesStats> result = [];
-      // // List<BcLog> temp = map['1'];
-      // // temp.sort(
-      // //   (a, b) => a.date.compareTo(b.date),
-      // // );
-      // // temp = temp.reversed.toList();
-      // for (var log in temp) {
-      //   if (tt.day != log.date.day) {
-      //     result.add(SalesStats(
-      //       date: log.date,
-      //       sales: getDailySales(log.date),
-      //     ));
-      //     tt = log.date;
-      //   }
-      // }
-      // Set<SalesStats> temp = {};
+
       Map<String, double> dailySales = {};
 
       for (var receipt in logs) {
@@ -1252,19 +1225,6 @@ class CgetMonthlySalesOfTheyear extends PooledJob<List<SalesStats>> {
           .dateBetween(startOfYear, endOfYear)
           .sortByDateDesc()
           .findAll();
-
-      // double getDailySales(DateTime time) {
-      //   // List<BcLog> temp = map['1'];
-      //   double sales = 0;
-      //   for (var log in temp) {
-      //     if (log.date.day == time.day &&
-      //         log.date.month == time.month &&
-      //         log.date.year == time.year) {
-      //       sales += log.price;
-      //     }
-      //   }
-      // return sales;
-      // }
 
       List<SalesStats> result = [];
       // // List<BcLog> temp = map['1'];

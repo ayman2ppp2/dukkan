@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
+import 'package:dukkan/secrets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mailer/mailer.dart';
@@ -99,6 +101,8 @@ class AuthAPI extends ChangeNotifier {
         _status = AuthStatus.authenticated;
         // Create a basic User object for offline mode
         _currentUser = User(
+          targets: [],
+          mfa: false,
           $id: userId,
           email: email,
           name: name,
@@ -191,8 +195,8 @@ class AuthAPI extends ChangeNotifier {
 
   Future<int> verifyUser({required String email}) async {
     int temp = Random().nextInt(9999);
-    String username = 'dukkansud@gmail.com';
-    String password = 'tfty ilep oxxt kuzb';
+    String username = User_Name;
+    String password = Password;
     final smtpServer = gmail(username, password);
     final message = Message()
       ..from = Address(username, 'Dukkan')
@@ -233,8 +237,8 @@ class AuthAPI extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final session =
-          await account.createEmailSession(email: email, password: password);
+      final session = await account.createEmailPasswordSession(
+          email: email, password: password);
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
       print('Saving session for user: ${_currentUser?.email}');
@@ -256,7 +260,7 @@ class AuthAPI extends ChangeNotifier {
       // PackageInfo packageInfo = await PackageInfo.fromPlatform();
       // print(packageInfo!.packageName);
       final session = await account.createOAuth2Session(
-        provider: 'google',
+        provider: OAuthProvider.google,
       );
 
       print('successful login');

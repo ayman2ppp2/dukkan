@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../providers/list.dart';
-import 'models/BC_product.dart';
 import 'models/Product.dart';
 
 class CircularChart extends StatefulWidget {
@@ -400,9 +399,9 @@ class _MOYState extends State<MOY> {
                 if (snapshot.hasData) {
                   return Container(
                     constraints: BoxConstraints(
-                        maxHeight: snapshot.data!.length * 24 < 200
+                        maxHeight: snapshot.data!.length * 26 < 200
                             ? 250
-                            : snapshot.data!.length * 25),
+                            : snapshot.data!.length * 27),
                     child: Flex(
                       mainAxisSize: MainAxisSize.min,
                       direction: Axis.vertical,

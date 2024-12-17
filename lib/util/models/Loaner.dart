@@ -1,6 +1,5 @@
 import 'package:hive/hive.dart';
 import 'package:isar/isar.dart';
-import 'package:uuid/uuid.dart';
 
 part '../adapters/Loaner.g.dart';
 part 'Loaner.g.dart';

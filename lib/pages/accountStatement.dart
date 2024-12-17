@@ -1,7 +1,6 @@
 import 'package:dukkan/providers/list.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/db.dart';
 import '../util/models/Loaner.dart';
 import 'package:intl/intl.dart';
 
@@ -28,7 +27,9 @@ class AccountStatementPage extends StatelessWidget {
         title: const Text('Account Statement'),
       ),
       body: FutureBuilder<Map<String, dynamic>>(
-        future: Provider.of<Lists>(context,listen: false).db.getAccountStatementData(loaner.ID),
+        future: Provider.of<Lists>(context, listen: false)
+            .db
+            .getAccountStatementData(loaner.ID),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -39,7 +40,7 @@ class AccountStatementPage extends StatelessWidget {
           }
 
           final data = snapshot.data!;
-          
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -63,7 +64,8 @@ class AccountStatementPage extends StatelessWidget {
                         _buildInfoRow('Name', data['customerName']),
                         _buildInfoRow('Phone', data['phoneNumber']),
                         _buildInfoRow('Location', data['location']),
-                        _buildInfoRow('Last Zeroing', data['zeroingDateDisplay']),
+                        _buildInfoRow(
+                            'Last Zeroing', data['zeroingDateDisplay']),
                       ],
                     ),
                   ),
@@ -99,7 +101,9 @@ class AccountStatementPage extends StatelessWidget {
                         _buildAmountRow(
                           'Current Balance',
                           data['currentBalance'],
-                          data['currentBalance'] > 0 ? Colors.red : Colors.green,
+                          data['currentBalance'] > 0
+                              ? Colors.red
+                              : Colors.green,
                         ),
                       ],
                     ),
@@ -123,7 +127,7 @@ class AccountStatementPage extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final transaction = data['transactionHistory'][index];
                     final bool isPayment = transaction['type'] == 'payment';
-                    
+
                     return Card(
                       child: ListTile(
                         leading: Icon(
@@ -135,7 +139,8 @@ class AccountStatementPage extends StatelessWidget {
                           children: [
                             Text(
                               _formatDate(transaction['date']),
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               '${isPayment ? "-" : "+"} ${_formatCurrency(transaction['amount'])}',

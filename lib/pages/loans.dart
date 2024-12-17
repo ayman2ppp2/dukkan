@@ -1,4 +1,3 @@
-import 'package:dukkan/pages/accountStatement.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loan.dart';
 import 'package:flutter/material.dart';
@@ -123,11 +122,11 @@ class _LoansState extends State<Loans> {
                 TextEditingController ph = TextEditingController();
                 TextEditingController lo = TextEditingController();
                 return Padding(
-                  padding: const EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: 100,
-                    bottom: 220,
+                  padding: EdgeInsets.only(
+                    left: MediaQuery.of(context).size.width * 0.05,
+                    right: MediaQuery.of(context).size.width * 0.05,
+                    top: MediaQuery.of(context).size.height * 0.1,
+                    bottom: MediaQuery.of(context).size.height * 0.3,
                   ),
                   child: Material(
                     borderRadius: BorderRadius.circular(12),

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 
 class Pool {

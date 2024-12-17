@@ -1,4 +1,3 @@
-import 'package:appwrite/appwrite.dart';
 import 'package:dukkan/pages/verifyPage.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 // import 'package:appwrite_app/appwrite/auth_api.dart';

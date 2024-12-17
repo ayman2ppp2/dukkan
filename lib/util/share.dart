@@ -1,6 +1,5 @@
 import 'package:dukkan/util/scanner.dart';
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import '../providers/list.dart';
 

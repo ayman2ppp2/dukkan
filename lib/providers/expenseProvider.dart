@@ -5,7 +5,6 @@ import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:flutter/material.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
-import 'package:provider/provider.dart';
 
 class ExpenseProvider extends ChangeNotifier {
   late DB db;

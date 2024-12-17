@@ -1,7 +1,6 @@
 import 'package:dukkan/util/models/Emap.dart';
 import 'package:hive/hive.dart';
 import 'package:isar/isar.dart';
-import 'BC_product.dart';
 part '../adapters/Product.g.dart';
 part 'Product.g.dart';
 

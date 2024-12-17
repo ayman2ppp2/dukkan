@@ -9,8 +9,6 @@ import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:uuid/uuid.dart';
-import 'package:uuid/v1.dart';
 // import 'package:uuid/uuid_util.dart';
 // import 'package:flutter/foundation.dart';
 

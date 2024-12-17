@@ -5,7 +5,6 @@ import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/util/scanner.dart';
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 class SearchPage extends StatefulWidget {

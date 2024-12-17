@@ -55,3 +55,4 @@ storage/emulated/0/dukkan/v2/owners.lock
 
 # Ignore Gradle build output directory
 build
+lib/secrets.dart
