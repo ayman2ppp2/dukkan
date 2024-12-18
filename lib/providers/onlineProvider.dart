@@ -4,10 +4,13 @@ import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
 import 'package:dukkan/secrets.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
+import 'dart:io' as IO;
+
 // import 'package:package_info_plus/package_info_plus.dart';
 
 const String APPWRITE_PROJECT_ID = "65e616d10bd9110e806f";
@@ -24,6 +27,7 @@ enum AuthStatus {
 class AuthAPI extends ChangeNotifier {
   Client client = Client();
   late final Account account;
+
   SharedPreferences? _prefs;
   static const String KEY_SESSION_TIME = 'last_login_time';
   static const String KEY_USER_EMAIL = 'user_email';
@@ -32,6 +36,7 @@ class AuthAPI extends ChangeNotifier {
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
+  Storage? storage;
 
   // Getter methods
   User? get currentUser => _currentUser;
@@ -53,6 +58,7 @@ class AuthAPI extends ChangeNotifier {
         .setProject(APPWRITE_PROJECT_ID)
         .setSelfSigned();
     account = Account(client);
+    storage = Storage(client);
     print('Appwrite client initialized');
   }
 
@@ -292,5 +298,31 @@ class AuthAPI extends ChangeNotifier {
 
   updatePreferences({required String bio}) async {
     return account.updatePrefs(prefs: {'bio': bio});
+  }
+
+  Future<void> uploadBackup() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+
+      final file = IO.File(dir.path + '/isarinstance.isar');
+
+      final response = await storage!.createFile(
+        bucketId: '6762672a0033f48ae769', // Replace with your bucket ID
+        fileId: 'backup_${_currentUser!.$id}', // Generate a unique file ID
+        file: InputFile.fromPath(
+          path: file.path,
+          filename: 'isar_backup_${_currentUser!.$id}.isar',
+        ),
+        permissions: [
+          Permission.read(Role.user(_currentUser!.$id)),
+          Permission.write(
+              Role.user(_currentUser!.$id)), // Restrict access to this user
+        ],
+      );
+
+      print('Backup uploaded: ${response.$id}');
+    } catch (e) {
+      print('Error uploading backup: $e');
+    }
   }
 }

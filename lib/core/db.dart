@@ -1499,15 +1499,16 @@ class CgetDailyloans extends PooledJob<double> {
           .findAll();
 
       final totalUnpaidLoans = receipts.fold<double>(
-          0.0,
-          (total, receipt) =>
-              total +
-              receipt.products.fold<double>(
-                  0.0,
-                  (subtotal, product) =>
-                      subtotal +
-                      (product.count ?? 0) * (product.sellPrice ?? 0)) -
-              receipt.discount);
+        0.0,
+        (total, receipt) =>
+            total +
+            receipt.products.fold<double>(
+              0.0,
+              (subtotal, product) =>
+                  subtotal + (product.count ?? 0) * (product.sellPrice ?? 0),
+            ) -
+            (receipt.discount),
+      );
 
       return totalUnpaidLoans;
     } catch (e) {

@@ -24,6 +24,37 @@ class ConfirmationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Uint8List? cropAndConvertToJpeg(Uint8List screenshot) {
+      // Decode the PNG image
+      img.Image? image = img.decodePng(screenshot);
+
+      if (image != null) {
+        int cropY = (image.height * 0.2)
+            .toInt(); // Start cropping at 20% of the image height
+        int cropHeight =
+            (image.height * 0.6).toInt(); // Crop 60% of the image height
+        int cropWidth = image.width; // Full width
+
+        // Perform the cropping
+        img.Image croppedImage = img.copyCrop(
+          image,
+          x: 0,
+          y: cropY,
+          width: cropWidth,
+          height: cropHeight,
+        );
+        // Convert the cropped image to JPEG
+        Uint8List jpegScreenshot = Uint8List.fromList(
+          img.encodeJpg(croppedImage, quality: 90),
+        );
+
+        return jpegScreenshot;
+      } else {
+        debugPrint('Failed to decode the image.');
+        return null;
+      }
+    }
+
     return Screenshot(
       controller: screenshotController,
       child: PopScope(
@@ -135,20 +166,14 @@ class ConfirmationPage extends StatelessWidget {
 
                                   if (screenshot != null) {
                                     // Convert the PNG screenshot to JPEG
-                                    img.Image? image =
-                                        img.decodeImage(screenshot);
+                                    Uint8List? image =
+                                        cropAndConvertToJpeg(screenshot);
                                     if (image != null) {
-                                      Uint8List jpegScreenshot =
-                                          Uint8List.fromList(
-                                        img.encodeJpg(image,
-                                            quality: 90), // Convert to JPEG
-                                      );
-
                                       // Share the converted JPEG screenshot
                                       await Share.shareXFiles(
                                         [
                                           XFile.fromData(
-                                            jpegScreenshot,
+                                            image,
                                             name:
                                                 'confirmation.jpg', // Save as .jpg
                                             mimeType:

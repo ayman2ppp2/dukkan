@@ -60,7 +60,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        
+        <provider
+    android:name="dev.fluttercommunity.plus.share.ShareFileProvider"
+    android:authorities="${applicationId}.flutter.share_provider"
+    android:exported="false"
+    android:grantUriPermissions="true">
+    <!-- <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/flutter_share_provider_paths" /> -->
+</provider>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

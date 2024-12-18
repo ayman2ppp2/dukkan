@@ -158,59 +158,287 @@ class _LoanState extends State<Loan> {
                                   onLongPress: () {
                                     showGeneralDialog(
                                       barrierDismissible: true,
-                                      barrierLabel: 'gg',
+                                      barrierLabel: 'paymentDialog',
                                       context: context,
                                       pageBuilder: (context, animation,
-                                              secondaryAnimation) =>
-                                          Padding(
-                                        padding: const EdgeInsets.only(
-                                          left: 20,
-                                          right: 20,
-                                          top: 100,
-                                          bottom: 200,
-                                        ),
-                                        child: Material(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          child: ListView.builder(
-                                            itemCount: snapshot.data
-                                                    ?.lastPayment?.length ??
-                                                0,
-                                            itemBuilder: (context, index) {
-                                              final payment = snapshot
-                                                  .data?.lastPayment?[index];
-
-                                              return ListTile(
-                                                leading: Text(
-                                                  '${payment?.value ?? '0'}        :',
-                                                ),
-                                                subtitle: Text(
-                                                  intl.DateFormat.yMEd()
-                                                      .add_jm()
-                                                      .format(
-                                                        payment != null
-                                                            ? DateTime.parse(payment
-                                                                    .key ??
-                                                                DateTime.now()
-                                                                    .toString())
-                                                            : DateTime.now(),
-                                                      ),
-                                                  textDirection:
-                                                      TextDirection.rtl,
-                                                ),
-                                                trailing: Text(
-                                                  payment?.remaining != null
-                                                      ? intl.NumberFormat
-                                                              .simpleCurrency()
-                                                          .format(payment!
-                                                              .remaining!)
-                                                      : 'N/A',
-                                                ),
-                                              );
-                                            },
+                                          secondaryAnimation) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 20,
+                                            right: 20,
+                                            top: 100,
+                                            bottom: 200,
                                           ),
-                                        ),
-                                      ),
+                                          child: Material(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            color: Colors
+                                                .white, // Background color
+                                            child: Column(
+                                              children: [
+                                                // Header
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.all(16),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors
+                                                        .brown, // Brown header
+                                                    borderRadius:
+                                                        const BorderRadius
+                                                            .vertical(
+                                                      top: Radius.circular(12),
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      'تفاصيل المدفوعات',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 20,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                // Payment List
+                                                Expanded(
+                                                  child: snapshot
+                                                              .data
+                                                              ?.lastPayment
+                                                              ?.isNotEmpty ??
+                                                          false
+                                                      ? ListView.separated(
+                                                          itemCount: snapshot
+                                                              .data!
+                                                              .lastPayment!
+                                                              .length,
+                                                          separatorBuilder:
+                                                              (context,
+                                                                      index) =>
+                                                                  Divider(
+                                                            color: Colors
+                                                                .grey.shade300,
+                                                            height: 1,
+                                                          ),
+                                                          itemBuilder:
+                                                              (context, index) {
+                                                            final payment = snapshot
+                                                                    .data!
+                                                                    .lastPayment![
+                                                                index];
+                                                            final paymentDate =
+                                                                payment.key !=
+                                                                        null
+                                                                    ? DateTime.parse(
+                                                                        payment
+                                                                            .key!)
+                                                                    : DateTime
+                                                                        .now();
+
+                                                            // Calculate balance before payment
+                                                            double? remaining =
+                                                                payment
+                                                                    .remaining;
+                                                            double? value =
+                                                                double.tryParse(
+                                                                    payment.value ??
+                                                                        '0');
+                                                            double?
+                                                                balanceBefore =
+                                                                (remaining !=
+                                                                            null &&
+                                                                        value !=
+                                                                            null)
+                                                                    ? remaining +
+                                                                        value
+                                                                    : null;
+
+                                                            return Container(
+                                                              margin:
+                                                                  const EdgeInsets
+                                                                      .symmetric(
+                                                                      vertical:
+                                                                          4,
+                                                                      horizontal:
+                                                                          8),
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .all(12),
+                                                              decoration:
+                                                                  BoxDecoration(
+                                                                color: Colors
+                                                                    .brown
+                                                                    .shade50, // Light brown background
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            8),
+                                                                boxShadow: [
+                                                                  BoxShadow(
+                                                                    color: Colors
+                                                                        .brown
+                                                                        .shade100,
+                                                                    blurRadius:
+                                                                        4,
+                                                                    offset:
+                                                                        const Offset(
+                                                                            0,
+                                                                            2),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                              child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .start,
+                                                                children: [
+                                                                  // Balance Before Payment (Top)
+                                                                  Row(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .spaceBetween,
+                                                                    children: [
+                                                                      Text(
+                                                                        'الرصيد قبل الدفع:',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                          color: Colors
+                                                                              .brown
+                                                                              .shade800,
+                                                                        ),
+                                                                      ),
+                                                                      Text(
+                                                                        balanceBefore !=
+                                                                                null
+                                                                            ? intl.NumberFormat.simpleCurrency().format(balanceBefore)
+                                                                            : 'N/A',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                          color: Colors
+                                                                              .brown
+                                                                              .shade900,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  // Amount Paid
+                                                                  Row(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .spaceBetween,
+                                                                    children: [
+                                                                      Text(
+                                                                        'المبلغ المدفوع:',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          color: Colors
+                                                                              .brown
+                                                                              .shade700,
+                                                                        ),
+                                                                      ),
+                                                                      Text(
+                                                                        '${payment.value ?? '0'}',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                          color: Colors
+                                                                              .brown
+                                                                              .shade700,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      height:
+                                                                          4),
+                                                                  // Remaining Balance
+                                                                  Row(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .spaceBetween,
+                                                                    children: [
+                                                                      Text(
+                                                                        'الرصيد المتبقي:',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          color: Colors
+                                                                              .brown
+                                                                              .shade700,
+                                                                        ),
+                                                                      ),
+                                                                      Text(
+                                                                        payment.remaining !=
+                                                                                null
+                                                                            ? intl.NumberFormat.simpleCurrency().format(payment.remaining!)
+                                                                            : 'N/A',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                          color: Colors
+                                                                              .brown
+                                                                              .shade900,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      height:
+                                                                          8),
+                                                                  // Payment Date
+                                                                  Align(
+                                                                    alignment:
+                                                                        Alignment
+                                                                            .centerRight,
+                                                                    child: Text(
+                                                                      intl.DateFormat
+                                                                              .yMEd()
+                                                                          .add_jm()
+                                                                          .format(
+                                                                              paymentDate),
+                                                                      style:
+                                                                          TextStyle(
+                                                                        color: Colors
+                                                                            .grey
+                                                                            .shade600,
+                                                                        fontSize:
+                                                                            12,
+                                                                      ),
+                                                                      textDirection:
+                                                                          TextDirection
+                                                                              .rtl,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            );
+                                                          },
+                                                        )
+                                                      : Center(
+                                                          child: Text(
+                                                            'لا توجد مدفوعات متاحة',
+                                                            style: TextStyle(
+                                                              color: Colors.grey
+                                                                  .shade600,
+                                                              fontSize: 16,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     );
                                   },
                                   child: Text(
