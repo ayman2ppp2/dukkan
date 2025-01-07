@@ -98,7 +98,7 @@ class _MyListTileState extends State<MyListTile> {
                                         li.kg.length,
                                         (index) => PopupMenuItem(
                                           enabled: li.getProductCount(
-                                                  widget.product.name!) >=
+                                                  widget.product.id) >=
                                               li.kg.values.elementAt(index),
                                           value: li.kg.values.elementAt(index),
                                           child: Text(
@@ -112,7 +112,7 @@ class _MyListTileState extends State<MyListTile> {
                                         li.kg.length,
                                         (index) => PopupMenuItem(
                                           enabled: li.getProductCount(
-                                                  widget.product.name!) >=
+                                                  widget.product.id) >=
                                               li.toumna.values.elementAt(index),
                                           value:
                                               li.toumna.values.elementAt(index),
@@ -126,7 +126,7 @@ class _MyListTileState extends State<MyListTile> {
                                         li.pound.length,
                                         (index) => PopupMenuItem(
                                           enabled: li.getProductCount(
-                                                  widget.product.name!) >=
+                                                  widget.product.id) >=
                                               li.pound.values.elementAt(index),
                                           value:
                                               li.pound.values.elementAt(index),
@@ -225,7 +225,7 @@ class _MyListTileState extends State<MyListTile> {
                   : Consumer<SalesProvider>(
                       builder: (context, sa, child) => NumberPicker(
                         value: widget.product.count!,
-                        maxValue: li.getProductCount(widget.product.name!),
+                        maxValue: li.getProductCount(widget.product.id),
                         minValue: 1,
                         onChanged: (int value) {
                           sa.updateSellListCount(
@@ -258,17 +258,15 @@ class _MyListTileState extends State<MyListTile> {
                                 index: widget.index, count: gg);
                           }
                           if ((double.tryParse(value) ?? 0) >=
-                              li.getProductCount(widget.product.name!) *
+                              li.getProductCount(widget.product.id) *
                                   widget.product.sellPrice!) {
                             // setState(() {
-                            con.text =
-                                (li.getProductCount(widget.product.name!) *
-                                        widget.product.sellPrice!)
-                                    .toStringAsFixed(2);
+                            con.text = (li.getProductCount(widget.product.id) *
+                                    widget.product.sellPrice!)
+                                .toStringAsFixed(2);
                             sa.updateSellListCount(
                                 index: widget.index,
-                                count:
-                                    li.getProductCount(widget.product.name!));
+                                count: li.getProductCount(widget.product.id));
                             // });
                           }
                         },

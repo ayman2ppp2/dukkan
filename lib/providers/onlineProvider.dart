@@ -303,26 +303,71 @@ class AuthAPI extends ChangeNotifier {
   Future<void> uploadBackup() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
+      final file = IO.File('${dir.path}/isarinstance.isar');
+      final fileId = 'backup_${_currentUser!.$id}.isar';
 
-      final file = IO.File(dir.path + '/isarinstance.isar');
+      if (!await file.exists()) {
+        print('Backup file does not exist at ${file.path}');
+        return;
+      }
 
+      // Check if the file exists in storage
+      try {
+        await storage!.getFile(
+          bucketId: '6762672a0033f48ae769',
+          fileId: fileId,
+        );
+
+        // If the file exists, delete it
+        await storage!.deleteFile(
+          bucketId: '6762672a0033f48ae769',
+          fileId: fileId,
+        );
+        print('Existing backup deleted.');
+      } catch (e) {
+        if (e.toString().contains('File not found')) {
+          print('No existing backup found. Proceeding with upload.');
+        } else {
+          print('Error checking for existing backup: $e');
+          return;
+        }
+      }
+
+      // Upload the new backup
       final response = await storage!.createFile(
-        bucketId: '6762672a0033f48ae769', // Replace with your bucket ID
-        fileId: 'backup_${_currentUser!.$id}', // Generate a unique file ID
+        bucketId: '6762672a0033f48ae769',
+        fileId: fileId,
         file: InputFile.fromPath(
           path: file.path,
-          filename: 'isar_backup_${_currentUser!.$id}.isar',
+          filename: 'backup_${_currentUser!.$id}.isar',
         ),
-        permissions: [
-          Permission.read(Role.user(_currentUser!.$id)),
-          Permission.write(
-              Role.user(_currentUser!.$id)), // Restrict access to this user
-        ],
       );
 
       print('Backup uploaded: ${response.$id}');
-    } catch (e) {
-      print('Error uploading backup: $e');
+    } catch (e, stackTrace) {
+      print('Error uploading backup: $e\n$stackTrace');
+    }
+  }
+
+  Future<void> downloadBackup() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final filePath = '${dir.path}/isarinstance.isar';
+      final fileId = 'backup_${_currentUser!.$id}.isar';
+
+      // Download the backup file
+      final response = await storage!.getFileDownload(
+        bucketId: '6762672a0033f48ae769',
+        fileId: fileId,
+      );
+
+      // Write the downloaded content to the local file
+      final file = IO.File(filePath);
+      await file.writeAsBytes(response);
+
+      print('Backup downloaded and saved to $filePath');
+    } catch (e, stackTrace) {
+      print('Error downloading backup: $e\n$stackTrace');
     }
   }
 }

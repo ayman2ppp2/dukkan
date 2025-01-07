@@ -390,7 +390,7 @@ class _CheckOutState extends State<CheckOut> {
                                                               secondaryAnimation) =>
                                                           LoadingOverlay(),
                                                     );
-                                                    await li.db
+                                                    await li
                                                         .checkOut(
                                                             lst: widget.lst,
                                                             total: widget.total,

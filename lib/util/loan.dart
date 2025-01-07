@@ -36,7 +36,7 @@ class _LoanState extends State<Loan> {
                 var temp =
                     await Provider.of<SalesProvider>(context, listen: false)
                         .db
-                        .isar
+                        .isar!
                         .loaners
                         .get(widget.loaner.ID);
                 if (temp!.loanedAmount == 0) {
@@ -240,10 +240,10 @@ class _LoanState extends State<Loan> {
                                                             double? remaining =
                                                                 payment
                                                                     .remaining;
-                                                            double? value =
-                                                                double.tryParse(
-                                                                    payment.value ??
-                                                                        '0');
+                                                            double? value = double
+                                                                .tryParse(payment
+                                                                        .value ??
+                                                                    'تم تصفير الحساب');
                                                             double?
                                                                 balanceBefore =
                                                                 (remaining !=
@@ -464,117 +464,162 @@ class _LoanState extends State<Loan> {
                                         var sa = Provider.of<SalesProvider>(
                                             context,
                                             listen: false);
-                                        (double.tryParse(con.text) ?? 0) <=
-                                                    snapshot
-                                                        .data!.loanedAmount! &&
-                                                (double.tryParse(con.text) ??
-                                                        0) !=
-                                                    0
-                                            ? showDialog(
-                                                context: context,
-                                                builder: (context) {
-                                                  return AlertDialog(
-                                                    title: Text(
-                                                      'هل انت متاكد من تسديد ${con.text}',
+                                        if (con.text == 'Reset') {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                title: Text(
+                                                  'هل انت متاكد من تصفير حساب العميل؟',
+                                                  style:
+                                                      TextStyle(fontSize: 20),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: const Text(
+                                                      'لا',
                                                       style: TextStyle(
                                                           fontSize: 20),
                                                     ),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed: () async {
-                                                          showGeneralDialog(
-                                                            context: context,
-                                                            pageBuilder: (context,
-                                                                    animation,
-                                                                    secondaryAnimation) =>
-                                                                LoadingOverlay(),
-                                                          );
-                                                          await sa
-                                                              .payLoaner(
-                                                                  double.tryParse(con
-                                                                          .text) ??
-                                                                      0,
-                                                                  snapshot
-                                                                      .data!.ID)
-                                                              .then((value) =>
-                                                                  Navigator.push(
-                                                                      context,
-                                                                      MaterialPageRoute(
-                                                                        builder:
-                                                                            (context) =>
-                                                                                ConfirmationPage(
-                                                                          clearField:
-                                                                              () {
-                                                                            setState(() {
-                                                                              con.text = '';
-                                                                            });
-                                                                          },
-                                                                          paied:
-                                                                              con.text,
-                                                                          name: snapshot
-                                                                              .data!
-                                                                              .name!,
-                                                                          remaining:
-                                                                              snapshot.data!.loanedAmount! - (double.tryParse(con.text) ?? 0),
-                                                                        ),
-                                                                      )));
-
-                                                          Navigator.pop(
-                                                              context);
-                                                          Navigator.pop(
-                                                              context);
-                                                        },
-                                                        child: const Text(
-                                                          'نعم',
-                                                          style: TextStyle(
-                                                              fontSize: 20),
-                                                        ),
-                                                      ),
-                                                      TextButton(
-                                                        onPressed: () {
-                                                          Navigator.pop(
-                                                              context);
-                                                        },
-                                                        child: const Text(
-                                                          'لا',
-                                                          style: TextStyle(
-                                                              fontSize: 20),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  );
-                                                },
-                                              )
-                                            : showDialog(
-                                                context: context,
-                                                builder: (context) {
-                                                  return AlertDialog(
-                                                    title: Text(
-                                                      (double.tryParse(con
-                                                                      .text) ??
-                                                                  0) !=
-                                                              0
-                                                          ? 'لا يمكنك ان تسدد اكثر من المطلوب'
-                                                          : 'لا يمكنك تسديد لاشيء',
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      sa
+                                                          .resetLoanerAcount(
+                                                              snapshot.data!.ID)
+                                                          .then((_) {
+                                                        con.text = '';
+                                                        Navigator.pop(context);
+                                                      });
+                                                    },
+                                                    child: const Text(
+                                                      'نعم',
                                                       style: TextStyle(
                                                           fontSize: 20),
                                                     ),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed: () {
-                                                          Navigator.pop(
-                                                              context);
-                                                        },
-                                                        child: const Text(
-                                                          'موافق',
-                                                          style: TextStyle(
-                                                              fontSize: 20),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  );
-                                                },
+                                                  ),
+                                                ],
                                               );
+                                            },
+                                          );
+                                        } else {
+                                          var sa = Provider.of<SalesProvider>(
+                                              context,
+                                              listen: false);
+                                          (double.tryParse(con.text) ?? 0) <=
+                                                      snapshot.data!
+                                                          .loanedAmount! &&
+                                                  (double.tryParse(con.text) ??
+                                                          0) !=
+                                                      0
+                                              ? showDialog(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    return AlertDialog(
+                                                      title: Text(
+                                                        'هل انت متاكد من تسديد ${con.text}',
+                                                        style: TextStyle(
+                                                            fontSize: 20),
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () async {
+                                                            showGeneralDialog(
+                                                              context: context,
+                                                              pageBuilder: (context,
+                                                                      animation,
+                                                                      secondaryAnimation) =>
+                                                                  LoadingOverlay(),
+                                                            );
+                                                            await sa
+                                                                .payLoaner(
+                                                                    double.tryParse(con
+                                                                            .text) ??
+                                                                        0,
+                                                                    snapshot
+                                                                        .data!
+                                                                        .ID)
+                                                                .then((value) =>
+                                                                    Navigator.push(
+                                                                        context,
+                                                                        MaterialPageRoute(
+                                                                          builder: (context) =>
+                                                                              ConfirmationPage(
+                                                                            clearField:
+                                                                                () {
+                                                                              setState(() {
+                                                                                con.text = '';
+                                                                              });
+                                                                            },
+                                                                            paied:
+                                                                                con.text,
+                                                                            name:
+                                                                                snapshot.data!.name!,
+                                                                            remaining:
+                                                                                snapshot.data!.loanedAmount! - (double.tryParse(con.text) ?? 0),
+                                                                          ),
+                                                                        )));
+
+                                                            Navigator.pop(
+                                                                context);
+                                                            Navigator.pop(
+                                                                context);
+                                                          },
+                                                          child: const Text(
+                                                            'نعم',
+                                                            style: TextStyle(
+                                                                fontSize: 20),
+                                                          ),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(
+                                                                context);
+                                                          },
+                                                          child: const Text(
+                                                            'لا',
+                                                            style: TextStyle(
+                                                                fontSize: 20),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                )
+                                              : showDialog(
+                                                  context: context,
+                                                  builder: (context) {
+                                                    return AlertDialog(
+                                                      title: Text(
+                                                        (double.tryParse(con
+                                                                        .text) ??
+                                                                    0) !=
+                                                                0
+                                                            ? 'لا يمكنك ان تسدد اكثر من المطلوب'
+                                                            : 'لا يمكنك تسديد لاشيء',
+                                                        style: TextStyle(
+                                                            fontSize: 20),
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(
+                                                                context);
+                                                          },
+                                                          child: const Text(
+                                                            'موافق',
+                                                            style: TextStyle(
+                                                                fontSize: 20),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                );
+                                        }
                                       },
                                       icon: Icon(Icons.payments_rounded),
                                     ),
@@ -582,59 +627,58 @@ class _LoanState extends State<Loan> {
                                 ),
                               ),
                               Item(child: Text('history')),
-                              Consumer<Lists>(
-                                builder: (context, li, child) {
-                                  return Item(
-                                    child: SizedBox(
-                                      height: 260 %
-                                          MediaQuery.of(context).size.height,
-                                      child: FutureBuilder(
-                                        future: li
-                                            .getPersonsLogs(snapshot.data!.ID),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.hasData) {
-                                            return ListView.builder(
-                                              itemCount: snapshot.data!.length,
-                                              itemBuilder: (context, index) =>
-                                                  Receipt(
-                                                log: snapshot.data![index],
-                                              ),
-                                            );
-                                          }
-                                          if (snapshot.hasError) {
-                                            return AlertDialog(
-                                              title: Text('Error'),
-                                            );
-                                          }
-                                          return SpinKitChasingDots(
-                                            color: Colors.brown[500],
+                              Item(
+                                child: SizedBox(
+                                  height:
+                                      260 % MediaQuery.of(context).size.height,
+                                  child: StreamBuilder(
+                                      stream: Provider.of<Lists>(context,
+                                              listen: false)
+                                          .getPersonsLogs(snapshot.data!.ID),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return ListView.builder(
+                                            itemCount: snapshot.data!.length,
+                                            itemBuilder: (context, index) =>
+                                                Receipt(
+                                              log: snapshot.data![index],
+                                            ),
                                           );
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
+                                        }
+                                        if (snapshot.hasError) {
+                                          return AlertDialog(
+                                            title: Text(
+                                                'Error: ${snapshot.error}'),
+                                          );
+                                        }
+                                        return SpinKitChasingDots(
+                                          color: Colors.brown[500],
+                                        );
+                                      }),
+                                ),
                               ),
                               Item(
                                   child: TextButton(
                                       onPressed: () async {
+                                        var li = Provider.of<Lists>(context,
+                                            listen: false);
                                         try {
-                                          Map<String, dynamic> accountData =
-                                              await Provider.of<SalesProvider>(
-                                                      context,
-                                                      listen: false)
-                                                  .db
-                                                  .getAccountStatementData(
-                                                      widget.loaner.ID);
+                                          // Map<String, dynamic> accountData =
+                                          //     await Provider.of<SalesProvider>(
+                                          //             context,
+                                          //             listen: false)
+                                          //         .db
+                                          //         .getAccountStatementData(
+                                          //             widget.loaner.ID);
 
                                           // Pass the data to the AccountStatementPage
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
                                                 builder: (context) =>
-                                                    Provider.value(
-                                                      value: Provider.of<Lists>(
-                                                          context),
+                                                    ChangeNotifierProvider
+                                                        .value(
+                                                      value: li,
                                                       child:
                                                           AccountStatementPage(
                                                         loaner: snapshot.data!,

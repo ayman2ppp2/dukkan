@@ -35,6 +35,8 @@ class _CircularChartState extends State<CircularChart>
                   firstDate: DateTime(2023),
                   lastDate: DateTime(2050))
               .then((value) {
+            Provider.of<Lists>(context, listen: false)
+                .clearCache('saledProductsByDate');
             setState(() {
               value == null ? time = time : time = value;
             });
@@ -123,12 +125,15 @@ class BarChart extends StatefulWidget {
 class _BarChartState extends State<BarChart>
     with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
+  Future<List<ProdStats>>? future;
   int _chunkSize = 20; // Initial chunk size
   bool _isLoadingMore = false;
 
   @override
   void initState() {
     super.initState();
+    future = Provider.of<Lists>(context, listen: false)
+        .getSalesPerProduct(_chunkSize);
 
     // Listen to scroll events to load more logs when reaching the bottom
     _scrollController.addListener(() {
@@ -142,13 +147,18 @@ class _BarChartState extends State<BarChart>
 
   // Method to increase the chunk size and trigger a new stream
   void _loadMoreData() {
+    Provider.of<Lists>(context, listen: false).clearCache('salesPerProduct');
     setState(() {
       _isLoadingMore = true;
-      _chunkSize += 20; // Increase the chunk size by 50 logs
+      _chunkSize += 50; // Increase the chunk size by 50 logs
+      future = Provider.of<Lists>(context, listen: false)
+          .getSalesPerProduct(_chunkSize);
     });
 
-    setState(() {
-      _isLoadingMore = false;
+    future!.then((value) {
+      setState(() {
+        _isLoadingMore = false;
+      });
     });
   }
 
@@ -166,25 +176,16 @@ class _BarChartState extends State<BarChart>
           Flexible(
             child: Consumer<Lists>(
               builder: (context, li, child) => FutureBuilder(
-                  future: li.getSalesPerProduct(_chunkSize),
+                  future: future,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Text('${snapshot.error.toString()}');
                     }
                     if (snapshot.hasData) {
-                      //   if (_scrollController.position.pixels ==
-                      //       _scrollController.position.maxScrollExtent) {
-                      //     // Show a loading indicator at the bottom when fetching more data
-                      //     return _isLoadingMore
-                      //         ? Padding(
-                      //             padding: const EdgeInsets.all(8.0),
-                      //             child: Center(
-                      //                 child: SpinKitChasingDots(
-                      //               color: Colors.white,
-                      //             )),
-                      //           )
-                      //         : SizedBox.shrink();
-                      //   }
+                      if (_scrollController.position.pixels ==
+                          _scrollController.position.maxScrollExtent) {
+                        // Show a loading indicator at the bottom when fetching more data
+                      }
                       return SizedBox(
                         height: snapshot.data!.length * 60.0 > 200
                             ? snapshot.data!.length * 60
@@ -224,6 +225,15 @@ class _BarChartState extends State<BarChart>
                   }),
             ),
           ),
+          _isLoadingMore
+              ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Center(
+                      child: SpinKitChasingDots(
+                    color: Colors.white,
+                  )),
+                )
+              : SizedBox.shrink(),
         ],
       ),
     );
@@ -255,6 +265,10 @@ class _LineChartState extends State<LineChart>
                 firstDate: DateTime(2023),
                 lastDate: DateTime(2050))
             .then((value) {
+          Provider.of<Lists>(context, listen: false)
+              .clearCache('dailyProfitOfTheMonth');
+          Provider.of<Lists>(context, listen: false)
+              .clearCache('dailySalesOfTheMonth');
           setState(() {
             value == null ? time = time : time = value;
           });
@@ -380,6 +394,10 @@ class _MOYState extends State<MOY> {
                 firstDate: DateTime(2023),
                 lastDate: DateTime(2050))
             .then((value) {
+          Provider.of<Lists>(context, listen: false)
+              .clearCache('monthlySalesOfTheYear');
+          Provider.of<Lists>(context, listen: false)
+              .clearCache('monthlyProfitsOfTheYear');
           setState(() {
             value == null ? time = time : time = value;
           });
@@ -399,9 +417,9 @@ class _MOYState extends State<MOY> {
                 if (snapshot.hasData) {
                   return Container(
                     constraints: BoxConstraints(
-                        maxHeight: snapshot.data!.length * 26 < 200
+                        maxHeight: snapshot.data![0].length * 26 < 200
                             ? 250
-                            : snapshot.data!.length * 27),
+                            : snapshot.data![0].length * 26),
                     child: Flex(
                       mainAxisSize: MainAxisSize.min,
                       direction: Axis.vertical,
@@ -428,7 +446,7 @@ class _MOYState extends State<MOY> {
                             series: <ChartSeries>[
                               StackedBarSeries<SalesStats, int>(
                                 name: 'الأرباح',
-                                color: Colors.brown[300],
+                                color: Colors.brown[400],
                                 dataSource: snapshot.data![1],
                                 xValueMapper: (SalesStats data, _) =>
                                     data.date.month,
@@ -442,7 +460,7 @@ class _MOYState extends State<MOY> {
                               ),
                               StackedBarSeries<SalesStats, int>(
                                 name: 'المبيعات',
-                                color: Colors.brown[400],
+                                color: Colors.brown,
                                 dataSource: snapshot.data![0],
                                 xValueMapper: (SalesStats data, _) =>
                                     data.date.month,

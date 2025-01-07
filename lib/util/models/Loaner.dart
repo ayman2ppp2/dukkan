@@ -75,6 +75,7 @@ class Loaner {
       'lastPayment': this.lastPaymentTemp,
       'lastPaymentDate': this.lastPaymentDate,
       'loanedAmount': this.loanedAmount,
+      'zeroingDate': this.zeroingDate,
     };
   }
 

@@ -4,7 +4,7 @@ import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:provider/provider.dart';
 import '../providers/list.dart';
 
@@ -36,14 +36,14 @@ class _ReceiptState extends State<Receipt> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                        '${DateFormat.yMEd().add_jmz().format(widget.log.date)}'),
+                        '${intl.DateFormat.yMEd().add_jmz().format(widget.log.date)}'),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Text(NumberFormat.simpleCurrency()
+                        Text(intl.NumberFormat.simpleCurrency()
                                 .format(widget.log.price) +
                             ' : السعر'),
-                        Text(NumberFormat.simpleCurrency()
+                        Text(intl.NumberFormat.simpleCurrency()
                                 .format(widget.log.profit) +
                             ' : الربح'),
                         Consumer<Lists>(
@@ -60,24 +60,57 @@ class _ReceiptState extends State<Receipt> {
                                   builder: (context) {
                                     return AlertDialog(
                                       title: const Text(
-                                        'هل انت متاكد',
+                                        'هل أنت متأكد؟',
                                         style: TextStyle(fontSize: 20),
                                       ),
                                       actions: [
                                         TextButton(
                                           onPressed: () async {
-                                            // LoadingOverlay();
-                                            showGeneralDialog(
+                                            // Show loading overlay
+                                            showDialog(
                                               context: context,
-                                              pageBuilder: (context, animation,
-                                                      secondaryAnimation) =>
+                                              barrierDismissible: false,
+                                              builder: (context) =>
                                                   LoadingOverlay(),
                                             );
-                                            await li.cancelReceipt(
-                                                widget.log.date, widget.log);
-                                            Navigator.pop(context);
-                                            Navigator.pop(context);
-                                            // sa.refreshProductsList();
+
+                                            try {
+                                              if (widget.log.loaned) {
+                                                var loaner =
+                                                    await sa.getLoanerName(
+                                                        id: widget
+                                                            .log.loanerID!);
+                                                if (loaner != null &&
+                                                    (loaner.zeroingDate ??
+                                                            DateTime(1999))
+                                                        .isAfter(
+                                                            widget.log.date)) {
+                                                  await accounAlreadyZeroed(
+                                                      context, li);
+                                                } else {
+                                                  await li.cancelReceipt(
+                                                      widget.log.date,
+                                                      widget.log);
+                                                  Navigator.pop(context);
+                                                }
+                                              } else {
+                                                await li.cancelReceipt(
+                                                    widget.log.date,
+                                                    widget.log);
+                                                Navigator.pop(context);
+                                              }
+                                            } catch (e, s) {
+                                              // Log the error for debugging
+                                              debugPrint("Error: $e + $s");
+                                            } finally {
+                                              // Ensure the loading overlay is dismissed
+                                              Navigator.of(context,
+                                                      rootNavigator: true)
+                                                  .pop();
+                                              // Navigator.of(context,
+                                              //         rootNavigator: true)
+                                              //     .pop();
+                                            }
                                           },
                                           child: const Text(
                                             'نعم',
@@ -86,7 +119,8 @@ class _ReceiptState extends State<Receipt> {
                                         ),
                                         TextButton(
                                           onPressed: () {
-                                            Navigator.pop(context);
+                                            Navigator.pop(
+                                                context); // Close the dialog
                                           },
                                           child: const Text(
                                             'لا',
@@ -117,10 +151,10 @@ class _ReceiptState extends State<Receipt> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Text(NumberFormat.simpleCurrency()
+                        Text(intl.NumberFormat.simpleCurrency()
                                 .format(widget.log.discount) +
                             ' : الخصم'),
-                        Text(NumberFormat.simpleCurrency()
+                        Text(intl.NumberFormat.simpleCurrency()
                                 .format(countSpecial(widget.log)) +
                             ' : سلع خاصة'),
                         Consumer<Lists>(
@@ -184,11 +218,11 @@ class _ReceiptState extends State<Receipt> {
                                     (e) => ListTile(
                                       title: Text('${e.name}'),
                                       leading: Text(
-                                          NumberFormat.simpleCurrency()
+                                          intl.NumberFormat.simpleCurrency()
                                               .format(e.sellPrice)),
                                       trailing: Text('${e.count}'),
                                       subtitle: Text(
-                                          "total : ${NumberFormat.simpleCurrency().format((e.count! * e.sellPrice!))}"),
+                                          "total : ${intl.NumberFormat.simpleCurrency().format((e.count! * e.sellPrice!))}"),
                                     ),
                                   )
                                   .toList(),
@@ -223,6 +257,57 @@ class _ReceiptState extends State<Receipt> {
             ],
           ));
     });
+  }
+
+  Future<dynamic> accounAlreadyZeroed(BuildContext context, Lists li) {
+    /// Displays a dialog to inform the user that the account has already been zeroed.
+    ///
+    /// This dialog warns the user about the implications of canceling a receipt
+    /// for an account that has been fully paid. It provides options to either
+    /// cancel the operation or proceed with the cancellation.
+    ///
+    /// [context] - The build context of the widget.
+
+    return showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            'تم دفع كامل الحساب بالفعل. حذف الفاتورة سيؤدي فقط إلى إعادة منتجاتها إلى المخزن، مما قد يتسبب في أخطاء بحسابات المخزن.',
+            style: TextStyle(fontSize: 20),
+            textDirection: TextDirection.rtl,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close this dialog
+                Navigator.pop(context); // Close the previous dialog
+              },
+              child: const Text(
+                'إلغاء',
+                style: TextStyle(fontSize: 20),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                await li.cancelReceipt(widget.log.date, widget.log);
+                Navigator.pop(context); // Close this dialog
+                Navigator.pop(context); // Close this dialog
+                // Navigator.pop(context); // Close this dialog
+
+                // Navigator.pop(context);
+                // Navigator.pop(context);
+              },
+              child: const Text(
+                'متابعة',
+                style: TextStyle(fontSize: 20),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   double countSpecial(Log log) {

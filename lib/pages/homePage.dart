@@ -339,6 +339,22 @@ class _HomePageState extends State<HomePage> {
                 ),
                 ListTile(
                   onTap: () async {
+                    var li = Provider.of<AuthAPI>(context, listen: false);
+                    await li.downloadBackup().then(
+                          (value) => ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('تم تنزيل النسخة الاحتياطية'),
+                            ),
+                          ),
+                        );
+                    // Navigator.pop(context);
+                  },
+                  leading: Icon(Icons.restart_alt_rounded),
+                  title: Text('تنزيل النسخة الإحتياطية'),
+                  enabled: true,
+                ),
+                ListTile(
+                  onTap: () async {
                     var li = Provider.of<Lists>(context, listen: false);
                     await li.db.useBackup().then(
                           (value) => ScaffoldMessenger.of(context).showSnackBar(

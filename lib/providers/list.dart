@@ -37,6 +37,7 @@ class Lists extends ChangeNotifier {
 
   void init() async {
     pool = await Pool.init();
+    _initializeStreamListener();
     // pool = Pool.pool;
 
     // await pool.start();
@@ -48,19 +49,53 @@ class Lists extends ChangeNotifier {
   // List<Product> sellList = [];
   List<Owner> ownersList = [];
   List<Log> logsList = [];
-
-  void calculateEachOwnerSales(String ownerName) {
-    // refreshListOfOwners();
-
-    for (var product in db.inventory.values) {
-      if (product.ownerName == ownerName) {
-        var temp =
-            ownersList.firstWhere((element) => element.ownerName == ownerName);
-        temp.dueMoney += product.sellprice * product.count;
-        db.owners.put(ownerName, temp);
-      }
+  final Map<String, dynamic> _cache = {};
+  bool cacheIsValid = false;
+  Future<T> getCachedCalculation<T>(
+      String cacheKey, Future<T> Function() calculate) async {
+    // Check if the value is already in cache
+    if (_cache.containsKey(cacheKey)) {
+      return _cache[cacheKey] as T;
     }
+
+    // Perform the calculation if not cached
+    final result = await calculate();
+
+    // Store the result in cache
+    _cache[cacheKey] = result;
+
+    return result;
   }
+
+  void clearAllCache() {
+    _cache.clear();
+    notifyListeners();
+  }
+
+  void clearCache(String cacheKey) {
+    _cache.remove(cacheKey);
+    notifyListeners();
+  }
+
+  void _initializeStreamListener() {
+    db.isar!.products.watchLazy().listen((_) {
+      // Call clearCache with the desired cacheKey
+      clearCache(
+          'salesPerProduct'); // Replace 'yourCacheKey' with the actual key
+    });
+  }
+
+  // void calculateEachOwnerSales(String ownerName) {
+
+  //   for (var product in db.inventory.values) {
+  //     if (product.ownerName == ownerName) {
+  //       var temp =
+  //           ownersList.firstWhere((element) => element.ownerName == ownerName);
+  //       temp.dueMoney += product.sellprice * product.count;
+  //       db.owners.put(ownerName, temp);
+  //     }
+  //   }
+  // }
 
   Future<void> refresh() async {
     notifyListeners();
@@ -76,39 +111,12 @@ class Lists extends ChangeNotifier {
     return db.getOwnersList();
   }
 
-  // Future<List<Log>> refreshLogsList() async {
-  //   try {
-  //     logsList = await db.getAllLogs();
-  //     // for (var log in logsList) {
-  //     //   await log.products.load();
-  //     // }
-  //     return logsList;
-  //   } on Exception catch (e, stacktrace) {
-  //     print(stacktrace);
-  //     return [];
-  //   }
-  //   // notifyListeners();
-  // }
-
   Stream<List<Product>> getTotalBuyPrice() {
     return db.getTotalBuyPrice();
-    // double sum = 0;
-    // for (var product in temp) {
-    //   sum += product.buyprice! * product.count!;
-    // }
-    // // print(sum);
-    // return sum;
   }
 
-  Future<List<Log>> getPersonsLogs(int? ID) async {
+  Stream<List<Log>> getPersonsLogs(int? ID) {
     return db.getPersonsLogs(ID);
-    // List<Log> result = [];
-    // for (Log log in await db.getAllLogs()) {
-    //   if (log.loaned && log.loanerID == ID) {
-    //     result.add(log);
-    //   }
-    // }
-    // return result;
   }
 
   Future<void> cancelReceipt(DateTime date, Log log) async {
@@ -120,20 +128,6 @@ class Lists extends ChangeNotifier {
     }
     if (log.loaned) {
       db.updateLoaner(log, sum);
-      // Loaner temp =
-      //     (await db.isar.loaners.where().iDEqualTo(log.loanerID!).findFirst())!;
-      // db.loaners.put(
-      //   log.loanerID,
-      //   Loaner(
-      //     name: temp.name,
-      //     // ID: temp.ID,
-      //     phoneNumber: temp.phoneNumber,
-      //     location: temp.location,
-      //     lastPayment: temp.lastPayment,
-      //     lastPaymentDate: temp.lastPaymentDate,
-      //     loanedAmount: temp.loanedAmount - (log.price + sum),
-      //   ),
-      // );
     }
 
     List<EmbeddedProduct> products = List.empty(growable: true);
@@ -144,6 +138,31 @@ class Lists extends ChangeNotifier {
     }
     await db.updateProducts(products);
     await db.deleteLog(log);
+    clearAllCache();
+  }
+
+  Future<void> checkOut({
+    required List<Product> lst,
+    required double total,
+    required double discount,
+    required int? LoID,
+    required bool loaned,
+    required bool edit,
+    required DateTime logID,
+    required bool expense,
+    required int? expenseId,
+  }) async {
+    await db.checkOut(
+        lst: lst,
+        total: total,
+        discount: discount,
+        LoID: LoID,
+        loaned: loaned,
+        edit: edit,
+        logID: logID,
+        expense: expense,
+        expenseId: expenseId);
+    clearAllCache();
   }
 
   Future<double> getAverageProfitPercent() async {
@@ -155,162 +174,119 @@ class Lists extends ChangeNotifier {
   }
 
   Future<double> getProfitOfTheMonth() {
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    // map['1'] = logsList
-    //     .map((e) => BcLog.fromLog(e))
-    //     .toList()
-    //     .takeWhile((value) =>
-    //         value.date.month == DateTime.now().month &&
-    //         value.date.year == DateTime.now().year)
-    //     .toList();
-    // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
-    return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
+    return getCachedCalculation('profitOfTheMonth', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
+    });
   }
 
   Future<double> getSalesOfTheMonth() {
-    // db.closeAll();
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
+    return getCachedCalculation('salesOfTheMonth', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
 
-    // logsList
-    //     .map((e) => BcLog.fromLog(e))
-    //     .toList()
-    //     .takeWhile((value) =>
-    //         value.date.month == DateTime.now().month &&
-    //         value.date.year == DateTime.now().year)
-    //     .toList();
-    // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
-    return pool.scheduleJob(CgetSalesOfTheMonth(map: map));
+      return pool.scheduleJob(CgetSalesOfTheMonth(map: map));
+    });
   }
 
   Future<double> getDailySales(DateTime time) {
-    Map map = Map();
-    // map['1'] = logsList
-    //     .map((e) => BcLog.fromLog(e))
-    //     .toList()
-    //     .takeWhile((value) =>
-    //         value.date.day == DateTime.now().day &&
-    //         value.date.month == DateTime.now().month &&
-    //         value.date.year == DateTime.now().year)
-    //     .toList();
-    map['1'] = RootIsolateToken.instance!;
-    map['2'] = time;
-    // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
-    return pool.scheduleJob(CgetDailySales(map: map));
+    return getCachedCalculation('dailySales', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = time;
+      return pool.scheduleJob(CgetDailySales(map: map));
+    });
   }
 
   Future<double> getDailyProfits(DateTime time) {
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    map['2'] = time;
-    // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
-    return pool.scheduleJob(CgetDailyProfit(map: map));
+    return getCachedCalculation('dailyProfits', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = time;
+      return pool.scheduleJob(CgetDailyProfit(map: map));
+    });
   }
 
   Future<double> getAllProfit() {
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    // map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
-    map['2'] = DateTime.now();
-    // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
-
-    return pool.scheduleJob(CgetTotalProfit(map: map));
+    return getCachedCalculation('totalProfit', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = DateTime.now();
+      return pool.scheduleJob(CgetTotalProfit(map: map));
+    });
   }
 
   Future<double> getAllSales() {
-    // refreshLogsList();
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    // map['1'] = logsList.map((e) => BcLog.fromLog(e)).toList();
-    // return Future.delayed(Duration(seconds: 0)).then((value) => 0.0);
-    return pool.scheduleJob(CgetAllSales(map: map));
+    return getCachedCalculation('allSales', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      return pool.scheduleJob(CgetAllSales(map: map));
+    });
   }
 
   Future<int> getNumberOfSalesForAproduct({required String key}) {
-    // List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    map['2'] = key;
-    // map['2'] = logs;
-    return pool.scheduleJob(CgetNumberOfSalesForAproduct(map: map));
+    return getCachedCalculation('numberOfSalesPerProduct', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = key;
+      return pool.scheduleJob(CgetNumberOfSalesForAproduct(map: map));
+    });
   }
 
   Future<List<Product>> getSaledProductsByDate(DateTime time) {
-    // List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    map['2'] = time;
-    // map['2'] = logs.where((element) =>
-    //     element.date.day == time.day &&
-    //     element.date.month == time.month &&
-    //     element.date.year == time.year);
-    return pool.scheduleJob(CgetSaledProductsByDate(map: map));
-    // return compute(_getSaledProductsByDate, map);
+    return getCachedCalculation('saledProductsByDate', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = time;
+      return pool.scheduleJob(CgetSaledProductsByDate(map: map));
+    });
   }
 
   Future<List<ProdStats>> getSalesPerProduct(int chunkSize) async {
-    // List<BcLog> logs = logsList.map((e) => BcLog.fromLog(e)).toList();
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    // map['2'] = logs;
-    // return pool.scheduleJob()
-    return pool.scheduleJob(CgetSalesPerProduct(
-      chunkSize: chunkSize,
-      map: map,
-    ));
-    // return compute(CgetSalesPerProduct, map);
+    return getCachedCalculation('salesPerProduct', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = chunkSize;
+      return pool
+          .scheduleJob(CgetSalesPerProduct(chunkSize: chunkSize, map: map));
+    });
   }
 
   Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) async {
-    // List<BcLog> logs = logsList
-    //     .map((e) => BcLog.fromLog(e))
-    //     .toList()
-    //     .where((value) =>
-    //         value.date.month == month.month && value.date.year == month.year)
-    //     .toList();
-
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    map['2'] = month;
-
-    return pool.scheduleJob(CgetDailySalesOfTheMonth(map: map));
-    // return await compute(CgetDailySalesOfTheMonth, map);
+    return getCachedCalculation('dailySalesOfTheMonth', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = month;
+      return pool.scheduleJob(CgetDailySalesOfTheMonth(map: map));
+    });
   }
 
   Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) async {
-    // List<BcLog> logs = logsList
-    //     .map((e) => BcLog.fromLog(e))
-    //     .toList()
-    //     .where((value) =>
-    //         value.date.month == month.month && value.date.year == month.year)
-    //     .toList();
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    map['2'] = month;
-    // map['2'] = logs;
-    return pool.scheduleJob(CgetDailyProfitOfTheMont(map: map));
+    return getCachedCalculation('dailyProfitOfTheMonth', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = month;
+      return pool.scheduleJob(CgetDailyProfitOfTheMont(map: map));
+    });
   }
 
   Future<List<SalesStats>> getMonthlySalesOfTheYear(DateTime month) async {
-    // List<BcLog> logs = logsList
-    //     .map((e) => BcLog.fromLog(e))
-    //     .toList()
-    //     .where((value) => value.date.year == month.year)
-    //     .toList();
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    map['2'] = month;
-    // map['2'] = logs;
-    return pool.scheduleJob(CgetMonthlySalesOfTheyear(map: map));
+    return getCachedCalculation('monthlySalesOfTheYear', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = month;
+      return pool.scheduleJob(CgetMonthlySalesOfTheyear(map: map));
+    });
   }
 
   Future<List<SalesStats>> getMonthlyProfitsOfTheYear(DateTime month) async {
-    Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
-    map['2'] = month;
-    // map['2'] = logs;
-    return pool.scheduleJob(CgetMonthlyProfitsOfTheyear(map: map));
+    return getCachedCalculation('monthlyProfitsOfTheYear', () {
+      Map map = Map();
+      map['1'] = RootIsolateToken.instance!;
+      map['2'] = month;
+      return pool.scheduleJob(CgetMonthlyProfitsOfTheyear(map: map));
+    });
   }
 
 //   import 'dart:io';
@@ -435,7 +411,6 @@ class Lists extends ChangeNotifier {
     Dio dio = Dio();
 
     try {
-      // Fetch the version first
       try {
         var versionResponse = await dio.get(
           'http://$ip/version',
@@ -444,11 +419,9 @@ class Lists extends ChangeNotifier {
         version = versionResponse.data.toString();
         shareList.add(Text(version));
         notifyListeners();
-        // print(version);
       } catch (e) {
         shareList.add(Text('Error fetching version: $e'));
         notifyListeners();
-        // print('Error fetching version: $e');
         return; // Exit if version can't be fetched
       }
 
@@ -530,7 +503,7 @@ class Lists extends ChangeNotifier {
   }
 
   void updateOwner(Owner owner) {
-    db.owners.put(owner.ownerName, owner);
+    // db.owners.put(owner.ownerName, owner);
   }
 
   List<Product?> embeddedToProduct(List<EmbeddedProduct> products) {
@@ -611,6 +584,7 @@ class Lists extends ChangeNotifier {
     notifyListeners();
     List<int> realProductIds =
         log.products.map((e) => e.productId ?? 0).toList();
+    clearAllCache();
     return embeddedToProduct(log.products);
   }
 

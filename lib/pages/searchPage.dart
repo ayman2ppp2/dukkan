@@ -8,12 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SearchPage extends StatefulWidget {
-  // final List<String> searchList;
-  // final TextEditingController controller;
-
-  // void Function(String name) setname;
-  // int sellListIndex;
-
   SearchPage({super.key});
 
   @override
@@ -23,7 +17,6 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   TextEditingController controller = TextEditingController();
   Future<List<Product>>? productsList;
-  Timer? _debounce;
   late SalesProvider li;
 
   @override
@@ -31,13 +24,6 @@ class _SearchPageState extends State<SearchPage> {
     li = Provider.of<SalesProvider>(context, listen: false);
     super.initState();
     productsList = li.search('', true, false);
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    controller.dispose();
-    super.dispose();
   }
 
   void _onSearchChanged(String query, SalesProvider li) {
@@ -116,27 +102,8 @@ class _SearchPageState extends State<SearchPage> {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  // for (var product in snapshot.data!) {
-                  //   print(product.toJson());
-                  // }
+
                   List<Product> products = snapshot.data!;
-
-                  // for (var element in products) {
-                  // print(element.toJson());
-                  // }
-
-                  // Implement the sorting logic here
-                  products.sort((a, b) {
-                    if (a.count == 0 && b.count != 0) {
-                      return 1; // a should come after b
-                    } else if (a.count != 0 && b.count == 0) {
-                      return -1; // a should come before b
-                    } else {
-                      return 0; // if both have stock or both are out of stock, leave them in the same order
-                    }
-                  });
-
-                  // Check if products are empty and sales is true
                   if (products.isEmpty) {
                     products.add(
                       Product.named(
@@ -169,8 +136,7 @@ class _SearchPageState extends State<SearchPage> {
                             ? Colors.red[100]
                             : Colors.transparent,
                         child: ListTile(
-                          enabled:
-                              li.isProductOutOFStock(products[index].name!),
+                          enabled: li.isProductOutOFStock(products[index].id),
                           title: Text(products[index].name!),
                           trailing: Text(
                               products[index].sellPrice!.toStringAsFixed(2)),

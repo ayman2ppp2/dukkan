@@ -59,27 +59,72 @@ class InPage extends StatefulWidget {
 }
 
 class _InPageState extends State<InPage> {
+  double getWholeUnitNumber(String wholeUnit) {
+    switch (wholeUnit) {
+      case 'كيلو':
+        return 1000;
+      case 'رطل':
+        return 450;
+      case 'تمنة':
+        return 850;
+      default:
+        return 1;
+    }
+  }
+
   @override
   void initState() {
-    if (widget.index != -1) {
-      widget.nameCon.text = widget.name;
-      widget.BarcodeCon.text = widget.barcode;
-      widget.ownerCon.text = widget.owner;
-      widget.buyCon.text = widget.buyPrice.toString();
-      widget.sellCon.text = widget.sellPrice.toString();
-      widget.countCon.text = widget.count.toString();
-      widget.wholeUnitCon.text = widget.wholeUnit;
-      widget.offerCountCon.text = widget.offerCount.toString();
-      widget.offerPriceCon.text = widget.offerPrice.toString();
-    }
     super.initState();
+    if (widget.index != -1) {
+      _initializeControllers();
+    }
+  }
+
+  void _initializeControllers() {
+    widget.nameCon.text = widget.name;
+    widget.BarcodeCon.text = widget.barcode;
+    widget.ownerCon.text = widget.owner;
+    widget.buyCon.text =
+        (widget.buyPrice * getWholeUnitNumber(widget.wholeUnit)).toString();
+    widget.sellCon.text =
+        (widget.sellPrice * getWholeUnitNumber(widget.wholeUnit)).toString();
+    widget.countCon.text =
+        (widget.count / getWholeUnitNumber(widget.wholeUnit)).toString();
+    widget.wholeUnitCon.text = widget.wholeUnit;
+    widget.offerCountCon.text = widget.offerCount.toString();
+    widget.offerPriceCon.text = widget.offerPrice.toString();
+  }
+
+  bool _validateFields() {
+    return widget.nameCon.text.isNotEmpty &&
+        widget.ownerCon.text.isNotEmpty &&
+        widget.buyCon.text.isNotEmpty &&
+        widget.sellCon.text.isNotEmpty &&
+        widget.countCon.text.isNotEmpty;
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.brown[200],
+        icon: const Icon(Icons.error_outline_rounded),
+        iconColor: Colors.red,
+        title: const Text(
+          'أدخل قيم صحيحة',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<SalesProvider>(
       builder: (context, li, child) {
-        // li.refreshListOfOwners();
         return Material(
           borderRadius: BorderRadius.circular(12),
           child: SingleChildScrollView(
@@ -101,7 +146,6 @@ class _InPageState extends State<InPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextFormField(
-                    // enabled: widget.index == -1 ? true : false,
                     textDirection: TextDirection.rtl,
                     controller: widget.nameCon,
                     decoration: InputDecoration(
@@ -112,109 +156,95 @@ class _InPageState extends State<InPage> {
                     ),
                   ),
                 ),
-                // owner name
+
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Consumer<Lists>(builder: (context, li, child) {
-                    li.refreshListOfOwners();
-                    return FutureBuilder(
-                        future: li.refreshListOfOwners(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return Text(snapshot.error.toString());
-                          }
-                          if (snapshot.hasData) {
-                            var temp = snapshot.data!
-                                .map((e) => DropdownMenuEntry(
-                                    value: e.ownerName, label: e.ownerName))
-                                .toList();
-                            return DropdownMenu(
-                              onSelected: (value) {
-                                widget.ownerCon.text = value!;
-                              },
-                              initialSelection: widget.ownerCon.text,
-                              controller: widget.ownerCon,
-                              dropdownMenuEntries: temp,
-                              label: Text(
-                                'المالك',
-                                //
-                              ),
-                              width: 114,
-                              menuHeight: 300,
-                              menuStyle: MenuStyle(
-                                  visualDensity: VisualDensity.compact),
-                            );
-                          }
-                          return SpinKitChasingDots(
-                            color: Colors.white,
-                            size: 50,
-                          );
-                        });
-                  }),
+                  child: FutureBuilder(
+                    future: Provider.of<Lists>(context, listen: false)
+                        .refreshListOfOwners(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return SpinKitChasingDots(
+                            color: Colors.white, size: 50);
+                      }
+                      if (snapshot.hasError) {
+                        return Text(snapshot.error.toString());
+                      }
+                      if (snapshot.hasData) {
+                        var temp = snapshot.data!
+                            .map((e) => DropdownMenuEntry(
+                                value: e.ownerName, label: e.ownerName))
+                            .toList();
+                        return DropdownMenu(
+                          onSelected: (value) {
+                            widget.ownerCon.text = value!;
+                          },
+                          initialSelection: widget.ownerCon.text,
+                          controller: widget.ownerCon,
+                          dropdownMenuEntries: temp,
+                          label: Text('المالك'),
+                          width: 114,
+                          menuHeight: 300,
+                          menuStyle:
+                              MenuStyle(visualDensity: VisualDensity.compact),
+                        );
+                      }
+                      return Text('No owners available');
+                    },
+                  ),
                 ),
                 // barcode
                 Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Consumer<SalesProvider>(
-                      builder: (context, value, child) => Flex(
-                        direction: Axis.horizontal,
-                        children: [
-                          Expanded(
-                            flex: 6,
-                            child: TextFormField(
-                              controller: widget.BarcodeCon,
-                              decoration: InputDecoration(
-                                hintText: 'الباركود',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                  padding: const EdgeInsets.all(8.0),
+                  child: Flex(
+                    direction: Axis.horizontal,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: TextFormField(
+                          controller: widget.BarcodeCon,
+                          decoration: InputDecoration(
+                            hintText: 'الباركود',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          Expanded(
-                              child: IconButton(
-                                  onPressed: () {
-                                    MobileScannerController con =
-                                        MobileScannerController();
-                                    showGeneralDialog(
-                                      // useRootNavigator: false,
-                                      context: context,
-                                      pageBuilder: (context, animation,
-                                          secondaryAnimation) {
-                                        return Material(
-                                          child: MobileScanner(
-                                            fit: BoxFit.contain,
-                                            controller: con,
-                                            onDetect: (capture) async {
-                                              final List<Barcode> barcodes =
-                                                  capture.barcodes;
-                                              // final Uint8List? image = capture.image;
-                                              for (final barcode in barcodes) {
-                                                // ip = barcode.rawValue;
-                                                // await SystemSound.play(
-                                                //     SystemSoundType.click);
-                                                widget.BarcodeCon.text =
-                                                    barcode.rawValue!;
-                                                debugPrint(
-                                                    'Barcode found! ${barcode.rawValue}');
-                                              }
-                                              // ScaffoldMessenger.of(context)
-                                              //     .showSnackBar(SnackBar(content: Text(ip)));
-                                              // li.client(ip);
-                                              Navigator.pop(context);
-                                              // Navigator.pop(context);
-                                              // con.stop();
-                                              // con.dispose();
-                                            },
-                                          ),
-                                        );
-                                      },
+                        ),
+                      ),
+                      Expanded(
+                          child: IconButton(
+                              onPressed: () {
+                                MobileScannerController con =
+                                    MobileScannerController();
+                                showGeneralDialog(
+                                  context: context,
+                                  pageBuilder:
+                                      (context, animation, secondaryAnimation) {
+                                    return Material(
+                                      child: MobileScanner(
+                                        fit: BoxFit.contain,
+                                        controller: con,
+                                        onDetect: (capture) async {
+                                          final List<Barcode> barcodes =
+                                              capture.barcodes;
+                                          for (final barcode in barcodes) {
+                                            widget.BarcodeCon.text =
+                                                barcode.rawValue!;
+                                            debugPrint(
+                                                'Barcode found! ${barcode.rawValue}');
+                                          }
+
+                                          Navigator.pop(context);
+                                        },
+                                      ),
                                     );
                                   },
-                                  icon: Icon(Icons.qr_code_scanner))),
-                        ],
-                      ),
-                    )),
+                                );
+                              },
+                              icon: Icon(Icons.qr_code_scanner))),
+                    ],
+                  ),
+                ),
                 //buyPrice
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -251,6 +281,9 @@ class _InPageState extends State<InPage> {
                     controller: widget.countCon,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
+                      prefix: Text(widget.wholeUnitCon.text.isEmpty
+                          ? 'قطعة'
+                          : widget.wholeUnitCon.text),
                       hintText: 'الكمية بالجرام/العدد',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -294,7 +327,9 @@ class _InPageState extends State<InPage> {
                             DropdownMenuEntry(value: 'تمنة', label: 'تمنة'),
                             DropdownMenuEntry(value: 'رطل', label: 'رطل')
                           ],
+                          onSelected: (value) => setState(() {}),
                           controller: widget.wholeUnitCon,
+                          initialSelection: widget.wholeUnit,
                           label: const Text("الوحدة"),
                         ),
                       )
@@ -361,20 +396,26 @@ class _InPageState extends State<InPage> {
                   builder: (context, sa, child) => IconButton(
                     onPressed: () {
                       if (widget.index == -1) {
-                        if (widget.nameCon.text.isNotEmpty &
-                            widget.ownerCon.text.isNotEmpty &
-                            widget.buyCon.text.isNotEmpty &
-                            widget.sellCon.text.isNotEmpty &
-                            widget.countCon.text.isNotEmpty) {
-                          // widget.priceHistory[DateTime.now()] =
-                          //     double.parse(widget.buyCon.text);
+                        if (_validateFields()) {
                           List<Product> temp = [];
                           Product temp2 = Product.named(
                             name: widget.nameCon.text,
                             barcode: widget.BarcodeCon.text,
-                            buyprice: double.parse(widget.buyCon.text),
-                            sellPrice: double.parse(widget.sellCon.text),
-                            count: int.parse(widget.countCon.text),
+                            buyprice: widget.weightable
+                                ? double.parse(widget.buyCon.text) /
+                                    getWholeUnitNumber(widget.wholeUnitCon.text)
+                                        .toDouble()
+                                : double.parse(widget.buyCon.text),
+                            sellPrice: widget.weightable
+                                ? double.parse(widget.sellCon.text) /
+                                    getWholeUnitNumber(widget.wholeUnitCon.text)
+                                        .toDouble()
+                                : double.parse(widget.sellCon.text),
+                            count: widget.weightable
+                                ? int.parse(widget.countCon.text) *
+                                    getWholeUnitNumber(widget.wholeUnitCon.text)
+                                        .toInt()
+                                : int.parse(widget.countCon.text),
                             ownerName: widget.ownerCon.text,
                             weightable: widget.weightable,
                             wholeUnit: widget.wholeUnitCon.text,
@@ -393,42 +434,35 @@ class _InPageState extends State<InPage> {
                           sa.refreshProductsList();
                           // sa.refresh();
                         } else {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              backgroundColor: Colors.brown[200],
-                              icon: const Icon(Icons.error_outline_rounded),
-                              iconColor: Colors.red,
-                              title: const Text(
-                                'أدخل قيم صحيحة',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          );
+                          _showErrorDialog(context, 'ادخل قيم صحيحة');
                         }
                       } else {
-                        if (widget.nameCon.text.isNotEmpty &
-                            widget.buyCon.text.isNotEmpty &
-                            widget.sellCon.text.isNotEmpty &
-                            widget.countCon.text.isNotEmpty) {
-                          // widget.priceHistory[DateTime.now()] =
-                          //     double.parse(widget.buyCon.text);
-                          // print(widget.priceHistory);
+                        if (_validateFields()) {
                           Emap emap = Emap()
                             ..buyPrice = widget.buyPrice
-                            ..sellPrice = widget.offerPrice
+                            ..sellPrice = widget.sellPrice
                             ..date = DateTime.now();
                           widget.priceHistory.add(emap);
                           Product temp2 = Product.named2(
                             id: widget.id!,
                             name: widget.nameCon.text,
                             barcode: widget.BarcodeCon.text,
-                            buyprice: double.parse(widget.buyCon.text),
-                            sellPrice: double.parse(widget.sellCon.text),
-                            count: int.parse(widget.countCon.text),
+                            buyprice: widget.weightable
+                                ? double.parse(widget.buyCon.text) /
+                                    getWholeUnitNumber(widget.wholeUnitCon.text)
+                                        .toDouble()
+                                : double.parse(widget.buyCon.text),
+                            sellPrice: widget.weightable
+                                ? double.parse(widget.sellCon.text) /
+                                    getWholeUnitNumber(widget.wholeUnitCon.text)
+                                        .toDouble()
+                                : double.parse(widget.sellCon.text),
+                            count: widget.weightable
+                                ? (double.parse(widget.countCon.text) *
+                                        getWholeUnitNumber(
+                                            widget.wholeUnitCon.text))
+                                    .toInt()
+                                : double.parse(widget.countCon.text).toInt(),
                             ownerName: widget.ownerCon.text,
                             weightable: widget.weightable,
                             wholeUnit: widget.wholeUnitCon.text,
@@ -446,21 +480,7 @@ class _InPageState extends State<InPage> {
                           li.refresh();
                           Navigator.pop(context);
                         } else {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              backgroundColor: Colors.brown[200],
-                              icon: const Icon(Icons.error_outline_rounded),
-                              iconColor: Colors.red,
-                              title: const Text(
-                                'أدخل قيم صحيحة',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          );
+                          _showErrorDialog(context, 'ادخل قيم صحيحة');
                         }
                       }
                     },

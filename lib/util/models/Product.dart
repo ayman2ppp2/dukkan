@@ -21,6 +21,7 @@ class Product {
   // @HiveField(4, defaultValue: '')
   String? barcode;
   // @HiveField(5, defaultValue: 0)
+  @Index()
   int? count;
   // @HiveField(6, defaultValue: false)
   bool? weightable;
@@ -39,6 +40,7 @@ class Product {
   DateTime? endDate;
   // @HiveField(13, defaultValue: false)
   bool? hot;
+
   Product();
   Product.named({
     required this.name,
@@ -89,6 +91,7 @@ class Product {
   //   endDate = product.endDate;
   //   hot = product.hot;
   // }
+
   Product.fromJson({required map}) {
     name = map['name'] as String;
     ownerName = map['ownerName'] as String;
