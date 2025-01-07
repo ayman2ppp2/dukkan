@@ -11,7 +11,7 @@ class Pool {
     if (_pool == null) {
       // If the pool has not been initialized, create and start it
       // (Platform.numberOfProcessors ~/ 2) - 1
-      _pool = IsolatePool(3);
+      _pool = IsolatePool((Platform.numberOfProcessors ~/ 2) - 1);
       await _pool!.start();
     }
     return _pool!; // Return the same instance of the pool

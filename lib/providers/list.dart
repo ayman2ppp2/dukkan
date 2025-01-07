@@ -78,7 +78,7 @@ class Lists extends ChangeNotifier {
   }
 
   void _initializeStreamListener() {
-    db.isar!.products.watchLazy().listen((_) {
+    db.isar!.products.watchLazy(fireImmediately: true).listen((_) {
       // Call clearCache with the desired cacheKey
       clearCache(
           'salesPerProduct'); // Replace 'yourCacheKey' with the actual key
