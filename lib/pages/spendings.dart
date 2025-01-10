@@ -17,8 +17,6 @@ class _SpendingsState extends State<Spendings> {
   @override
   Widget build(BuildContext context) {
     var ex = Provider.of<ExpenseProvider>(context);
-    var totalprofit = 0.0;
-    var loans = 0.0;
     BoxShadow shadow = BoxShadow(
       color: Color.fromARGB(255, 54, 49, 49),
       spreadRadius: 1,
@@ -78,7 +76,6 @@ class _SpendingsState extends State<Spendings> {
                                 future: ex.getProfitOfTheMonth(),
                                 builder: (context, snapshot) {
                                   if (snapshot.hasData) {
-                                    totalprofit = snapshot.data!;
                                     return FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Text(

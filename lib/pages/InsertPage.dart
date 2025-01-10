@@ -67,8 +67,10 @@ class _InPageState extends State<InPage> {
         return 450;
       case 'تمنة':
         return 850;
-      default:
+      case '':
         return 1;
+      default:
+        return double.tryParse(wholeUnit) ?? 0;
     }
   }
 
@@ -89,10 +91,14 @@ class _InPageState extends State<InPage> {
     widget.sellCon.text =
         (widget.sellPrice * getWholeUnitNumber(widget.wholeUnit)).toString();
     widget.countCon.text =
-        (widget.count / getWholeUnitNumber(widget.wholeUnit)).toString();
+        padd(original: widget.count.toString(), wholeUnit: widget.wholeUnit)
+            .toString();
     widget.wholeUnitCon.text = widget.wholeUnit;
     widget.offerCountCon.text = widget.offerCount.toString();
-    widget.offerPriceCon.text = widget.offerPrice.toString();
+    widget.offerPriceCon.text = unPadd(
+            padded: widget.offerPrice.toString(),
+            wholeUnit: widget.offerCount.toString())
+        .toString();
   }
 
   bool _validateFields() {
@@ -412,26 +418,30 @@ class _InPageState extends State<InPage> {
                                         .toDouble()
                                 : double.parse(widget.sellCon.text),
                             count: widget.weightable
-                                ? int.parse(widget.countCon.text) *
-                                    getWholeUnitNumber(widget.wholeUnitCon.text)
-                                        .toInt()
-                                : int.parse(widget.countCon.text),
+                                ? unPadd(
+                                        padded: widget.countCon.text,
+                                        wholeUnit: widget.wholeUnitCon.text)
+                                    .toInt()
+                                : (double.tryParse(widget.countCon.text) ?? 0)
+                                    .toInt(),
                             ownerName: widget.ownerCon.text,
                             weightable: widget.weightable,
                             wholeUnit: widget.wholeUnitCon.text,
                             offer: widget.offer,
                             offerCount:
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
-                            offerPrice:
-                                double.tryParse(widget.offerPriceCon.text) ?? 0,
-                            priceHistory: [],
+                            offerPrice: padd(
+                                original: widget.offerPriceCon.text,
+                                wholeUnit: widget.offerCountCon.text),
+                            // double.tryParse(widget.offerPriceCon.text) ?? 0,
+                            priceHistory: widget.priceHistory,
                             endDate: widget.endDate,
                             hot: false,
                           );
                           temp.add(temp2);
                           Navigator.pop(context);
                           li.db.insertProducts(products: temp);
-                          sa.refreshProductsList();
+                          // sa.refreshProductsList();
                           // sa.refresh();
                         } else {
                           _showErrorDialog(context, 'ادخل قيم صحيحة');
@@ -458,26 +468,29 @@ class _InPageState extends State<InPage> {
                                         .toDouble()
                                 : double.parse(widget.sellCon.text),
                             count: widget.weightable
-                                ? (double.parse(widget.countCon.text) *
-                                        getWholeUnitNumber(
-                                            widget.wholeUnitCon.text))
+                                ? unPadd(
+                                        padded: widget.countCon.text,
+                                        wholeUnit: widget.wholeUnitCon.text)
                                     .toInt()
-                                : double.parse(widget.countCon.text).toInt(),
+                                : (double.tryParse(widget.countCon.text) ?? 0)
+                                    .toInt(),
                             ownerName: widget.ownerCon.text,
                             weightable: widget.weightable,
                             wholeUnit: widget.wholeUnitCon.text,
                             offer: widget.offer,
                             offerCount:
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
-                            offerPrice:
-                                double.tryParse(widget.offerPriceCon.text) ?? 0,
+                            offerPrice: padd(
+                                original: widget.offerPriceCon.text,
+                                wholeUnit: widget.offerCountCon.text),
+                            // double.tryParse(widget.offerPriceCon.text) ?? 0,
                             priceHistory: widget.priceHistory,
                             endDate: widget.endDate,
                             hot: false,
                           );
                           sa.updateProduct(temp2);
-                          sa.refreshProductsList();
-                          li.refresh();
+                          // sa.refreshProductsList();
+                          // li.refresh();
                           Navigator.pop(context);
                         } else {
                           _showErrorDialog(context, 'ادخل قيم صحيحة');
@@ -495,5 +508,13 @@ class _InPageState extends State<InPage> {
         );
       },
     );
+  }
+
+  double padd({required String original, required String wholeUnit}) {
+    return double.parse(original) / getWholeUnitNumber(wholeUnit);
+  }
+
+  double unPadd({required String padded, required String wholeUnit}) {
+    return double.parse(padded) * getWholeUnitNumber(wholeUnit);
   }
 }

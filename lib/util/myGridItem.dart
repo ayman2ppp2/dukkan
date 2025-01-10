@@ -116,9 +116,9 @@ class GridItem extends StatelessWidget {
                                                 snapshot.data!.weightable!,
                                             offer: snapshot.data!.offer!,
                                             offerCount:
-                                                snapshot.data!.offerCount!,
+                                                snapshot.data!.offerCount ?? 0,
                                             offerPrice:
-                                                snapshot.data!.offerPrice!,
+                                                snapshot.data!.offerPrice ?? 0,
                                             endDate: snapshot.data!.endDate!,
                                             priceHistory: List.from(
                                                 snapshot.data!.priceHistory,

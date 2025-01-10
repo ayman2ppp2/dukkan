@@ -582,8 +582,7 @@ class Lists extends ChangeNotifier {
     //     '${date.year}-${date.month}-${date.day}-${date.hour}-${date.minute}-${date.second}');
     // refreshLogsList();
     notifyListeners();
-    List<int> realProductIds =
-        log.products.map((e) => e.productId ?? 0).toList();
+
     clearAllCache();
     return embeddedToProduct(log.products);
   }

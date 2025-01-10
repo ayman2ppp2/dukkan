@@ -4,7 +4,6 @@ import 'package:dukkan/pages/CheckOutPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/myListItem.dart';
-import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/pages/searchPage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -19,8 +18,11 @@ class SellPage extends StatefulWidget {
 
 class _SellPageState extends State<SellPage> {
   TrackingScrollController con = TrackingScrollController();
+
   @override
   Widget build(BuildContext context) {
+    var exp = Provider.of<ExpenseProvider>(context, listen: false);
+
     return Consumer<SalesProvider>(
       builder: (context, sa, child) {
         return LayoutBuilder(builder: (context, constraints) {
@@ -128,20 +130,6 @@ class _SellPageState extends State<SellPage> {
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
                     child: IconButton.filled(
                       onPressed: () {
-                        // var LoID = '1e88c930-7a71-1e48-bab5-1de85dfff6fa';
-                        // print(sa.db.loaners.values.elementAt(2).ID);
-                        // sa.db.loaners.put(
-                        //     LoID,
-                        //     Loaner(
-                        //       name: sa.db.loaners.get(LoID).name,
-                        //       ID: sa.db.loaners.get(LoID).ID,
-                        //       phoneNumber: sa.db.loaners.get(LoID).phoneNumber,
-                        //       location: sa.db.loaners.get(LoID).location,
-                        //       lastPayment: sa.db.loaners.get(LoID).lastPayment,
-                        //       lastPaymentDate:
-                        //           sa.db.loaners.get(LoID).lastPaymentDate,
-                        //       loanedAmount: 5450,
-                        //     ));
                         sa.refreshProductsList();
                         showGeneralDialog(
                           barrierDismissible: true,
@@ -192,8 +180,6 @@ class _SellPageState extends State<SellPage> {
                     child: Consumer<Lists>(
                       builder: (context, li, child) => IconButton.filled(
                         onPressed: () {
-                          var exp = Provider.of<ExpenseProvider>(context,
-                              listen: false);
                           sa.refreshLoanersList();
                           if (sa.sellList.isNotEmpty) {
                             showGeneralDialog(

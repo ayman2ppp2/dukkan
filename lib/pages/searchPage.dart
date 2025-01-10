@@ -129,8 +129,6 @@ class _SearchPageState extends State<SearchPage> {
                   return ListView.builder(
                     itemCount: products.length,
                     itemBuilder: (context, index) {
-                      var li =
-                          Provider.of<SalesProvider>(context, listen: false);
                       return Container(
                         color: li.isProductOutOfDate(products[index].endDate!)
                             ? Colors.red[100]
@@ -153,7 +151,7 @@ class _SearchPageState extends State<SearchPage> {
                               ),
                               if (products[index].offer!)
                                 Text(
-                                  'عرض: ${products[index].offerCount} بسعر ${(products[index].offerPrice! * products[index].offerCount!).toStringAsFixed(0)}',
+                                  'عرض: ${products[index].offerCount}${products[index].weightable! ? "جم" : ''} بسعر ${(products[index].offerPrice! * products[index].offerCount!).toStringAsFixed(0)}',
                                   style: TextStyle(color: Colors.blue),
                                 ),
                             ],

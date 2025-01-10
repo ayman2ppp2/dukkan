@@ -1,5 +1,4 @@
 import 'package:dukkan/providers/list.dart';
-import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/receipt.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +45,7 @@ class _LogsState extends State<Logs> {
 
   @override
   Widget build(BuildContext context) {
-    var sa = Provider.of<SalesProvider>(context, listen: false);
+    // var sa = Provider.of<SalesProvider>(context, listen: false);
     var li = Provider.of<Lists>(context, listen: false);
     return Scaffold(
       appBar: AppBar(

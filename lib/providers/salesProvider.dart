@@ -8,7 +8,6 @@ import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 // import 'package:provider/provider.dart';
 
 class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
@@ -167,7 +166,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     String phone,
     String location,
   ) async {
-    var uuid = Uuid();
+    // var uuid = Uuid();
 
     db.insertLoaner(
       Loaner(
@@ -254,7 +253,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   Future<List<Product>> loadProductsFromSharedPreferences() async {
     var _productListJson = _pref.getString('productList');
     if (_productListJson != null) {
-      final List<dynamic> jsonList = jsonDecode(_productListJson!);
+      final List<dynamic> jsonList = jsonDecode(_productListJson);
       return jsonList.map((json) => Product.fromJson(map: json)).toList();
     }
     return [];

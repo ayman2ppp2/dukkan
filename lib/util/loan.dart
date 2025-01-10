@@ -6,6 +6,7 @@ import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/receipt.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:provider/provider.dart';
@@ -23,6 +24,27 @@ class _LoanState extends State<Loan> {
   List<Log> receipts = [];
   double payment = 0;
   TextEditingController con = TextEditingController();
+  String formatTextField(oldValue, newValue) {
+    try {
+      return intl.NumberFormat.currency(decimalDigits: 0, name: '').format(
+          intl.NumberFormat.currency(decimalDigits: 0, name: '')
+              .parse(newValue.text));
+    } on FormatException catch (_) {
+      return '';
+    }
+  }
+
+  int getEOLOffset(TextEditingValue oldValue, TextEditingValue newValue) {
+    try {
+      return intl.NumberFormat.currency(decimalDigits: 0, name: '')
+          .format(intl.NumberFormat.currency(decimalDigits: 0, name: '')
+              .parse(newValue.text))
+          .length;
+    } on FormatException catch (_) {
+      return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     receipts = Provider.of<Lists>(context, listen: false).logsList;
@@ -146,7 +168,7 @@ class _LoanState extends State<Loan> {
                               ),
                               Item(
                                 child: Text(
-                                    'المطلوب : ${snapshot.data!.loanedAmount}'),
+                                    'المطلوب : ${intl.NumberFormat.simpleCurrency(decimalDigits: 0, name: '').format(snapshot.data!.loanedAmount)}'),
                               ),
                               Item(
                                 child: Text(
@@ -442,7 +464,7 @@ class _LoanState extends State<Loan> {
                                     );
                                   },
                                   child: Text(
-                                      'اخر دفعة :${snapshot.data!.lastPayment!.isEmpty ? 0.toString() : snapshot.data!.lastPayment!.last.value!}'),
+                                      'اخر دفعة :${snapshot.data!.lastPayment!.isEmpty ? 0.toString() : intl.NumberFormat.simpleCurrency(decimalDigits: 0, name: '').format(double.parse(snapshot.data!.lastPayment!.last.value!))}'),
                                 ),
                               ),
                               Item(
@@ -454,6 +476,19 @@ class _LoanState extends State<Loan> {
                                         'تسديد : '),
                                     Expanded(
                                       child: TextFormField(
+                                        inputFormatters: [
+                                          TextInputFormatter.withFunction(
+                                            (oldValue, newValue) =>
+                                                TextEditingValue(
+                                              selection:
+                                                  TextSelection.collapsed(
+                                                      offset: getEOLOffset(
+                                                          oldValue, newValue)),
+                                              text: formatTextField(
+                                                  oldValue, newValue),
+                                            ),
+                                          ),
+                                        ],
                                         controller: con,
                                         autocorrect: true,
                                         keyboardType: TextInputType.number,
@@ -509,11 +544,15 @@ class _LoanState extends State<Loan> {
                                           var sa = Provider.of<SalesProvider>(
                                               context,
                                               listen: false);
-                                          (double.tryParse(con.text) ?? 0) <=
+                                          (intl.NumberFormat.currency(name: '')
+                                                              .parse(con.text))
+                                                          .toDouble() <=
                                                       snapshot.data!
                                                           .loanedAmount! &&
-                                                  (double.tryParse(con.text) ??
-                                                          0) !=
+                                                  (intl.NumberFormat.currency(
+                                                                  name: '')
+                                                              .parse(con.text))
+                                                          .toDouble() !=
                                                       0
                                               ? showDialog(
                                                   context: context,
@@ -559,7 +598,7 @@ class _LoanState extends State<Loan> {
                                                                             name:
                                                                                 snapshot.data!.name!,
                                                                             remaining:
-                                                                                snapshot.data!.loanedAmount! - (double.tryParse(con.text) ?? 0),
+                                                                                snapshot.data!.loanedAmount! - (intl.NumberFormat.currency(name: '').parse(con.text)),
                                                                           ),
                                                                         )));
 
@@ -594,9 +633,11 @@ class _LoanState extends State<Loan> {
                                                   builder: (context) {
                                                     return AlertDialog(
                                                       title: Text(
-                                                        (double.tryParse(con
-                                                                        .text) ??
-                                                                    0) !=
+                                                        (intl.NumberFormat.currency(
+                                                                        name:
+                                                                            '')
+                                                                    .parse(con
+                                                                        .text)) !=
                                                                 0
                                                             ? 'لا يمكنك ان تسدد اكثر من المطلوب'
                                                             : 'لا يمكنك تسديد لاشيء',
