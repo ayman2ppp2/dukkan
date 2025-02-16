@@ -1,6 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    id 'com.google.gms.google-services' version '4.4.2' apply false
+    id "com.google.gms.google-services"
 }
 
 // Load local.properties
@@ -59,5 +61,7 @@ flutter {
 }
 
 dependencies {
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    classpath "com.google.gms:google-services:4.4.0"
 }

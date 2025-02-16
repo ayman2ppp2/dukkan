@@ -19,12 +19,14 @@ class _MyListTileState extends State<MyListTile> {
   String weight = "";
   int gg = 0;
   int _multiplyer = 1;
+  int precession = 0;
 
   TextEditingController con = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Consumer<SalesProvider>(
       builder: (context, li, child) {
+        precession = li.getWeightPrececsion() ?? 0;
         return ListTile(
           leading: !widget.product.hot!
               ? (widget.product.offer! &&
@@ -251,9 +253,9 @@ class _MyListTileState extends State<MyListTile> {
                           if (value.isNotEmpty) {
                             gg = ((((((double.tryParse(value) ?? 0) ~/
                                             (widget.product.sellPrice!))) /
-                                        5)
+                                        precession)
                                     .ceil()) *
-                                5);
+                                precession);
                             sa.updateSellListCount(
                                 index: widget.index, count: gg);
                           }

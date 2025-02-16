@@ -11,12 +11,14 @@ class ConfirmationPage extends StatelessWidget {
   final String name;
   final double remaining;
   final Function clearField;
+  final DateTime date;
 
   final ScreenshotController screenshotController = ScreenshotController();
 
   ConfirmationPage({
     super.key,
     required this.paied,
+    required this.date,
     required this.name,
     required this.remaining,
     required this.clearField,
@@ -86,7 +88,7 @@ class ConfirmationPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'تم تسديد ${formatter.NumberFormat.currency(name: '').format(double.tryParse(paied) ?? 0)}',
+                        'تم تسديد $paied',
                         style: TextStyle(
                           color: Colors.brown[800],
                           fontSize: 22,
@@ -111,9 +113,7 @@ class ConfirmationPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        formatter.DateFormat.yMEd()
-                            .add_jmz()
-                            .format(DateTime.now()),
+                        formatter.DateFormat.yMEd().add_jmz().format(date),
                         style: TextStyle(
                           color: Colors.brown[800],
                           fontSize: 20,

@@ -96,6 +96,19 @@ const LogSchema = CollectionSchema(
         )
       ],
     ),
+    r'loanerID': IndexSchema(
+      id: -8216433769298640305,
+      name: r'loanerID',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'loanerID',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
     r'expense': IndexSchema(
       id: -4097527398321967696,
       name: r'expense',
@@ -323,6 +336,14 @@ extension LogQueryWhereSort on QueryBuilder<Log, Log, QWhere> {
     });
   }
 
+  QueryBuilder<Log, Log, QAfterWhere> anyLoanerID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'loanerID'),
+      );
+    });
+  }
+
   QueryBuilder<Log, Log, QAfterWhere> anyExpense() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -534,6 +555,114 @@ extension LogQueryWhere on QueryBuilder<Log, Log, QWhereClause> {
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<Log, Log, QAfterWhereClause> loanerIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'loanerID',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Log, Log, QAfterWhereClause> loanerIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'loanerID',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Log, Log, QAfterWhereClause> loanerIDEqualTo(int? loanerID) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'loanerID',
+        value: [loanerID],
+      ));
+    });
+  }
+
+  QueryBuilder<Log, Log, QAfterWhereClause> loanerIDNotEqualTo(int? loanerID) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'loanerID',
+              lower: [],
+              upper: [loanerID],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'loanerID',
+              lower: [loanerID],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'loanerID',
+              lower: [loanerID],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'loanerID',
+              lower: [],
+              upper: [loanerID],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Log, Log, QAfterWhereClause> loanerIDGreaterThan(
+    int? loanerID, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'loanerID',
+        lower: [loanerID],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Log, Log, QAfterWhereClause> loanerIDLessThan(
+    int? loanerID, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'loanerID',
+        lower: [],
+        upper: [loanerID],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Log, Log, QAfterWhereClause> loanerIDBetween(
+    int? lowerLoanerID,
+    int? upperLoanerID, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'loanerID',
+        lower: [lowerLoanerID],
+        includeLower: includeLower,
+        upper: [upperLoanerID],
+        includeUpper: includeUpper,
+      ));
     });
   }
 

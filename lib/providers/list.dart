@@ -410,6 +410,15 @@ class Lists extends ChangeNotifier {
     var te = await getApplicationDocumentsDirectory();
     Dio dio = Dio();
 
+    // Function to create a backup of existing files
+    Future<void> createBackup() async {
+      await db.createLocalBackup();
+      shareList.add(Text('Backup created for : isarInstance.isar'));
+      notifyListeners();
+    }
+
+    await createBackup();
+
     try {
       try {
         var versionResponse = await dio.get(
@@ -473,11 +482,21 @@ class Lists extends ChangeNotifier {
           continue; // Skip the shutdown file download
         }
 
+        // Create a backup before downloading the file
+
         // Download the file
         try {
           shareList.add(Text('receiving : $fileName'));
           notifyListeners();
-          var response = await dio.download('http://$ip/$fileName', filePath);
+          var response = await dio
+              .download('http://$ip/$fileName', filePath)
+              .then((value) {
+            if (Platform.isWindows) {
+              db.windows();
+              return value;
+            }
+            return value;
+          });
 
           if (response.statusCode == 200) {
             shareList.add(Text('File received: $fileName'));

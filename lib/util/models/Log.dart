@@ -22,7 +22,7 @@ class Log {
   late double discount;
   @Index()
   late bool loaned;
-
+  @Index()
   late int? loanerID;
   @Index()
   late bool expense;

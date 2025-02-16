@@ -2,6 +2,7 @@ import 'package:dukkan/providers/expenseProvider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/CheckOutPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
+import 'package:dukkan/util/models/Product.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/myListItem.dart';
 import 'package:dukkan/pages/searchPage.dart';
@@ -59,7 +60,9 @@ class _SellPageState extends State<SellPage> {
                               return Dismissible(
                                 key: ValueKey(sa.sellList[index]),
                                 onDismissed: (direction) {
-                                  sa.sellList.removeAt(index);
+                                  setState(() {
+                                    sa.sellList.removeAt(index);
+                                  });
                                 },
                                 background: Container(
                                   color: Colors.red[100],
@@ -94,7 +97,9 @@ class _SellPageState extends State<SellPage> {
                               return Dismissible(
                                 key: ValueKey(sa.sellList[index]),
                                 onDismissed: (direction) {
-                                  sa.sellList.removeAt(index);
+                                  setState(() {
+                                    sa.sellList.removeAt(index);
+                                  });
                                 },
                                 background: Container(
                                   color: Colors.red[100],
@@ -130,6 +135,7 @@ class _SellPageState extends State<SellPage> {
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
                     child: IconButton.filled(
                       onPressed: () {
+                        print(sa.db.hasna(id: 9533));
                         sa.refreshProductsList();
                         showGeneralDialog(
                           barrierDismissible: true,
@@ -180,7 +186,7 @@ class _SellPageState extends State<SellPage> {
                     child: Consumer<Lists>(
                       builder: (context, li, child) => IconButton.filled(
                         onPressed: () {
-                          sa.refreshLoanersList();
+                          // sa.refreshLoanersList();
                           if (sa.sellList.isNotEmpty) {
                             showGeneralDialog(
                               context: context,

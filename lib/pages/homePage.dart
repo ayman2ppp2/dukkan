@@ -1,5 +1,7 @@
 // import 'dart:io';
 
+import 'package:dukkan/pages/landingPge.dart';
+import 'package:dukkan/pages/settingsPage.dart';
 import 'package:dukkan/pages/spendings.dart';
 import 'package:dukkan/providers/expenseProvider.dart';
 import 'package:dukkan/providers/list.dart';
@@ -41,17 +43,8 @@ class _HomePageState extends State<HomePage> {
         child: Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.brown,
-            // leading: IconButton(
-            //   onPressed: () {
-            //     print(Scaffold.hasDrawer(context));
-            //   },
-            //   icon: const Icon(
-            //     Icons.storefront,
-            //     color: Colors.white,
-            //   ),
-            // ),
-            title: const Text(
-              'دكــان',
+            title: Text(
+              Provider.of<SalesProvider>(context).getStoreName() ?? 'دكان',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -64,6 +57,8 @@ class _HomePageState extends State<HomePage> {
                     MobileScannerController con = MobileScannerController();
                     var ip;
                     showGeneralDialog(
+                      barrierDismissible: true,
+                      barrierLabel: 'gg',
                       context: context,
                       pageBuilder: (context, animation, secondaryAnimation) =>
                           Padding(
@@ -72,82 +67,25 @@ class _HomePageState extends State<HomePage> {
                           child: MobileScanner(
                             fit: BoxFit.contain,
                             controller: con,
-                            onDetect: (capture) {
+                            onDetect: (capture) async {
                               final List<Barcode> barcodes = capture.barcodes;
                               for (final barcode in barcodes) {
-                                li.search(barcode.rawValue!, true, true);
                                 ip = barcode.rawValue;
                                 debugPrint(
                                     'Barcode found! ${barcode.rawValue}');
-                                if (li.searchTemp.isNotEmpty) {
-                                  Product product = li.searchTemp[0];
-                                  li.sellList.add(Product.named(
-                                    // id: product.id,
-                                    barcode: product.barcode,
-                                    name: product.name,
-                                    buyprice: product.buyprice,
-                                    sellPrice: product.sellPrice,
-                                    count: 1,
-                                    ownerName: product.ownerName,
-                                    weightable: product.weightable,
-                                    wholeUnit: product.wholeUnit,
-                                    offer: product.offer,
-                                    offerCount: product.offerCount,
-                                    offerPrice: product.offerPrice,
-                                    priceHistory: product.priceHistory,
-                                    endDate: product.endDate,
-                                    hot: product.hot,
-                                  ));
-                                  // Navigator.pop(context);
-                                  li.searchTemp.clear();
-                                  li.refresh();
-                                }
+                                li.sellList.addAll(await li.search(
+                                    barcode.rawValue!, true, true));
+                                Future.delayed(
+                                  Duration(seconds: 1),
+                                );
                               }
                               ScaffoldMessenger.of(context)
                                   .showSnackBar(SnackBar(content: Text(ip)));
-                              // li.client(ip);
-                              // Navigator.pop(context);
-                              // con.stop();
-                              // con.dispose();
                             },
                           ),
                         ),
                       ),
                     );
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(
-                    //       builder: (context) => HiveBoxesView(
-                    //               hiveBoxes: {
-                    //                 li.db.inventory: (json) => Product.fromJson,
-                    //                 li.db.owners: (json) => Owner.fromJson
-                    //               },
-                    //               onError: (String errorMessage) =>
-                    //                   {print(errorMessage)})),
-                    // );
-                    // print(await Navigator.of(context).push(
-                    //   MaterialPageRoute(
-                    //     builder: (context) => AiBarcodeScanner(
-                    //       validator: (value) {
-                    //         return value.startsWith('https://');
-                    //       },
-                    //       canPop: false,
-                    //       onScan: (String value) {
-                    //         debugPrint(value);
-                    //         // setState(() {
-                    //         //   barcode = value;
-                    //         // });
-                    //       },
-                    //       onDetect: (p0) {},
-                    //       onDispose: () {
-                    //         debugPrint("Barcode scanner disposed!");
-                    //       },
-                    //       controller: MobileScannerController(
-                    //         detectionSpeed: DetectionSpeed.noDuplicates,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ));
                   },
                   icon: Icon(
                     Icons.barcode_reader,
@@ -333,7 +271,7 @@ class _HomePageState extends State<HomePage> {
                         );
                     // Navigator.pop(context);
                   },
-                  leading: Icon(Icons.restart_alt_rounded),
+                  leading: Icon(Icons.upload_rounded),
                   title: Text('رفع نسخة احتياطية'),
                   enabled: true,
                 ),
@@ -349,25 +287,51 @@ class _HomePageState extends State<HomePage> {
                         );
                     // Navigator.pop(context);
                   },
-                  leading: Icon(Icons.restart_alt_rounded),
+                  leading: Icon(Icons.download_rounded),
                   title: Text('تنزيل النسخة الإحتياطية'),
                   enabled: true,
                 ),
                 ListTile(
                   onTap: () async {
                     var li = Provider.of<Lists>(context, listen: false);
-                    await li.db.useBackup().then(
+                    await li.db.useLocalBacup().then(
                           (value) => ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('done converting'),
+                              content:
+                                  Text('تم استخدام النسخة الاحتياطيةالمحلية'),
                             ),
                           ),
                         );
-                    Navigator.pop(context);
+                    // var li = Provider.of<Lists>(context, listen: false);
+                    // await li.db.useBackup().then(
+                    //       (value) => ScaffoldMessenger.of(context).showSnackBar(
+                    //         SnackBar(
+                    //           content: Text('done converting'),
+                    //         ),
+                    //       ),
+                    //     );
+                    // Navigator.pop(context);
                   },
                   leading: Icon(Icons.restart_alt_rounded),
-                  title: Text('تحويل'),
-                  enabled: false,
+                  title: Text('إستخدام نسخة احتياطية محلية'),
+                  enabled: true,
+                ),
+                ListTile(
+                  onTap: () async {
+                    var sa = Provider.of<SalesProvider>(context, listen: false);
+
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangeNotifierProvider.value(
+                            value: sa,
+                            child: SettingsPage(),
+                          ),
+                        ));
+                  },
+                  leading: Icon(Icons.settings),
+                  title: Text('الإعدادات'),
+                  enabled: true,
                 ),
                 ListTile(
                   onTap: () async {

@@ -370,4 +370,20 @@ class AuthAPI extends ChangeNotifier {
       print('Error downloading backup: $e\n$stackTrace');
     }
   }
+
+  void uploadPaymentReceipt({required IO.File receipt}) {}
+
+  Future<User> setSubscriptionPlan(int s) {
+    return account.updatePrefs(prefs: {
+      'subscriptionPlan': s,
+      'subscriptionExpiry':
+          DateTime.now().add(Duration(days: s)).toIso8601String(),
+    });
+  }
+
+  Future<String> getSubscriptionStatus() {
+    return account
+        .getPrefs()
+        .then((value) => value.data['subscriptionPlan'] ?? '');
+  }
 }

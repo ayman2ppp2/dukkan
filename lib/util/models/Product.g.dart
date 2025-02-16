@@ -107,6 +107,19 @@ const ProductSchema = CollectionSchema(
           caseSensitive: false,
         )
       ],
+    ),
+    r'count': IndexSchema(
+      id: -9148443115153931023,
+      name: r'count',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'count',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -342,6 +355,14 @@ extension ProductQueryWhereSort on QueryBuilder<Product, Product, QWhere> {
       );
     });
   }
+
+  QueryBuilder<Product, Product, QAfterWhere> anyCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'count'),
+      );
+    });
+  }
 }
 
 extension ProductQueryWhere on QueryBuilder<Product, Product, QWhereClause> {
@@ -562,6 +583,115 @@ extension ProductQueryWhere on QueryBuilder<Product, Product, QWhereClause> {
               upper: [''],
             ));
       }
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> countIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'count',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> countIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'count',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> countEqualTo(int? count) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'count',
+        value: [count],
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> countNotEqualTo(
+      int? count) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'count',
+              lower: [],
+              upper: [count],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'count',
+              lower: [count],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'count',
+              lower: [count],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'count',
+              lower: [],
+              upper: [count],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> countGreaterThan(
+    int? count, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'count',
+        lower: [count],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> countLessThan(
+    int? count, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'count',
+        lower: [],
+        upper: [count],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterWhereClause> countBetween(
+    int? lowerCount,
+    int? upperCount, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'count',
+        lower: [lowerCount],
+        includeLower: includeLower,
+        upper: [upperCount],
+        includeUpper: includeUpper,
+      ));
     });
   }
 }

@@ -5,6 +5,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/test.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
@@ -77,7 +78,7 @@ class DB {
   }
 
   Future<List<int>> updateProducts(List<EmbeddedProduct> products) async {
-    var ids = products.map((e) => e.hot! ? 0 : e.productId!).toList();
+    var ids = products.map((e) => e.hot! ? 0 : (e.productId ?? 0)).toList();
     var realProducts = embeddedToProduct(ids);
     var updatedRealProducts = List<Product>.empty(growable: true);
     for (var product in realProducts.nonNulls.toList()) {
@@ -127,12 +128,6 @@ class DB {
       return isar!.logs.putAll(temp1);
     });
 
-    // for (var element in await isar!.logs.where().anyId().findAll()) {
-    //   isar!.writeTxn(() {
-    //     element.products.addAll(element.oldProducts);
-    //     return element.products.save();
-    //   });
-    // }
     print('finished logs');
     List<Owner> temp2 = List.empty(growable: true);
 
@@ -182,38 +177,26 @@ class DB {
       }
     }
 
-    return isar!.writeTxn(() async => isar!.loaners.put(
-            // log.loanerID,
-            Loaner(
+    return isar!.writeTxn(() async => isar!.loaners.put(Loaner(
           name: temp.name,
-          // ID: temp.ID,
           phoneNumber: temp.phoneNumber,
           location: temp.location,
           lastPayment: temp.lastPayment,
-          // lastPaymentDate: temp.lastPaymentDate,
           loanedAmount: (temp.loanedAmount ?? 0) > 0
               ? temp.loanedAmount! - (log.price + sum)
               : 0,
         )
-              ..ID = temp.ID
-              ..zeroingDate = CalculateDate()));
+          ..ID = temp.ID
+          ..zeroingDate = CalculateDate()));
   }
 
   Future<List<Owner>> getOwnersList() {
     return isar!.owners.where().anyId().findAll();
-    // return List<Owner>.from(owners.values);
   }
 
   Future<Id> insertOwner(Owner owner) {
     return isar!.writeTxn(() async => isar!.owners.put(owner));
-    // owners.put(owner.ownerName, owner);
   }
-
-  // List<BcProduct> getAllProductsPev() {
-  //   List<BcProduct> temp2 =
-  //       inventory.values.map((e) => BcProduct.fromProduct(e)).toList();
-  //   return temp2;
-  // }
 
   Future<List<Product>> getAllProducts() async {
     List<Product> temp2 =
@@ -221,44 +204,13 @@ class DB {
     return temp2;
   }
 
-  // Future<List<Log>> getAllLogs() {
-  //   // Iterable temp = logs.values;
-  //   // List<Log> temp2 = [];
-  //   // for (var element in temp) {
-  //   //   temp2.add(element);
-  //   // }
-  //   // temp2.sort((a, b) => a.date.compareTo(b.date));
-  //   // temp2 = List<Log>.from(temp2.reversed);
-  //   // return temp2;
-  //   try {
-  //     return isar!.logs.where().sortByDateDesc().findAll();
-  //   } on Exception catch (e, s) {
-  //     // TODO0
-  //     print(e);
-  //     print(s);
-  //     return Future.value([]);
-  //   }
-  // }
-
   Future<void> deleteLog(Log log) {
     return isar!.writeTxn(() async => isar!.logs.delete(log.id));
   }
 
   Future<void> insertProducts({required List<Product> products}) async {
-    // products.elementAt(0).priceHistory.add({
-    //   DateTime.now(): products.elementAt(0).buyprice,
-    // });
-    // for (var element in products) {
-    //   await inventory.put(element.name, element);
-    // }
     isar!.writeTxn(() => isar!.products.putAll(products));
   }
-
-  // void printProducts() {
-  //   for (var element in getAllProducts()) {
-  //     print(element.toJson());
-  //   }
-  // }
 
   Future<void> checkOut({
     required List<Product> lst,
@@ -579,6 +531,127 @@ class DB {
       'transactionHistory': transactions,
       'zeroingDateDisplay': loaner.lastPayment!.last.key ?? 'not yet'
     };
+  }
+
+  String hasna({required int id}) {
+    final logs =
+        isar!.logs.filter().loanerIDEqualTo(id).sortByDate().findAllSync();
+
+    // Group logs by year and month
+    Map<String, double> monthlySums = {};
+
+    for (var log in logs) {
+      String monthKey =
+          "${log.date.year}-${log.date.month.toString().padLeft(2, '0')}";
+
+      monthlySums[monthKey] = (monthlySums[monthKey] ?? 0) + log.price;
+    }
+
+    return monthlySums.toString();
+  }
+
+  Future<void> createLocalBackup() async {
+    final backupFilePath =
+        '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
+    final backupFile = File(backupFilePath);
+
+    if (await backupFile.exists()) {
+      await backupFile.delete();
+    }
+
+    await isar!.copyToFile(backupFilePath);
+    print('Backup created successfully.');
+  }
+
+  Future<void> closeAllIsarInstances() async {
+    IsolatePool pool = await Pool.init();
+    List<Future> futures = [];
+    for (var i = 0; i < pool.numberOfIsolates; i++) {
+      futures.add(
+          pool.scheduleJob(StopIsar(map: {'1': RootIsolateToken.instance!})));
+    }
+    await Future.wait(futures);
+  }
+
+  Future<IsolatePool> reOpenPool() async {
+    return Pool.reInit();
+  }
+
+  useLocalBacup() async {
+    final backupFilePath =
+        '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
+    final dir = await getApplicationDocumentsDirectory();
+
+    // Close the current Isar instance
+    await closeAllIsarInstances();
+    await isar!.close();
+
+    // Delete the current Isar database files
+    await File('${dir.path}/isarInstance.isar').delete();
+
+    // Copy the backup file to the Isar directory
+    final backupFile = File(backupFilePath);
+    final newIsarFile = File('${dir.path}/isarInstance.isar');
+    await backupFile.copy(newIsarFile.path);
+
+    // Reopen the Isar instance
+    isar = await Isar.open(
+      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+      directory: dir.path,
+      name: 'isarInstance',
+    );
+    // await reOpenPool();
+
+    print('Backup restored successfully.');
+  }
+
+  void windows() async {
+    final receivedFilePath =
+        '${(await getApplicationDocumentsDirectory()).path}/isarInstance.isar+1';
+    final dir = await getApplicationDocumentsDirectory();
+    await closeAllIsarInstances();
+    await isar!.close();
+
+    // Delete the current Isar database files
+
+    await File('${dir.path}/isarInstance.isar').delete();
+
+    // Copy the backup file to the Isar directory
+    final backupFile = File(receivedFilePath);
+    final newIsarFile = File('${dir.path}/isarInstance.isar');
+    await backupFile.copy(newIsarFile.path);
+
+    // Reopen the Isar instance
+    isar = await Isar.open(
+      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+      directory: dir.path,
+      name: 'isarInstance',
+    );
+  }
+}
+
+class StopIsar extends PooledJob<bool> {
+  Map map;
+  StopIsar({required this.map});
+  @override
+  Future<bool> job() async {
+    BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
+    // 'C:/Users/hadow/Documents'
+
+    Isar isar;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      isar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: dir.path,
+        name: 'isarInstance',
+      );
+      print(isar.name);
+    } catch (e) {
+      // print(e);
+      isar = await Isar.getInstance('isarInstance')!;
+    }
+    return isar.close();
   }
 }
 
@@ -917,60 +990,78 @@ class CgetNumberOfSalesForAproduct extends PooledJob<int> {
 }
 
 class CgetSalesPerProduct extends PooledJob<List<ProdStats>> {
-  Map map;
-  int chunkSize;
+  final Map map;
+  final int chunkSize;
+
   CgetSalesPerProduct({required this.map, required this.chunkSize});
+
+  // Static cache for storing computed results
+  static List<ProdStats>? _cachedStats;
+
   @override
   Future<List<ProdStats>> job() async {
     try {
+      // Initialize the isolate's binary messenger
       BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
+
+      // If cached results are available, return the required chunk
+      if (_cachedStats != null) {
+        return _cachedStats!.take(chunkSize).toList();
+      }
+
+      // Get the application directory
       final dir = await getApplicationDocumentsDirectory();
-      Isar isar;
-      try {
-        isar = await Isar.open(
-          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-          directory: dir.path,
-          name: 'isarInstance',
+
+      // Open or get an existing Isar instance
+      final isar = await _initializeIsar(dir.path);
+
+      // Fetch all logs and products concurrently
+      final logsFuture = isar.logs.where().anyId().findAll();
+      final productsFuture = isar.products.where().anyId().findAll();
+      final logs = await logsFuture;
+      final products = await productsFuture;
+
+      // Generate product statistics
+      _cachedStats = products.map((product) {
+        final salesCount = _getNumberOfSalesForProduct(logs, product.name!);
+        return ProdStats(
+          date: DateTime.now(),
+          name: product.name!,
+          count:
+              salesCount > 1000 ? salesCount.toDouble() : salesCount.toDouble(),
         );
-      } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
-      }
-      List<Log> logs = await isar.logs.where().anyId().findAll();
-      List<Product> products = await isar.products.where().anyId().findAll();
-      int getNumberOfSalesForAproduct({required String key}) {
-        int count = 0;
-        // List<Log> logs = db.getAllLogs();
-        for (var log in logs) {
-          List<EmbeddedProduct> products = log.products.toList();
-          for (var product in products) {
-            if (product.name == key) {
-              count += product.count!;
-            }
-          }
-        }
-        return count;
-      }
+      }).toList();
 
-      List<ProdStats> temp = [];
-
-      // List<Product> products = db.getAllProducts();
-
-      for (var product in products) {
-        int gg = getNumberOfSalesForAproduct(key: product.name!);
-        temp.add(
-          ProdStats(
-            date: DateTime.now(),
-            name: product.name!,
-            count: gg > 1000 ? (gg).toDouble() : gg.toDouble(),
-          ),
-        );
-      }
-
-      return temp.getRange(0, chunkSize - 1).toList();
+      // Return the required chunk
+      return _cachedStats!.take(chunkSize).toList();
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('Error in job: $e');
       return [];
     }
+  }
+
+  Future<Isar> _initializeIsar(String directoryPath) async {
+    try {
+      return await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: directoryPath,
+        name: 'isarInstance',
+      );
+    } catch (e) {
+      return Isar.getInstance('isarInstance')!;
+    }
+  }
+
+  int _getNumberOfSalesForProduct(List<Log> logs, String productName) {
+    return logs.fold<int>(
+      0,
+      (count, log) =>
+          count +
+          log.products.where((p) => p.name == productName).fold<int>(
+                0,
+                (productCount, product) => productCount + (product.count ?? 0),
+              ),
+    );
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:dukkan/pages/LoginPage.dart';
+import 'package:dukkan/pages/landingPge.dart';
 // import 'package:appwrite/appwrite.dart';
 // import 'package:dukkan/pages/LoginPage.dart';
 import 'package:dukkan/providers/expenseProvider.dart';
@@ -213,7 +214,11 @@ class MyApp extends StatelessWidget {
                 }
 
                 if (auth.status == AuthStatus.authenticated) {
-                  return HomePage();
+                  return Provider.of<SalesProvider>(context)
+                              .getWeightPrececsion() ==
+                          null
+                      ? LandingPage()
+                      : HomePage();
                 }
 
                 return LoginPage();

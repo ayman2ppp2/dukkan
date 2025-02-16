@@ -431,7 +431,9 @@ class _InPageState extends State<InPage> {
                             offerCount:
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
                             offerPrice: padd(
-                                original: widget.offerPriceCon.text,
+                                original: widget.offerPriceCon.text.isEmpty
+                                    ? '0'
+                                    : widget.offerPriceCon.text,
                                 wholeUnit: widget.offerCountCon.text),
                             // double.tryParse(widget.offerPriceCon.text) ?? 0,
                             priceHistory: widget.priceHistory,
@@ -481,7 +483,9 @@ class _InPageState extends State<InPage> {
                             offerCount:
                                 double.tryParse(widget.offerCountCon.text) ?? 0,
                             offerPrice: padd(
-                                original: widget.offerPriceCon.text,
+                                original: widget.offerPriceCon.text.isEmpty
+                                    ? '0'
+                                    : widget.offerPriceCon.text,
                                 wholeUnit: widget.offerCountCon.text),
                             // double.tryParse(widget.offerPriceCon.text) ?? 0,
                             priceHistory: widget.priceHistory,

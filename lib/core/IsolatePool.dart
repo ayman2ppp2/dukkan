@@ -16,4 +16,10 @@ class Pool {
     }
     return _pool!; // Return the same instance of the pool
   }
+
+  static Future<IsolatePool> reInit() async {
+    // _pool = IsolatePool((Platform.numberOfProcessors ~/ 2) - 1);
+    await _pool!.start();
+    return _pool!;
+  }
 }

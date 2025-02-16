@@ -28,34 +28,12 @@ class _ScannerState extends State<Scanner> {
               child: MobileScanner(
                 fit: BoxFit.contain,
                 controller: con,
-                onDetect: (capture) {
+                onDetect: (capture) async {
                   final List<Barcode> barcodes = capture.barcodes;
                   for (final barcode in barcodes) {
-                    li.search(barcode.rawValue!, true, true);
-                    ip = barcode.rawValue;
-                    debugPrint('Barcode found! ${barcode.rawValue}');
-                    if (li.searchTemp.isNotEmpty) {
-                      var product = li.searchTemp[0];
-                      li.sellList.add(Product.named(
-                        barcode: product.barcode,
-                        name: product.name,
-                        buyprice: product.buyprice,
-                        sellPrice: product.sellPrice,
-                        count: 1,
-                        ownerName: product.ownerName,
-                        weightable: product.weightable,
-                        wholeUnit: product.wholeUnit,
-                        offer: product.offer,
-                        offerCount: product.offerCount,
-                        offerPrice: product.offerPrice,
-                        priceHistory: product.priceHistory,
-                        endDate: product.endDate,
-                        hot: product.hot,
-                      ));
-                      Navigator.pop(context);
-                      li.searchTemp.clear();
-                      li.refresh();
-                    }
+                    li.sellList
+                        .addAll(await li.search(barcode.rawValue!, true, true));
+                    break;
                   }
                   ScaffoldMessenger.of(context)
                       .showSnackBar(SnackBar(content: Text(ip)));
@@ -105,7 +83,7 @@ class _Scanner2State extends State<Scanner2> {
               child: Platform.isWindows
                   ? IconButton(
                       onPressed: () {
-                        li.client('192.168.8.105:30000');
+                        li.client('192.168.8.102:30000');
                         Navigator.pop(context);
                         // con.stop();
                         // con.dispose();

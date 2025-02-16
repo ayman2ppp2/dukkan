@@ -19,6 +19,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   }
   Future<void> init() async {
     _pref = await SharedPreferences.getInstance();
+    // _pref.clear();
   }
 
   List<Loaner> loanersList = [];
@@ -43,6 +44,27 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     'ربع تمنة': 212.5,
     'وزن': 0,
   };
+
+  int? getWeightPrececsion() {
+    return _pref.getInt('weightPrececsion');
+  }
+
+  void setWeightPrececsion(int value) {
+    _pref.setInt('weightPrececsion', value);
+  }
+
+  String? getStoreName() {
+    return _pref.getString('storeName');
+  }
+
+  void setStoreName(String name) {
+    _pref.setString('storeName', name);
+  }
+
+  void removeItemAt(int index) {
+    sellList.removeAt(index);
+    notifyListeners();
+  }
 
   Future<List<Loaner>> refreshLoanersList() async {
     return db.getLoaners();
