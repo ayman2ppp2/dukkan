@@ -275,7 +275,13 @@ class _LoanState extends State<Loan> {
                                           builder: (context) =>
                                               ChangeNotifierProvider.value(
                                                 value: li,
-                                                child: AccountStatementPage(
+                                                child: BankStatementPage(
+                                                  accountNumber: snapshot
+                                                      .data!.ID
+                                                      .toString(),
+                                                  customerName: snapshot
+                                                      .data!.name
+                                                      .toString(),
                                                   loaner: snapshot.data!,
                                                 ),
                                               )),

@@ -1,4 +1,3 @@
-import 'package:dukkan/pages/homePage.dart';
 import 'package:dukkan/pages/paymentVerficaion.dart';
 import 'package:dukkan/providers/expenseProvider.dart';
 import 'package:dukkan/providers/list.dart';
@@ -249,7 +248,7 @@ class _LandingPageState extends State<LandingPage> {
                                     value: exp,
                                     child: ChangeNotifierProvider.value(
                                       value: auth,
-                                      child: const HomePage(),
+                                      child: const PaymentVerificationPage(),
                                     ),
                                   ),
                                 ),

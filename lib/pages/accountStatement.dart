@@ -1,221 +1,247 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/util/models/Loaner.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../util/models/Loaner.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
-class AccountStatementPage extends StatelessWidget {
+/// A simple model representing a transaction.
+class Transaction {
+  final DateTime date;
+  final String description;
+  final double debit;
+  final double credit;
+  final double balance;
+
+  Transaction({
+    required this.date,
+    required this.description,
+    this.debit = 0,
+    this.credit = 0,
+    required this.balance,
+  });
+}
+
+/// This widget represents a bank-like account statement page.
+class BankStatementPage extends StatefulWidget {
+  final String customerName;
+  final String accountNumber;
+  late List<Transaction> transactions;
   final Loaner loaner;
-
-  const AccountStatementPage({
+  BankStatementPage({
     Key? key,
+    required this.customerName,
+    required this.accountNumber,
     required this.loaner,
   }) : super(key: key);
+  // Map the loaner's last payments to transactions and append them with the loaner's receipts
 
-  String _formatDate(DateTime date) {
-    return DateFormat('yyyy-MM-dd').format(date);
+  // Sort transactions by date
+
+  @override
+  State<BankStatementPage> createState() => _BankStatementPageState();
+}
+
+class _BankStatementPageState extends State<BankStatementPage> {
+  void fetchTransactions(BuildContext context) {
+    List<Transaction> temp = widget.loaner.lastPayment!.map((payment) {
+      return Transaction(
+        date: DateTime.parse(payment.key!),
+        description: 'Payment',
+        debit: double.tryParse(payment.value!) ?? 0,
+        balance: payment.remaining!,
+      );
+    }).toList();
+
+    Provider.of<Lists>(context).getPersonsLogs(widget.loaner.ID).forEach((log) {
+      for (var log in log) {
+        temp.add(Transaction(
+          date: log.date,
+          description: 'فاتورة رقم ${log.id}',
+          credit: log.products.fold(
+            0.0,
+            (previousValue, element) =>
+                previousValue + (element.sellPrice! * element.count!),
+          ),
+          balance: log.price,
+        ));
+      }
+    });
+
+    temp.sort((a, b) => a.date.compareTo(b.date));
+    widget.transactions = temp;
   }
 
-  String _formatCurrency(double amount) {
-    return NumberFormat.currency(symbol: '₪', decimalDigits: 2).format(amount);
+  /// Formats a [DateTime] object as 'yyyy-MM-dd'.
+  String _formatDate(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
+
+  /// Formats a currency value.
+  String _formatCurrency(double amount) =>
+      NumberFormat.currency(symbol: "\$", decimalDigits: 2).format(amount);
+
+  /// Generates a PDF file with a bank-like statement and shares it.
+  Future<void> _generateAndSharePdf(BuildContext context) async {
+    fetchTransactions(context);
+    try {
+      final pdf = pw.Document();
+
+      // Build the PDF content.
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Header
+                pw.Text(
+                  "Bank Statement",
+                  style: pw.TextStyle(
+                      fontSize: 24, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Text("Customer: ${widget.customerName}"),
+                pw.Text("Account Number: ${widget.accountNumber}"),
+                pw.Text("Date: ${_formatDate(DateTime.now())}"),
+                pw.Divider(),
+
+                pw.SizedBox(height: 20),
+
+                // Table header
+                pw.Table.fromTextArray(
+                  headerStyle: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold, fontSize: 12),
+                  cellStyle: const pw.TextStyle(fontSize: 10),
+                  headers: [
+                    "Date",
+                    "Description",
+                    "Debit",
+                    "Credit",
+                    "Balance"
+                  ],
+                  data: widget.transactions.map((t) {
+                    return [
+                      _formatDate(t.date),
+                      t.description,
+                      t.debit > 0 ? _formatCurrency(t.debit) : "",
+                      t.credit > 0 ? _formatCurrency(t.credit) : "",
+                      _formatCurrency(t.balance),
+                    ];
+                  }).toList(),
+                  border: pw.TableBorder.all(
+                    color: PdfColors.grey,
+                    width: 0.5,
+                  ),
+                  headerDecoration:
+                      const pw.BoxDecoration(color: PdfColors.grey300),
+                  cellAlignment: pw.Alignment.centerLeft,
+                  headerAlignments: {
+                    0: pw.Alignment.centerLeft,
+                    1: pw.Alignment.centerLeft,
+                    2: pw.Alignment.centerRight,
+                    3: pw.Alignment.centerRight,
+                    4: pw.Alignment.centerRight,
+                  },
+                ),
+
+                pw.SizedBox(height: 20),
+                pw.Divider(),
+
+                // Footer
+                pw.Center(
+                  child: pw.Text(
+                    "Thank you for banking with us!",
+                    style: pw.TextStyle(
+                      fontStyle: pw.FontStyle.italic,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+
+      // Convert the PDF document to bytes.
+      final Uint8List pdfBytes = await pdf.save();
+
+      // Get the temporary directory of the device.
+      final tempDir = await getTemporaryDirectory();
+      final pdfFile = File('${tempDir.path}/bank_statement.pdf');
+
+      // Write the PDF file to the temporary directory.
+      await pdfFile.writeAsBytes(pdfBytes);
+
+      // Share the PDF file using share_plus.
+      await Share.shareXFiles(
+        [XFile(pdfFile.path)],
+        text: 'Your bank statement',
+      );
+    } catch (e) {
+      // Show an error message if something goes wrong.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error generating PDF: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Account Statement'),
-      ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: Provider.of<Lists>(context, listen: false)
-            .db
-            .getAccountStatementData(loaner.ID),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          final data = snapshot.data!;
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Customer Information Card
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Customer Information',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildInfoRow('Name', data['customerName']),
-                        _buildInfoRow('Phone', data['phoneNumber']),
-                        _buildInfoRow('Location', data['location']),
-                        _buildInfoRow(
-                            'Last Zeroing', data['zeroingDateDisplay']),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Financial Summary Card
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Financial Summary',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildAmountRow(
-                          'Total Loaned',
-                          data['totalLoaned'],
-                          Colors.orange,
-                        ),
-                        _buildAmountRow(
-                          'Total Paid',
-                          data['totalPaidAmount'],
-                          Colors.green,
-                        ),
-                        const Divider(),
-                        _buildAmountRow(
-                          'Current Balance',
-                          data['currentBalance'],
-                          data['currentBalance'] > 0
-                              ? Colors.red
-                              : Colors.green,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Transaction History
-                const Text(
-                  'Transaction History',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: (data['transactionHistory'] as List).length,
-                  itemBuilder: (context, index) {
-                    final transaction = data['transactionHistory'][index];
-                    final bool isPayment = transaction['type'] == 'payment';
-
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(
-                          isPayment ? Icons.payment : Icons.shopping_cart,
-                          color: isPayment ? Colors.green : Colors.orange,
-                        ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _formatDate(transaction['date']),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              '${isPayment ? "-" : "+"} ${_formatCurrency(transaction['amount'])}',
-                              style: TextStyle(
-                                color: isPayment ? Colors.green : Colors.orange,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          transaction['description'],
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+        title: const Text("Bank Statement"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () => _generateAndSharePdf(context),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAmountRow(String label, double amount, Color valueColor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          children: [
+            Text(
+              "Bank Statement",
+              style: Theme.of(context).textTheme.headlineLarge,
+              textAlign: TextAlign.center,
             ),
-          ),
-          Text(
-            _formatCurrency(amount),
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Text("Customer: ${widget.customerName}"),
+            Text("Account Number: ${widget.accountNumber}"),
+            Text("Date: ${_formatDate(DateTime.now())}"),
+            const Divider(),
+            // Show a preview of transactions (optional)
+            ...widget.transactions.map((t) => ListTile(
+                  title: Text(t.description),
+                  subtitle: Text(_formatDate(t.date)),
+                  trailing: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (t.debit > 0)
+                        Text(
+                          "Debit: ${_formatCurrency(t.debit)}",
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      if (t.credit > 0)
+                        Text(
+                          "Credit: ${_formatCurrency(t.credit)}",
+                          style: const TextStyle(color: Colors.green),
+                        ),
+                      Text("Balance: ${_formatCurrency(t.balance)}"),
+                    ],
+                  ),
+                ))
+          ],
+        ),
       ),
     );
   }

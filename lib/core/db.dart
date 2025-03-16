@@ -11,6 +11,7 @@ import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/util/models/prodStats.dart';
+import 'package:dukkan/util/models/searchQuery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isar/isar.dart';
@@ -401,9 +402,26 @@ class DB {
         .watch(fireImmediately: true);
   }
 
-  Stream<List<Log>> getLogsStream(int chunkSize) {
+  Stream<List<Log>> getLogsStream(int chunkSize, SearchQuery searchQuery) {
     return isar!.logs
-        .where()
+        .filter()
+        .optional(searchQuery.queryText.isNotEmpty, (q) {
+          // Check if queryText is numeric to search by receipt ID
+          if (int.tryParse(searchQuery.queryText) != null) {
+            return q.idEqualTo(int.parse(searchQuery.queryText));
+          } else {
+            // Otherwise, search within receipt products
+            return q
+                .productsElement((p) => p.nameContains(searchQuery.queryText));
+          }
+        })
+        .optional(searchQuery.startDate != null && searchQuery.endDate != null,
+            (q) {
+          return q.dateBetween(searchQuery.startDate, searchQuery.endDate);
+        })
+        .optional(searchQuery.userId != null, (q) {
+          return q.loanerIDEqualTo(int.tryParse(searchQuery.userId!) ?? 0);
+        })
         .sortByDateDesc()
         .limit(chunkSize)
         .watch(fireImmediately: true);
@@ -478,12 +496,11 @@ class DB {
   Future<Map<String, dynamic>> getAccountStatementData(int loanerId) async {
     final loaner = await isar!.loaners.get(loanerId);
     if (loaner == null) throw Exception('Loaner with ID $loanerId not found');
-
+    var date = DateTime.now();
     final loanReceipts = await isar!.logs
         .filter()
         .loanerIDEqualTo(loanerId)
-        .and()
-        .loanedEqualTo(true)
+        .dateBetween(DateTime(date.year, date.month, 0), DateTime.now())
         .findAll();
 
     List<Map<String, dynamic>> transactions = [];
@@ -505,7 +522,12 @@ class DB {
 
     // Add payments
     if (loaner.lastPayment != null) {
-      for (var payment in loaner.lastPayment!) {
+      var monthPayments = loaner.lastPayment!.where(
+        (payment) => DateTime.parse(payment.key!).isAfter(
+          DateTime(date.year, date.month, 1, 0),
+        ),
+      );
+      for (var payment in monthPayments) {
         double amount = double.tryParse(payment.value ?? '0') ?? 0;
         totalPaid += amount;
         transactions.add({
@@ -798,15 +820,16 @@ class CgetDailySales extends PooledJob<double> {
       } catch (e) {
         isar = await Isar.getInstance('isarInstance')!;
       }
-      List<Log> temp = await isar.logs.where().anyId().findAll();
-      double sales = 0;
       var time = map['2'];
+      List<Log> temp = await isar.logs
+          .filter()
+          .dateBetween(DateTime(time.year, time.month, time.day),
+              DateTime(time.year, time.month, time.day, 23, 59, 59))
+          .findAll();
+      double sales = 0;
+
       for (var log in temp) {
-        if (log.date.day == time.day &&
-            log.date.month == time.month &&
-            log.date.year == time.year) {
-          sales += log.price;
-        }
+        sales += log.price;
       }
 
       return sales;

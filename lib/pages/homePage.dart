@@ -1,6 +1,5 @@
 // import 'dart:io';
 
-import 'package:dukkan/pages/landingPge.dart';
 import 'package:dukkan/pages/settingsPage.dart';
 import 'package:dukkan/pages/spendings.dart';
 import 'package:dukkan/providers/expenseProvider.dart';
@@ -15,7 +14,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 // import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
 import 'Logs.dart';
-import '../util/models/Product.dart';
 import 'SellPage.dart';
 import 'StatsPage.dart';
 // import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';

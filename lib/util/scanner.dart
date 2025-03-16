@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
-import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
@@ -83,7 +82,7 @@ class _Scanner2State extends State<Scanner2> {
               child: Platform.isWindows
                   ? IconButton(
                       onPressed: () {
-                        li.client('192.168.8.102:30000');
+                        li.client('192.168.8.103:30000');
                         Navigator.pop(context);
                         // con.stop();
                         // con.dispose();

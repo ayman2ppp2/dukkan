@@ -247,6 +247,13 @@ class _ReceiptState extends State<Receipt> {
                           child: SizedBox(),
                         );
                       }
+                      if (snapshot.data == null) {
+                        return Banner(
+                          message: 'تم مسح العميل برقم ${widget.log.loanerID}',
+                          location: BannerLocation.topEnd,
+                          child: SizedBox(),
+                        );
+                      }
                       return SpinKitChasingDots(
                         color: Colors.brown[200],
                       );

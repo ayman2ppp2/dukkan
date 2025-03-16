@@ -1,4 +1,7 @@
+import 'package:dukkan/providers/expenseProvider.dart';
+import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
+import 'package:dukkan/providers/salesProvider.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -32,10 +35,12 @@ class _PaymentVerificationPageState extends State<PaymentVerificationPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('الرجاء رفع صورة الإيصال')),
       );
-      Provider.of<AuthAPI>(context, listen: false).uploadPaymentReceipt(
-        receipt: _receiptImage!,
-      );
+      return;
+      // Future.value("Empty image")
     }
+    Provider.of<AuthAPI>(context, listen: false).uploadPaymentReceipt(
+      receipt: _receiptImage!,
+    );
 
     setState(() {
       _isWaitingForPin = true;
@@ -66,6 +71,28 @@ class _PaymentVerificationPageState extends State<PaymentVerificationPage> {
       const SnackBar(content: Text('تم التحقق من الدفع بنجاح')),
     );
     // Navigate to the next page or perform other actions
+    var sa = Provider.of<SalesProvider>(context, listen: false);
+    var li = Provider.of<Lists>(context, listen: false);
+    var exp = Provider.of<ExpenseProvider>(context, listen: false);
+    var auth = Provider.of<AuthAPI>(context, listen: false);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider.value(
+          value: sa,
+          child: ChangeNotifierProvider.value(
+            value: li,
+            child: ChangeNotifierProvider.value(
+              value: exp,
+              child: ChangeNotifierProvider.value(
+                value: auth,
+                child: const PaymentVerificationPage(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override

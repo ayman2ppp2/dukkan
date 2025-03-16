@@ -2,7 +2,6 @@ import 'package:dukkan/providers/expenseProvider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/CheckOutPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
-import 'package:dukkan/util/models/Product.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/myListItem.dart';
 import 'package:dukkan/pages/searchPage.dart';

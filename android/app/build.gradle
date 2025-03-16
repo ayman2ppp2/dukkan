@@ -1,9 +1,10 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
-    id 'com.google.gms.google-services' version '4.4.2' apply false
-    id "com.google.gms.google-services"
+    // id 'com.google.gms.google-services' version '4.4.2' apply false
+    id 'dev.flutter.flutter-gradle-plugin' // ✅ New Flutter Gradle Plugin
 }
+
 
 // Load local.properties
 def localProperties = new Properties()
@@ -21,7 +22,7 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
 // Apply Flutter Gradle plugin
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+// apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace "com.golden.dukkan"
@@ -63,5 +64,5 @@ flutter {
 dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    classpath "com.google.gms:google-services:4.4.0"
+//    classpath "com.google.gms:google-services:4.4.2"
 }

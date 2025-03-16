@@ -12,11 +12,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 import 'package:mime/mime.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../util/models/Log.dart';
+import '../util/models/searchQuery.dart'; // Import SearchQuery model
 
 class Lists extends ChangeNotifier {
   late DB db;
@@ -37,7 +39,7 @@ class Lists extends ChangeNotifier {
 
   void init() async {
     pool = await Pool.init();
-    _initializeStreamListener();
+    // _initializeStreamListener();
     // pool = Pool.pool;
 
     // await pool.start();
@@ -295,28 +297,30 @@ class Lists extends ChangeNotifier {
 
   void runServer() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    final NetworkInfo _networkInfo = NetworkInfo();
 
     // Getting available network address (fallback for multiple interface names)
-    String? ipAddress = await NetworkInterface.list().then((interfaces) {
-      try {
-        return interfaces
-            .expand((interface) => interface.addresses)
-            .firstWhere(
-              (address) =>
-                  address.type == InternetAddressType.IPv4 &&
-                  !address
-                      .isLoopback, // Avoid loopback addresses like 127.0.0.1
-            )
-            .address;
-      } catch (e) {
-        shareList.add(Text('No suitable network interface found'));
-        notifyListeners();
-        // print('No suitable network interface found');
-        return null;
-      }
-    });
+    String? wifiIp = await _networkInfo.getWifiIP();
+    // String? ipAddress = await NetworkInterface.list().then((interfaces) {
+    //   try {
+    //     return interfaces
+    //         .expand((interface) => interface.addresses)
+    //         .firstWhere(
+    //           (address) =>
+    //               address.type == InternetAddressType.IPv4 &&
+    //               !address
+    //                   .isLoopback, // Avoid loopback addresses like 127.0.0.1
+    //         )
+    //         .address;
+    //   } catch (e) {
+    //     shareList.add(Text('No suitable network interface found'));
+    //     notifyListeners();
+    //     // print('No suitable network interface found');
+    //     return null;
+    //   }
+    // });
 
-    if (ipAddress == null) {
+    if (wifiIp == null) {
       shareList.add(Text('No IP address found'));
       notifyListeners();
       // print('No IP address found');
@@ -324,7 +328,7 @@ class Lists extends ChangeNotifier {
     }
 
     // Show QR code with the server's IP and port
-    shareList.add(QrImageView(data: '$ipAddress:30000'));
+    shareList.add(QrImageView(data: '$wifiIp:30000'));
     notifyListeners();
 
     // Get the application documents directory
@@ -376,7 +380,7 @@ class Lists extends ChangeNotifier {
 
     // Start the HTTP server
     try {
-      final server = await HttpServer.bind(ipAddress, 30000);
+      final server = await HttpServer.bind(wifiIp, 30000);
       print('Server listening on ${server.address.address}:${server.port}');
       shareList.add(
           Text('Server listening on ${server.address.address}:${server.port}'));
@@ -561,8 +565,15 @@ class Lists extends ChangeNotifier {
     return realProducts;
   }
 
-  Stream<List<Log>> getLogsStream({required int chunkSize}) {
-    return db.getLogsStream(chunkSize);
+  Stream<List<Log>> getLogsStream({
+    required int chunkSize,
+    required SearchQuery searchQuery,
+  }) {
+    // Pass the SearchQuery object to the database method
+    return db.getLogsStream(
+      chunkSize,
+      searchQuery, // Convert SearchQuery to a Map
+    );
   }
 
   Future<List<Product?>> editReceipt(DateTime date, Log log) async {

@@ -78,7 +78,7 @@ class _CircularChartState extends State<CircularChart>
                                 isVisible: true,
                               ),
                               // tooltipBehavior: TooltipBehavior(enable: true),
-                              series: <ChartSeries<Product, String>>[
+                              series: <CartesianSeries<dynamic, dynamic>>[
                                 StackedBarSeries<Product, String>(
                                   // enableTooltip: true,
                                   animationDuration: 0,
@@ -200,7 +200,7 @@ class _BarChartState extends State<BarChart>
                             isVisible: true,
                           ),
                           tooltipBehavior: TooltipBehavior(enable: true),
-                          series: <ChartSeries>[
+                          series: <CartesianSeries>[
                             StackedBarSeries<ProdStats, String>(
                               animationDuration: 0,
                               borderRadius: BorderRadius.circular(12),
@@ -321,7 +321,7 @@ class _LineChartState extends State<LineChart>
                               numberFormat: NumberFormat.compact(),
                               isVisible: true,
                             ),
-                            series: <ChartSeries>[
+                            series: <CartesianSeries>[
                               StackedBarSeries<SalesStats, int>(
                                 name: 'الأرباح',
                                 color: Colors.brown[400],
@@ -443,7 +443,7 @@ class _MOYState extends State<MOY> {
                               numberFormat: NumberFormat.compact(),
                               isVisible: true,
                             ),
-                            series: <ChartSeries>[
+                            series: <CartesianSeries>[
                               StackedBarSeries<SalesStats, int>(
                                 name: 'الأرباح',
                                 color: Colors.brown[400],

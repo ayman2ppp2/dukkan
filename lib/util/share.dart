@@ -90,6 +90,38 @@ class _ShareState extends State<Share> {
                                 ),
                               );
                             },
+                            onLongPress: () {
+                              var ip = '';
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text(
+                                      'قم بكتابة الأرقام الظاهرة على الجهاز المُرسل'),
+                                  content: TextField(
+                                    onChanged: (value) {
+                                      setState(() {
+                                        ip = value;
+                                      });
+                                    },
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        li.client(ip + ':30000');
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('Connect'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('cancel'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                             icon: const Icon(Icons.call_received_rounded,
                                 color: Colors.white),
                           ),
