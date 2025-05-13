@@ -13,8 +13,13 @@ import 'package:provider/provider.dart';
 class CheckOut extends StatefulWidget {
   final List<Product> lst;
   final double total;
+  final bool inbound;
 
-  CheckOut({super.key, required this.lst, required this.total});
+  CheckOut(
+      {super.key,
+      required this.lst,
+      required this.total,
+      required this.inbound});
 
   @override
   State<CheckOut> createState() => _CheckOutState();
@@ -40,28 +45,35 @@ class _CheckOutState extends State<CheckOut> {
             color: Colors.white,
           ),
         ),
-        title: Flex(
-          direction: Axis.horizontal,
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Expanded(
-              flex: 0,
-              child: const Text(
-                'الفاتورة',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ),
-            Expanded(
-              flex: 5,
-              child: Row(
+        title: widget.inbound
+            ? Center(
+                child: const Text(
+                  'فاتورة إدخال',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              )
+            : Flex(
+                direction: Axis.horizontal,
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  radio == 1
-                      ? Expanded(
-                          flex: 4,
-                          child: FutureBuilder(
+                  Expanded(
+                    flex: 0,
+                    child: const Text(
+                      'الفاتورة',
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 5,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (radio == 1) // Loaner selection
+                          Expanded(
+                            flex: 4,
+                            child: FutureBuilder(
                               future: Provider.of<SalesProvider>(context,
                                       listen: false)
                                   .refreshLoanersList(),
@@ -70,38 +82,39 @@ class _CheckOutState extends State<CheckOut> {
                                   return Text(snapshot.error.toString());
                                 }
                                 if (snapshot.hasData) {
-                                  var temp = snapshot.data!
-                                      .map((e) => DropdownMenuEntry(
-                                          value: e.ID, label: e.name!))
+                                  var loanerOptions = snapshot.data!
+                                      .map((loaner) => DropdownMenuEntry(
+                                            value: loaner.ID,
+                                            label: loaner.name!,
+                                          ))
                                       .toList();
                                   return DropdownMenu(
                                     onSelected: (value) {
                                       loanerID = value;
                                     },
-                                    dropdownMenuEntries: temp,
-                                    label: Text(
+                                    dropdownMenuEntries: loanerOptions,
+                                    label: const Text(
                                       'الدائن',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                      ),
+                                      style: TextStyle(color: Colors.white),
                                     ),
                                     width: 114,
                                     menuHeight: 300,
-                                    menuStyle: MenuStyle(
-                                        visualDensity: VisualDensity.compact),
+                                    menuStyle: const MenuStyle(
+                                      visualDensity: VisualDensity.compact,
+                                    ),
                                   );
                                 }
-                                return SpinKitChasingDots(
+                                return const SpinKitChasingDots(
                                   color: Colors.white,
                                   size: 50,
                                 );
-                              }),
-                        )
-                      : SizedBox(),
-                  radio == 2
-                      ? Expanded(
-                          flex: 4,
-                          child: StreamBuilder(
+                              },
+                            ),
+                          ),
+                        if (radio == 2) // Expense selection
+                          Expanded(
+                            flex: 4,
+                            child: StreamBuilder(
                               stream: Provider.of<ExpenseProvider>(context,
                                       listen: false)
                                   .getIndvidualExpenses(fixed: false),
@@ -110,113 +123,80 @@ class _CheckOutState extends State<CheckOut> {
                                   return Text(snapshot.error.toString());
                                 }
                                 if (snapshot.hasData) {
-                                  var temp = snapshot.data!
-                                      .map((e) => DropdownMenuEntry(
-                                          value: e.ID, label: e.name!))
+                                  var expenseOptions = snapshot.data!
+                                      .map((expense) => DropdownMenuEntry(
+                                            value: expense.ID,
+                                            label: expense.name!,
+                                          ))
                                       .toList();
                                   return DropdownMenu(
                                     onSelected: (value) {
                                       expenseID = value;
                                     },
-                                    dropdownMenuEntries: temp,
-                                    label: Text(
+                                    dropdownMenuEntries: expenseOptions,
+                                    label: const Text(
                                       'المنصرف',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                      ),
+                                      style: TextStyle(color: Colors.white),
                                     ),
-                                    // width: 114,
-                                    // menuHeight: 300,
-                                    menuStyle: MenuStyle(
-                                        visualDensity: VisualDensity.compact),
+                                    menuStyle: const MenuStyle(
+                                      visualDensity: VisualDensity.compact,
+                                    ),
                                   );
                                 }
-                                return SpinKitChasingDots(
+                                return const SpinKitChasingDots(
                                   color: Colors.white,
                                   size: 50,
                                 );
-                              }),
-                        )
-                      : SizedBox(),
-                  Expanded(
-                    flex: 0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 0,
-                              child: Text(
-                                'دين',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize:
-                                      17 % MediaQuery.of(context).size.width,
-                                ),
-                              ),
+                              },
                             ),
-                            Expanded(
-                                flex: 0,
-                                child: Radio(
-                                  value: 1,
-                                  groupValue: radio,
-                                  onChanged: (value) => setState(() {
-                                    radio = value!;
-                                  }),
-                                )
-                                //  Checkbox(
-                                //     value: loan,
-                                //     onChanged: (boo) {
-                                //       setState(() {
-                                //         loan = !loan;
-                                //       });
-                                //     }),
-                                ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              flex: 0,
-                              child: Text(
-                                'منصرف',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize:
-                                      15 % MediaQuery.of(context).size.width,
-                                ),
+                          ),
+                        Expanded(
+                          flex: 0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              // Loan radio button
+                              Row(
+                                children: [
+                                  const Text(
+                                    'دين',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 17),
+                                  ),
+                                  Radio(
+                                    value: 1,
+                                    groupValue: radio,
+                                    onChanged: (value) => setState(() {
+                                      radio = value!;
+                                    }),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Expanded(
-                                flex: 0,
-                                child: Radio(
-                                  value: 2,
-                                  groupValue: radio,
-                                  onChanged: (value) => setState(() {
-                                    radio = value!;
-                                  }),
-                                )
-                                //  Checkbox(
-                                //     value: loan,
-                                //     onChanged: (boo) {
-                                //       setState(() {
-                                //         loan = !loan;
-                                //       });
-                                //     }),
-                                ),
-                          ],
+                              // Expense radio button
+                              Row(
+                                children: [
+                                  const Text(
+                                    'منصرف',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 15),
+                                  ),
+                                  Radio(
+                                    value: 2,
+                                    groupValue: radio,
+                                    onChanged: (value) => setState(() {
+                                      radio = value!;
+                                    }),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
         backgroundColor: Colors.brown,
       ),
       body: ClipRRect(
@@ -237,27 +217,34 @@ class _CheckOutState extends State<CheckOut> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: ListTile(
-                          leading: (widget.lst[index].offer! &&
-                                  widget.lst[index].count! %
-                                          widget.lst[index].offerCount! ==
-                                      0)
+                          leading: widget.inbound
                               ? Text(NumberFormat.simpleCurrency()
-                                  .format(widget.lst[index].offerPrice))
-                              : Text(NumberFormat.simpleCurrency()
-                                  .format(widget.lst[index].sellPrice)),
+                                  .format(widget.lst[index].buyprice))
+                              : (widget.lst[index].offer! &&
+                                      widget.lst[index].count! %
+                                              widget.lst[index].offerCount! ==
+                                          0)
+                                  ? Text(NumberFormat.simpleCurrency()
+                                      .format(widget.lst[index].offerPrice))
+                                  : Text(NumberFormat.simpleCurrency()
+                                      .format(widget.lst[index].sellPrice)),
                           title: Text(widget.lst[index].name!),
                           trailing: Text(widget.lst[index].count.toString()),
                           subtitle: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              (widget.lst[index].offer! &&
-                                      widget.lst[index].count! %
-                                              widget.lst[index].offerCount! ==
-                                          0)
+                              widget.inbound
                                   ? Text(
-                                      "${NumberFormat.simpleCurrency().format((widget.lst[index].count! * widget.lst[index].offerPrice!))}")
-                                  : Text(
-                                      "${NumberFormat.simpleCurrency().format((widget.lst[index].count! * widget.lst[index].sellPrice!))}"),
+                                      "${NumberFormat.simpleCurrency().format((widget.lst[index].count! * widget.lst[index].buyprice!))}")
+                                  : (widget.lst[index].offer! &&
+                                          widget.lst[index].count! %
+                                                  widget
+                                                      .lst[index].offerCount! ==
+                                              0)
+                                      ? Text(
+                                          "${NumberFormat.simpleCurrency().format((widget.lst[index].count! * widget.lst[index].offerPrice!))}")
+                                      : Text(
+                                          "${NumberFormat.simpleCurrency().format((widget.lst[index].count! * widget.lst[index].sellPrice!))}"),
                             ],
                           ),
                         ),
@@ -407,14 +394,23 @@ class _CheckOutState extends State<CheckOut> {
                                                                 expenseID)
                                                         .then((value) =>
                                                             li.editing = false);
-                                                    await sa
-                                                        .refreshProductsList();
-                                                    await li.refresh();
-                                                    li.refreshListOfOwners();
-                                                    sa.defaultSellList();
-                                                    Navigator.pop(context);
-                                                    Navigator.pop(context);
-                                                    Navigator.pop(context);
+                                                    if (!widget.inbound) {
+                                                      await sa
+                                                          .refreshProductsList();
+                                                      await li.refresh();
+                                                      li.refreshListOfOwners();
+                                                      sa.defaultSellList();
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                    } else {
+                                                      await li.inboundReceipt(
+                                                          lst: widget.lst,
+                                                          total: widget.total);
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                    }
                                                   },
                                                   child: const Text(
                                                     'نعم',

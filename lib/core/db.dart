@@ -650,6 +650,32 @@ class DB {
       name: 'isarInstance',
     );
   }
+
+  inboundReceipt({required List<Product> lst, required double total}) async {
+    for (var element in lst) {
+      var num = await isar!.products.get(element.id);
+      await isar!.writeTxn(() async => await isar!.products.put(
+            // element.name,
+            Product.named2(
+              id: element.id,
+              name: element.name,
+              barcode: element.barcode,
+              buyprice: element.buyprice,
+              sellPrice: element.sellPrice,
+              count: (num!.count!) + element.count!,
+              ownerName: element.ownerName,
+              weightable: element.weightable,
+              wholeUnit: element.wholeUnit,
+              offer: element.offer,
+              offerCount: element.offerCount,
+              offerPrice: element.offerPrice,
+              priceHistory: element.priceHistory,
+              endDate: element.endDate,
+              hot: false,
+            ),
+          ));
+    }
+  }
 }
 
 class StopIsar extends PooledJob<bool> {

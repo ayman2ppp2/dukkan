@@ -167,6 +167,12 @@ class Lists extends ChangeNotifier {
     clearAllCache();
   }
 
+  Future<void> inboundReceipt(
+      {required List<Product> lst, required double total}) async {
+    await db.inboundReceipt(lst: lst, total: total);
+    clearAllCache();
+  }
+
   Future<double> getAverageProfitPercent() async {
     var temp = await Future.wait([getAllSales(), getAllProfit()]);
     double profit = temp[1];

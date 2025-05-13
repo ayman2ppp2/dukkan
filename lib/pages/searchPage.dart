@@ -8,7 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SearchPage extends StatefulWidget {
-  SearchPage({super.key});
+  final bool inbound;
+  SearchPage({super.key, required this.inbound});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -158,23 +159,43 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                           onTap: () {
                             final selectedProduct = products[index];
-                            li.sellList.add(Product.named2(
-                              id: selectedProduct.id,
-                              barcode: selectedProduct.barcode,
-                              name: selectedProduct.name,
-                              buyprice: selectedProduct.buyprice,
-                              sellPrice: selectedProduct.sellPrice,
-                              count: 1,
-                              ownerName: selectedProduct.ownerName,
-                              weightable: selectedProduct.weightable,
-                              wholeUnit: selectedProduct.wholeUnit,
-                              offer: selectedProduct.offer,
-                              offerCount: selectedProduct.offerCount,
-                              offerPrice: selectedProduct.offerPrice,
-                              priceHistory: selectedProduct.priceHistory,
-                              endDate: selectedProduct.endDate,
-                              hot: selectedProduct.hot,
-                            ));
+                            if (!widget.inbound) {
+                              li.sellList.add(Product.named2(
+                                id: selectedProduct.id,
+                                barcode: selectedProduct.barcode,
+                                name: selectedProduct.name,
+                                buyprice: selectedProduct.buyprice,
+                                sellPrice: selectedProduct.sellPrice,
+                                count: 1,
+                                ownerName: selectedProduct.ownerName,
+                                weightable: selectedProduct.weightable,
+                                wholeUnit: selectedProduct.wholeUnit,
+                                offer: selectedProduct.offer,
+                                offerCount: selectedProduct.offerCount,
+                                offerPrice: selectedProduct.offerPrice,
+                                priceHistory: selectedProduct.priceHistory,
+                                endDate: selectedProduct.endDate,
+                                hot: selectedProduct.hot,
+                              ));
+                            } else {
+                              li.inboundList.add(Product.named2(
+                                id: selectedProduct.id,
+                                barcode: selectedProduct.barcode,
+                                name: selectedProduct.name,
+                                buyprice: selectedProduct.buyprice,
+                                sellPrice: selectedProduct.sellPrice,
+                                count: 0,
+                                ownerName: selectedProduct.ownerName,
+                                weightable: selectedProduct.weightable,
+                                wholeUnit: selectedProduct.wholeUnit,
+                                offer: selectedProduct.offer,
+                                offerCount: selectedProduct.offerCount,
+                                offerPrice: selectedProduct.offerPrice,
+                                priceHistory: selectedProduct.priceHistory,
+                                endDate: selectedProduct.endDate,
+                                hot: selectedProduct.hot,
+                              ));
+                            }
 
                             // Clear search and notify
                             controller.clear();

@@ -59,7 +59,9 @@ class _BankStatementPageState extends State<BankStatementPage> {
       );
     }).toList();
 
-    Provider.of<Lists>(context).getPersonsLogs(widget.loaner.ID).forEach((log) {
+    Provider.of<Lists>(context, listen: false)
+        .getPersonsLogs(widget.loaner.ID)
+        .forEach((log) {
       for (var log in log) {
         temp.add(Transaction(
           date: log.date,
@@ -180,6 +182,8 @@ class _BankStatementPageState extends State<BankStatementPage> {
       // Write the PDF file to the temporary directory.
       await pdfFile.writeAsBytes(pdfBytes);
 
+      print(pdfFile.path);
+
       // Share the PDF file using share_plus.
       await Share.shareXFiles(
         [XFile(pdfFile.path)],
@@ -195,6 +199,7 @@ class _BankStatementPageState extends State<BankStatementPage> {
 
   @override
   Widget build(BuildContext context) {
+    fetchTransactions(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text("Bank Statement"),

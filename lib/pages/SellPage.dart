@@ -134,7 +134,6 @@ class _SellPageState extends State<SellPage> {
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
                     child: IconButton.filled(
                       onPressed: () {
-                        print(sa.db.hasna(id: 9533));
                         sa.refreshProductsList();
                         showGeneralDialog(
                           barrierDismissible: true,
@@ -147,7 +146,9 @@ class _SellPageState extends State<SellPage> {
                             child: Padding(
                               padding:
                                   const EdgeInsets.fromLTRB(40, 150, 40, 10),
-                              child: SearchPage(),
+                              child: SearchPage(
+                                inbound: false,
+                              ),
                             ),
                           ),
                         );
@@ -219,6 +220,7 @@ class _SellPageState extends State<SellPage> {
                                                     : (element.sellPrice! *
                                                         element.count!)),
                                           )),
+                                          inbound: false,
                                         ),
                                       ),
                                     ),

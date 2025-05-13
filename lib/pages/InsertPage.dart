@@ -86,13 +86,16 @@ class _InPageState extends State<InPage> {
     widget.nameCon.text = widget.name;
     widget.BarcodeCon.text = widget.barcode;
     widget.ownerCon.text = widget.owner;
-    widget.buyCon.text =
-        (widget.buyPrice * getWholeUnitNumber(widget.wholeUnit)).toString();
-    widget.sellCon.text =
-        (widget.sellPrice * getWholeUnitNumber(widget.wholeUnit)).toString();
-    widget.countCon.text =
-        padd(original: widget.count.toString(), wholeUnit: widget.wholeUnit)
-            .toString();
+    widget.buyCon.text = widget.weightable
+        ? (widget.buyPrice * getWholeUnitNumber(widget.wholeUnit)).toString()
+        : widget.buyPrice.toString();
+    widget.sellCon.text = widget.weightable
+        ? (widget.sellPrice * getWholeUnitNumber(widget.wholeUnit)).toString()
+        : widget.sellPrice.toString();
+    widget.countCon.text = widget.weightable
+        ? padd(original: widget.count.toString(), wholeUnit: widget.wholeUnit)
+            .toString()
+        : widget.count.toString();
     widget.wholeUnitCon.text = widget.wholeUnit;
     widget.offerCountCon.text = widget.offerCount.toString();
     widget.offerPriceCon.text = unPadd(
@@ -287,7 +290,7 @@ class _InPageState extends State<InPage> {
                     controller: widget.countCon,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      prefix: Text(widget.wholeUnitCon.text.isEmpty
+                      prefix: Text(!widget.weightable
                           ? 'قطعة'
                           : widget.wholeUnitCon.text),
                       hintText: 'الكمية بالجرام/العدد',

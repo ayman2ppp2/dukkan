@@ -25,6 +25,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   List<Loaner> loanersList = [];
   // List<Product> productsList = [];
   List<Product> sellList = [];
+  List<Product> inboundList = [];
   List<Product> searchTemp = [];
   Map<String, double> kg = {
     'كيلو': 1000,
@@ -68,6 +69,71 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<List<Loaner>> refreshLoanersList() async {
     return db.getLoaners();
+  }
+
+  void updateProductName(int id, String newName) {
+    _updateProductField(id, (product) => product.name = newName);
+  }
+
+  void updateProductOwnerName(int id, String newOwnerName) {
+    _updateProductField(id, (product) => product.ownerName = newOwnerName);
+  }
+
+  void updateProductCount(int id, int newCount) {
+    _updateProductField(id, (product) => product.count = newCount);
+  }
+
+  void updateProductBuyPrice(int id, double newPrice) {
+    _updateProductField(id, (product) => product.buyprice = newPrice);
+  }
+
+  void updateProductSellPrice(int id, double newPrice) {
+    _updateProductField(id, (product) => product.sellPrice = newPrice);
+  }
+
+  void updateProductBarcode(int id, String newBarcode) {
+    _updateProductField(id, (product) => product.barcode = newBarcode);
+  }
+
+  void updateProductWholeUnit(int id, String newUnit) {
+    _updateProductField(id, (product) => product.wholeUnit = newUnit);
+  }
+
+  void updateProductWeightable(int id, bool val) {
+    _updateProductField(id, (product) => product.weightable = val);
+  }
+
+  void updateProductOffer(int id, bool val) {
+    _updateProductField(id, (product) => product.offer = val);
+  }
+
+  void updateProductOfferCount(int id, double val) {
+    _updateProductField(id, (product) => product.offerCount = val);
+  }
+
+  void updateProductOfferPrice(int id, double val) {
+    _updateProductField(id, (product) => product.offerPrice = val);
+  }
+
+  void updateProductEndDate(int id, DateTime val) {
+    _updateProductField(id, (product) => product.endDate = val);
+  }
+
+  // Internal helper:
+  void _updateProductField(int id, void Function(Product) updater) {
+    final index = inboundList.indexWhere((p) => p.id == id);
+    if (index != -1) {
+      updater(inboundList[index]);
+      notifyListeners();
+    }
+  }
+
+  Future<void> saveAllChanges() async {
+    if (inboundList.isNotEmpty) {
+      await db.isar!.writeTxn(() async {
+        await db.isar!.products.putAll(inboundList);
+      });
+    }
   }
 
   Future<int> resetLoanerAcount(int ID) async {
@@ -167,9 +233,9 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
           .nameContains(searchTerm, caseSensitive: false)
           .or()
           .barcodeContains(searchTerm, caseSensitive: false)
-          .sortByEndDateDesc() // Ensure non-expired items are prioritized
-          .thenByCountDesc() // Ensure items with stock are prioritized
-          .thenByName() // Sort alphabetically for items with the same count and end date
+          .sortByCountDesc()
+          .thenByEndDate()
+          .thenByName()
           .findAll();
     } else {
       return db.isar!.products
@@ -177,7 +243,8 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
           .nameContains(searchTerm, caseSensitive: false)
           .or()
           .barcodeContains(searchTerm, caseSensitive: false)
-          .sortByCountDesc()
+          .sortByCount() // low stock first
+          .thenByEndDate()
           .thenByName()
           .findAll();
     }
