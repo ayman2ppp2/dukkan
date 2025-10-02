@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dukkan/core/IsolatePool.dart';
+import 'package:dukkan/core/postgres_connection.dart';
 import 'package:dukkan/test.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
@@ -210,7 +211,7 @@ class DB {
   }
 
   Future<void> insertProducts({required List<Product> products}) async {
-    isar!.writeTxn(() => isar!.products.putAll(products));
+    await isar!.writeTxn(() => isar!.products.putAll(products));
   }
 
   Future<void> checkOut({
@@ -224,109 +225,105 @@ class DB {
     required bool expense,
     required int? expenseId,
   }) async {
-    double price = 0;
-    double profit = 0;
-    for (var element in lst) {
-      if (element.ownerName!.isNotEmpty) {
-        Owner? tempOwner = await (isar!.owners
-            .where()
-            .filter()
-            .ownerNameEqualTo(element.ownerName!)
-            .findFirst());
-        tempOwner!.dueMoney += element.buyprice! * element.count!;
-        await isar!.writeTxn(
-          () async => await isar!.owners.put(tempOwner..id = tempOwner.id),
-        );
+    try {
+      double price = 0;
+      double profit = 0;
+
+      for (var element in lst) {
+        // Owner due money update with null check
+        if (element.ownerName != null && element.ownerName!.isNotEmpty) {
+          Owner? tempOwner = await (isar!.owners
+              .where()
+              .filter()
+              .ownerNameEqualTo(element.ownerName!)
+              .findFirst());
+          if (tempOwner != null) {
+            tempOwner.dueMoney = (tempOwner.dueMoney ?? 0) +
+                (element.buyprice ?? 0) * (element.count ?? 0);
+            await isar!.writeTxn(() async => await isar!.owners.put(tempOwner));
+          }
+        }
+
+        // Product count update with null check
+        if (element.hot == false) {
+          var num = await isar!.products.get(element.id);
+          if (num == null) continue;
+          await isar!.writeTxn(() async => await isar!.products.put(
+                Product.named2(
+                  id: element.id,
+                  name: element.name,
+                  barcode: element.barcode,
+                  buyprice: element.buyprice,
+                  sellPrice: element.sellPrice,
+                  count: (num.count ?? 0) - (element.count ?? 0),
+                  ownerName: element.ownerName,
+                  weightable: element.weightable,
+                  wholeUnit: element.wholeUnit,
+                  offer: element.offer,
+                  offerCount: element.offerCount,
+                  offerPrice: element.offerPrice,
+                  priceHistory: element.priceHistory,
+                  endDate: element.endDate,
+                  hot: false,
+                ),
+              ));
+          // Use full precision for calculations, round only for display
+          double unitProfit = ((element.offer == true &&
+                      element.count! % (element.offerCount ?? 1) == 0)
+                  ? (element.offerPrice ?? 0)
+                  : (element.sellPrice ?? 0)) -
+              (element.buyprice ?? 0);
+          profit += unitProfit * (element.count ?? 0);
+          price += ((element.offer == true &&
+                      element.count! % (element.offerCount ?? 1) == 0
+                  ? (element.offerPrice ?? 0)
+                  : (element.sellPrice ?? 0)) *
+              (element.count ?? 0));
+        }
       }
 
-      if (!element.hot!) {
-        var num = await isar!.products.get(element.id);
-        await isar!.writeTxn(() async => await isar!.products.put(
-              // element.name,
-              Product.named2(
-                id: element.id,
-                name: element.name,
-                barcode: element.barcode,
-                buyprice: element.buyprice,
-                sellPrice: element.sellPrice,
-                count: (num!.count!) - element.count!,
-                ownerName: element.ownerName,
-                weightable: element.weightable,
-                wholeUnit: element.wholeUnit,
-                offer: element.offer,
-                offerCount: element.offerCount,
-                offerPrice: element.offerPrice,
-                priceHistory: element.priceHistory,
-                endDate: element.endDate,
-                hot: false,
-              ),
-            ));
-        profit +=
-            ((((element.offer! && element.count! % element.offerCount! == 0)
-                            ? (element.offerPrice!)
-                            : (element.sellPrice!)) -
-                        element.buyprice!) *
-                    element.count!)
-                .round();
-
-        price += (((element.offer! && element.count! % element.offerCount! == 0)
-                    ? element.offerPrice!
-                    : element.sellPrice!) *
-                element.count!)
-            .round();
+      // Apply discount if present
+      if (discount != null && discount > 0) {
+        price -= discount;
+        profit -= discount;
       }
-    }
 
-    if (loaned) {
-      var tempLoner = await isar!.loaners.get(LoID!);
-      await isar!.writeTxn(
-        () async => await isar!.loaners.put(
-          Loaner(
-            name: tempLoner!.name,
-            phoneNumber: tempLoner.phoneNumber,
-            location: tempLoner.location,
-            lastPayment: tempLoner.lastPayment,
-            // lastPaymentDate: tempLoner.lastPaymentDate,
-            loanedAmount: tempLoner.loanedAmount! + total.round() - discount,
-          )..ID = LoID,
-        ),
-      );
-    }
-    if (expense) {
-      var tempExpense = await isar!.expenses.get(expenseId!);
-      await isar!.writeTxn(
-        () async => await isar!.expenses.put(
-          Expense.named(
-              name: tempExpense!.name,
-              amount: tempExpense.amount! + price - discount - profit,
-              period: tempExpense.period,
-              payDate: tempExpense.payDate,
-              lastCalculationDate: tempExpense.lastCalculationDate,
-              fixed: tempExpense.fixed)
-            ..ID = tempExpense.ID,
-        ),
-      );
-    }
-    var embeddedProducts = lst.map((e) => e.toEmbedded()).toList();
+      // Loaner update with null check
+      if (LoID != null) {
+        var tempLoner = await isar!.loaners.get(LoID);
+        if (tempLoner != null) {
+          tempLoner.loanedAmount =
+              (tempLoner.loanedAmount ?? 0) + total.round() - discount;
+          await isar!.writeTxn(() async => await isar!.loaners.put(tempLoner));
+        }
+      }
 
-    var log = Log.named2(
-      products: embeddedProducts,
-      price: price - discount,
-      profit: profit - discount,
-      date: edit ? logID : DateTime.now(),
-      discount: discount,
-      loaned: loaned,
-      loanerID: LoID,
-      expense: expense,
-      expenseId: expenseId,
-    );
-    // log.products.addAll(lst);
-    await isar!.writeTxn(
-      () async {
-        // log.products.save();
-        return isar!.logs.put(log);
-      },
-    );
+      // Expense update with null check
+      if (expenseId != null) {
+        var tempExpense = await isar!.expenses.get(expenseId);
+        if (tempExpense != null) {
+          tempExpense.amount = (tempExpense.amount ?? 0) + price;
+          await isar!
+              .writeTxn(() async => await isar!.expenses.put(tempExpense));
+        }
+      }
+
+      // Save the log/receipt
+      final log = Log.named2(
+          price: price,
+          profit: profit,
+          products: lst.map((e) => e.toEmbedded()).toList(),
+          date: DateTime.now(),
+          discount: discount ?? 0,
+          loaned: loaned,
+          loanerID: LoID,
+          expenseId: expenseId,
+          expense: expense);
+      await isar!.writeTxn(() async => await isar!.logs.put(log));
+    } catch (e) {
+      print('Error in checkOut: $e');
+      // Optionally, handle or rethrow
+    }
   }
 
   Stream<List<Expense>> getExpenses({required bool fixed}) {
@@ -627,9 +624,42 @@ class DB {
     print('Backup restored successfully.');
   }
 
+  void insertInPostgres(
+      {required String name,
+      required String ownerName,
+      required double buyPrice,
+      required double sellPrice,
+      required String barcode,
+      required int count,
+      required bool weightable,
+      required String wholeUnit,
+      required bool offer,
+      required double offerCount,
+      required double offerPrice,
+      required DateTime? endDate,
+      required bool hot}) {
+    var postgresConnection = PostgresConnection();
+    postgresConnection.connect();
+    postgresConnection.insertProduct(
+      name: name,
+      ownerName: ownerName,
+      buyPrice: buyPrice,
+      sellPrice: sellPrice,
+      barcode: barcode,
+      count: count,
+      weightable: weightable,
+      wholeUnit: wholeUnit,
+      offer: offer,
+      offerCount: offerCount,
+      offerPrice: offerPrice,
+      endDate: endDate,
+      hot: hot,
+    );
+  }
+
   void windows() async {
     final receivedFilePath =
-        '${(await getApplicationDocumentsDirectory()).path}/isarInstance.isar+1';
+        '${(await getApplicationDocumentsDirectory()).path}/backup.isar.received';
     final dir = await getApplicationDocumentsDirectory();
     await closeAllIsarInstances();
     await isar!.close();
