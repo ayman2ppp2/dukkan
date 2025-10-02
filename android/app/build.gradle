@@ -26,7 +26,7 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '
 
 android {
     namespace "com.golden.dukkan"
-    compileSdkVersion 34  // Use the latest SDK version compatible with your dependencies
+    compileSdkVersion 35  // Use the latest SDK version compatible with your dependencies
     ndkVersion "25.1.8937393"
 
     compileOptions {
@@ -45,7 +45,7 @@ android {
     defaultConfig {
         applicationId "com.golden.dukkan"
         minSdkVersion 21  // Minimum Android version supported
-        targetSdkVersion 34  // Set explicitly to match compileSdkVersion
+        targetSdkVersion 35  // Set explicitly to match compileSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

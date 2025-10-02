@@ -1,5 +1,6 @@
 import 'dart:async';
 // import 'package:mime';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:dukkan/core/IsolatePool.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
@@ -17,6 +18,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:restart_app/restart_app.dart';
 import '../util/models/Log.dart';
 import '../util/models/searchQuery.dart'; // Import SearchQuery model
 
@@ -350,10 +352,26 @@ class Lists extends ChangeNotifier {
         request.response.close();
         shareList.add(Text('vsersion sent'));
         notifyListeners();
-      } else {
-        final file = File('${te.path}/$fileName'); // Path to the requested file
+      }
+      if (fileName == 'hash') {
+        final originalFileName = fileName.replaceAll('hash', 'backup.isar');
+        final file = File('${te.path}/$originalFileName');
         if (await file.exists()) {
-          print('Sending file: $fileName');
+          final bytes = await file.readAsBytes();
+          final digest = sha256.convert(bytes);
+          request.response.write(digest.toString());
+          shareList.add(Text('Hash sent for: $originalFileName'));
+        } else {
+          request.response.statusCode = HttpStatus.notFound;
+          request.response.write('File not found: $originalFileName');
+        }
+        await request.response.close();
+        return;
+      } else {
+        await createBackup(); // Copy the database
+        File file = File('${te.path}/$fileName'); // Path to the requested file
+        if (await file.exists()) {
+          print('Sending file: ${file.absolute.path}');
           shareList.add(Text('Sending file: $fileName'));
           notifyListeners();
 
@@ -364,22 +382,22 @@ class Lists extends ChangeNotifier {
             request.response.headers
                 .set(HttpHeaders.contentTypeHeader, mimeType);
             request.response.headers.set(HttpHeaders.contentDisposition,
-                'attachment; filename="$fileName"');
+                'attachment; filename="$fileName.copy"');
 
             await file.openRead().pipe(request.response);
-            shareList.add(Text('File sent: $fileName'));
+            shareList.add(Text('File sent: $fileName.copy'));
             notifyListeners();
           } catch (error) {
             print('Error sending file: $error');
             request.response.statusCode = HttpStatus.internalServerError;
             request.response.write('Error sending file');
-            request.response.close();
+            await request.response.close();
           }
         } else {
           print('File not found: $fileName');
           request.response.statusCode = HttpStatus.notFound;
           request.response.write('File not found: $fileName');
-          request.response.close();
+          await request.response.close();
         }
       }
     }
@@ -395,14 +413,14 @@ class Lists extends ChangeNotifier {
       // Listen for requests
       await for (HttpRequest request in server) {
         if (request.uri.pathSegments.last == 'shutdown') {
-          request.response.write('server is down');
-          request.response.close();
-          print('Shutting down server...');
+          // print('Shutting down server...');
           shareList.add(Text('Server shutting down...'));
           notifyListeners();
           await server.close();
           shareList.add(Text('Server is down'));
           notifyListeners();
+          request.response.write('server is down');
+          request.response.close();
           break;
         } else {
           handleHttpRequest(request); // Handle file requests dynamically
@@ -415,36 +433,35 @@ class Lists extends ChangeNotifier {
     }
   }
 
+  Future<void> createBackup() async {
+    await db.createLocalBackup();
+    shareList.add(Text('Backup created for: isarInstance.isar'));
+    notifyListeners();
+  }
+
   void client(String ip) async {
-    String version = ''; // e.g., "1.0.0"
+    String version = '';
     var te = await getApplicationDocumentsDirectory();
     Dio dio = Dio();
 
-    // Function to create a backup of existing files
-    Future<void> createBackup() async {
-      await db.createLocalBackup();
-      shareList.add(Text('Backup created for : isarInstance.isar'));
-      notifyListeners();
-    }
+    // Create backup
 
     await createBackup();
 
     try {
+      // Fetch version
       try {
-        var versionResponse = await dio.get(
-          'http://$ip/version',
-          onReceiveProgress: (count, total) => print(count),
-        );
+        var versionResponse = await dio.get('http://$ip/version');
         version = versionResponse.data.toString();
-        shareList.add(Text(version));
+        shareList.add(Text('Version: $version'));
         notifyListeners();
       } catch (e) {
         shareList.add(Text('Error fetching version: $e'));
         notifyListeners();
-        return; // Exit if version can't be fetched
+        return;
       }
 
-      // Determine file list based on version
+      // Decide which files to download
       List<String> fileNames;
       if (version.startsWith('2.2.')) {
         fileNames = [
@@ -455,11 +472,10 @@ class Lists extends ChangeNotifier {
           'shutdown'
         ];
       } else if (version.startsWith('2.3.') || version.startsWith('2.4.')) {
-        fileNames = ['isarInstance.isar', 'shutdown'];
+        fileNames = ['backup.isar'];
       } else {
         shareList.add(Text('Unsupported version: $version'));
         notifyListeners();
-        // print('Unsupported version: $version');
         fileNames = [
           'inventoryv2.2.0.hive',
           'logsv2.2.0.hive',
@@ -467,67 +483,78 @@ class Lists extends ChangeNotifier {
           'loanersv2.2.0.hive',
           'shutdown'
         ];
-        // return; // Exit if the version is unsupported
       }
 
-      // Loop through the file list and download each one
+      // Loop through and handle files
       for (var fileName in fileNames) {
         var filePath = Platform.isWindows
-            ? '${te.path}/$fileName+1'
-            : '${te.path}/$fileName'; // Local file path
+            ? '${te.path}/$fileName.received'
+            : '${te.path}/$fileName';
 
-        // Handle shutdown separately
-        if (fileName == 'shutdown') {
-          try {
-            var response = await dio.get('http://$ip/shutdown');
+        // if (fileName == 'shutdown') {
+        //   try {
+        //     var response = await dio.get('http://$ip/shutdown');
+        //     shareList.add(Text(response.data));
+        //     notifyListeners();
+        //   } catch (e) {
+        //     shareList.add(Text('Error shutting down the server: $e'));
+        //     notifyListeners();
+        //   }
+        //   continue;
+        // }
 
-            shareList.add(Text(response.data));
-            notifyListeners();
-            // print('Server shut down successfully');
-          } catch (e) {
-            shareList.add(Text('Error shutting down the server: $e'));
-            notifyListeners();
-            // print('Error shutting down the server: $e');
-          }
-          continue; // Skip the shutdown file download
-        }
-
-        // Create a backup before downloading the file
-
-        // Download the file
         try {
-          shareList.add(Text('receiving : $fileName'));
+          shareList.add(Text('Receiving: $fileName'));
           notifyListeners();
-          var response = await dio
-              .download('http://$ip/$fileName', filePath)
-              .then((value) {
-            if (Platform.isWindows) {
-              db.windows();
-              return value;
-            }
-            return value;
-          });
+          var response = await dio.download('http://$ip/$fileName', filePath);
+          if (Platform.isWindows) db.windows();
 
           if (response.statusCode == 200) {
             shareList.add(Text('File received: $fileName'));
             notifyListeners();
-            // print('File received: $fileName');
           } else {
             shareList
                 .add(Text('Error receiving $fileName: ${response.statusCode}'));
             notifyListeners();
-            // print('Error receiving $fileName: ${response.statusCode}');
           }
         } catch (e) {
           shareList.add(Text('Failed to download $fileName: $e'));
           notifyListeners();
-          // print('Failed to download $fileName: $e');
         }
       }
-    } catch (e) {
-      shareList.add(Text('Error: $e'));
+      if (fileNames.contains('backup.isar')) {
+        var filePath = Platform.isWindows
+            ? '${te.path}/backup.isar.received'
+            : '${te.path}/backup.isar';
+        final fileBytes = await File(filePath).readAsBytes();
+        final actualHash = sha256.convert(fileBytes).toString();
+        shareList.add(Text('Actual hash: $actualHash'));
+        notifyListeners();
+        var expectedHash = await dio
+            .get('http://$ip/hash')
+            .then((response) => response.data.toString());
+        if (actualHash == expectedHash) {
+          shareList.add(Text('Hash verified ✅ — Restarting app...'));
+          notifyListeners();
+          Platform.isWindows ? null : Restart.restartApp(); // ⬅️ RESTART HERE
+        } else {
+          shareList.add(Text('Hash mismatch ❌ — App not restarted'));
+          notifyListeners();
+        }
+      }
 
-      // print('Error: $e');
+      try {
+        var response = await dio.get('http://$ip/shutdown');
+        shareList.add(Text(response.data));
+        notifyListeners();
+      } catch (e) {
+        shareList.add(Text('Error shutting down the server: $e'));
+        notifyListeners();
+      }
+    } catch (e, s) {
+      print('Error: $s');
+      shareList.add(Text('Error: $e'));
+      notifyListeners();
     }
   }
 
