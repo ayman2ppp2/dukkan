@@ -534,6 +534,7 @@ class Lists extends ChangeNotifier {
             .get('http://$ip/hash')
             .then((response) => response.data.toString());
         if (actualHash == expectedHash) {
+          if (Platform.isAndroid) db.useLocalBacup();
           shareList.add(Text('Hash verified ✅ — Restarting app...'));
           notifyListeners();
           Platform.isWindows ? null : Restart.restartApp(); // ⬅️ RESTART HERE
