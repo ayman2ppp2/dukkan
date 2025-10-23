@@ -215,116 +215,123 @@ class DB {
   }
 
   Future<void> checkOut({
-    required List<Product> lst,
-    required double total,
-    required double discount,
-    required int? LoID,
-    required bool loaned,
-    required bool edit,
-    required DateTime logID,
-    required bool expense,
-    required int? expenseId,
-  }) async {
-    try {
-      double price = 0;
-      double profit = 0;
+  required List<Product> products,
+  required double total,
+  double discount = 0,
+  int? loanerId,
+  bool loaned = false,
+  bool expense = false,
+  int? expenseId,
+}) async {
+  try {
+    double totalPrice = 0;
+    double totalProfit = 0;
 
-      for (var element in lst) {
-        // Owner due money update with null check
-        if (element.ownerName != null && element.ownerName!.isNotEmpty) {
-          Owner? tempOwner = await (isar!.owners
-              .where()
-              .filter()
-              .ownerNameEqualTo(element.ownerName!)
-              .findFirst());
-          if (tempOwner != null) {
-            tempOwner.dueMoney = (tempOwner.dueMoney ?? 0) +
-                (element.buyprice ?? 0) * (element.count ?? 0);
-            await isar!.writeTxn(() async => await isar!.owners.put(tempOwner));
-          }
-        }
+    // Collect updated entities for batch writing
+    final updatedOwners = <Owner>[];
+    final updatedProducts = <Product>[];
+    Owner? tempOwner;
 
-        // Product count update with null check
-        if (element.hot == false) {
-          var num = await isar!.products.get(element.id);
-          if (num == null) continue;
-          await isar!.writeTxn(() async => await isar!.products.put(
-                Product.named2(
-                  id: element.id,
-                  name: element.name,
-                  barcode: element.barcode,
-                  buyprice: element.buyprice,
-                  sellPrice: element.sellPrice,
-                  count: (num.count ?? 0) - (element.count ?? 0),
-                  ownerName: element.ownerName,
-                  weightable: element.weightable,
-                  wholeUnit: element.wholeUnit,
-                  offer: element.offer,
-                  offerCount: element.offerCount,
-                  offerPrice: element.offerPrice,
-                  priceHistory: element.priceHistory,
-                  endDate: element.endDate,
-                  hot: false,
-                ),
-              ));
-          // Use full precision for calculations, round only for display
-          double unitProfit = ((element.offer == true &&
-                      element.count! % (element.offerCount ?? 1) == 0)
-                  ? (element.offerPrice ?? 0)
-                  : (element.sellPrice ?? 0)) -
-              (element.buyprice ?? 0);
-          profit += unitProfit * (element.count ?? 0);
-          price += ((element.offer == true &&
-                      element.count! % (element.offerCount ?? 1) == 0
-                  ? (element.offerPrice ?? 0)
-                  : (element.sellPrice ?? 0)) *
-              (element.count ?? 0));
+    for (final product in products) {
+      // 🔹 Update owner's due money
+      if ((product.ownerName ?? '').isNotEmpty) {
+        tempOwner = await isar!.owners
+            .where()
+            .filter()
+            .ownerNameEqualTo(product.ownerName!)
+            .findFirst();
+
+        if (tempOwner != null) {
+          tempOwner.dueMoney = (tempOwner.dueMoney ?? 0) +
+              (product.buyprice ?? 0) * (product.count ?? 0);
+          updatedOwners.add(tempOwner);
         }
       }
 
-      // Apply discount if present
-      if (discount != null && discount > 0) {
-        price -= discount;
-        profit -= discount;
-      }
+      // 🔹 Update product count (skip if 'hot')
+      if (product.hot == false) {
+        final existing = await isar!.products.get(product.id);
+        if (existing == null) continue;
 
-      // Loaner update with null check
-      if (LoID != null) {
-        var tempLoner = await isar!.loaners.get(LoID);
-        if (tempLoner != null) {
-          tempLoner.loanedAmount =
-              (tempLoner.loanedAmount ?? 0) + total.round() - discount;
-          await isar!.writeTxn(() async => await isar!.loaners.put(tempLoner));
-        }
-      }
+        final updatedCount = (existing.count ?? 0) - (product.count ?? 0);
+        updatedProducts.add(
+          existing.copyWith(count: updatedCount),
+        );
 
-      // Expense update with null check
-      if (expenseId != null) {
-        var tempExpense = await isar!.expenses.get(expenseId);
-        if (tempExpense != null) {
-          tempExpense.amount = (tempExpense.amount ?? 0) + price;
-          await isar!
-              .writeTxn(() async => await isar!.expenses.put(tempExpense));
-        }
-      }
+        // 🔹 Calculate profit and price
+        final offerActive =
+            product.offer == true && product.offerCount != null;
 
-      // Save the log/receipt
-      final log = Log.named2(
-          price: price,
-          profit: profit,
-          products: lst.map((e) => e.toEmbedded()).toList(),
-          date: DateTime.now(),
-          discount: discount ?? 0,
-          loaned: loaned,
-          loanerID: LoID,
-          expenseId: expenseId,
-          expense: expense);
-      await isar!.writeTxn(() async => await isar!.logs.put(log));
-    } catch (e) {
-      print('Error in checkOut: $e');
-      // Optionally, handle or rethrow
+        final sellPrice = offerActive && product.count! % product.offerCount! == 0
+            ? (product.offerPrice ?? 0)
+            : (product.sellPrice ?? 0);
+
+        final unitProfit = sellPrice - (product.buyprice ?? 0);
+
+        totalProfit += unitProfit * (product.count ?? 0);
+        totalPrice += sellPrice * (product.count ?? 0);
+      }
     }
+
+    // 🔹 Apply discount
+    if (discount > 0) {
+      totalPrice -= discount;
+      totalProfit -= discount;
+    }
+
+    // 🔹 Prepare loaner and expense updates
+    Loaner? updatedLoaner;
+    if (loanerId != null) {
+      updatedLoaner = await isar!.loaners.get(loanerId);
+      if (updatedLoaner != null) {
+        updatedLoaner.loanedAmount =
+            (updatedLoaner.loanedAmount ?? 0) + total.round() - discount;
+      }
+    }
+
+    Expense? updatedExpense;
+    if (expenseId != null) {
+      updatedExpense = await isar!.expenses.get(expenseId);
+      if (updatedExpense != null) {
+        updatedExpense.amount = (updatedExpense.amount ?? 0) + totalPrice;
+      }
+    }
+
+    // 🔹 Create log
+    final log = Log.named2(
+      price: totalPrice,
+      profit: totalProfit,
+      products: products.map((p) => p.toEmbedded()).toList(),
+      date: DateTime.now(),
+      discount: discount,
+      loaned: loaned,
+      loanerID: loanerId,
+      expenseId: expenseId,
+      expense: expense,
+    );
+
+    // 🔹 Perform a single batched transaction
+    await isar!.writeTxn(() async {
+      if (updatedOwners.isNotEmpty) {
+        await isar!.owners.putAll(updatedOwners);
+      }
+      if (updatedProducts.isNotEmpty) {
+        await isar!.products.putAll(updatedProducts);
+      }
+      if (updatedLoaner != null) {
+        await isar!.loaners.put(updatedLoaner);
+      }
+      if (updatedExpense != null) {
+        await isar!.expenses.put(updatedExpense);
+      }
+
+      await isar!.logs.put(log);
+    });
+  } catch (e, st) {
+    debugPrint('❌ Error in checkOut: $e\n$st');
+    // Optionally rethrow or handle more gracefully
   }
+}
 
   Stream<List<Expense>> getExpenses({required bool fixed}) {
     var temp;
