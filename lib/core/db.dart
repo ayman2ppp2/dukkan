@@ -65,6 +65,15 @@ class DB {
     }
   }
 
+  // void closeAll() {
+  //   inventory.close();
+  //   logs.close();
+  //   owners.close();
+  //   loaners.close();
+  //   invBack.close();
+  //   logBack.close();
+  //   ownersBack.close();
+  // }
 
   Future<bool> deleteLoaner(int id) {
     return isar!.writeTxn(() => isar!.loaners.delete(id));
