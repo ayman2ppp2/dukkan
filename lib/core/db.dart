@@ -255,7 +255,7 @@ class DB {
 
         final updatedCount = (existing.count ?? 0) - (product.count ?? 0);
         updatedProducts.add(
-          existing.copyWith(count: updatedCount),
+          existing..count= updatedCount,
         );
 
         // 🔹 Calculate profit and price
