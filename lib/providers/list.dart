@@ -145,7 +145,7 @@ class Lists extends ChangeNotifier {
     clearAllCache();
   }
 
-  Future<void> checkOut({
+  Future<dynamic> checkOut({
     required List<Product> lst,
     required double total,
     required double discount,
@@ -157,13 +157,13 @@ class Lists extends ChangeNotifier {
     required int? expenseId,
   }) async {
     await db.checkOut(
-        lst: lst,
+        products: lst,
         total: total,
         discount: discount,
-        LoID: LoID,
+        loanerId: LoID,
         loaned: loaned,
-        edit: edit,
-        logID: logID,
+        // edit: edit,
+        // logID: logID,
         expense: expense,
         expenseId: expenseId);
     clearAllCache();
