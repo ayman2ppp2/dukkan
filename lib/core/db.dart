@@ -65,16 +65,6 @@ class DB {
     }
   }
 
-  // void closeAll() {
-  //   inventory.close();
-  //   logs.close();
-  //   owners.close();
-  //   loaners.close();
-  //   invBack.close();
-  //   logBack.close();
-  //   ownersBack.close();
-  // }
-
   Future<bool> deleteLoaner(int id) {
     return isar!.writeTxn(() => isar!.loaners.delete(id));
   }
@@ -214,7 +204,7 @@ class DB {
     await isar!.writeTxn(() => isar!.products.putAll(products));
   }
 
-  Future<dynamic> checkOut({
+  Future<bool> checkOut({
     required List<Product> products,
     required double total,
     double discount = 0,
@@ -224,6 +214,41 @@ class DB {
     int? expenseId,
   }) async {
     try {
+      var productsIds = products.map((e) => e.id);
+
+      productsIds = productsIds.toSet();
+      final productCounts = <int, int>{};
+      for (final product in products) {
+        final id = product.id;
+        final count = product.count ?? 0;
+        productCounts.update(
+          id,
+          (existing) => existing + count,
+          ifAbsent: () => count,
+        );
+      }
+      List<Product> clearedProducts = [];
+      productsIds.forEach((id) {
+        var product = products.firstWhere((e) => e.id == id);
+        clearedProducts.add(Product.named2(
+            id: product.id,
+            name: product.name,
+            ownerName: product.ownerName,
+            barcode: product.barcode,
+            buyprice: product.buyprice,
+            sellPrice: product.sellPrice,
+            count: productCounts[id],
+            weightable: product.weightable,
+            wholeUnit: product.wholeUnit,
+            offer: product.offer,
+            offerCount: product.offerCount,
+            offerPrice: product.offerPrice,
+            priceHistory: product.priceHistory,
+            endDate: product.endDate,
+            hot: product.hot));
+      });
+
+      debugPrint(clearedProducts.map((p) => p.toJson()).toString());
       double totalPrice = 0;
       double totalProfit = 0;
 
@@ -232,7 +257,7 @@ class DB {
       final updatedProducts = <Product>[];
       Owner? tempOwner;
 
-      for (final product in products) {
+      for (final product in clearedProducts) {
         // 🔹 Update owner's due money
         if ((product.ownerName ?? '').isNotEmpty) {
           tempOwner = await isar!.owners
@@ -242,14 +267,14 @@ class DB {
               .findFirst();
 
           if (tempOwner != null) {
-            tempOwner.dueMoney = (tempOwner.dueMoney ?? 0) +
+            tempOwner.dueMoney = (tempOwner.dueMoney) +
                 (product.buyprice ?? 0) * (product.count ?? 0);
             updatedOwners.add(tempOwner);
           }
         }
 
         // 🔹 Update product count (skip if 'hot')
-        if (product.hot == false) {
+        if (!(product.hot!)) {
           final existing = await isar!.products.get(product.id);
           if (existing == null) continue;
 
@@ -261,6 +286,22 @@ class DB {
           // 🔹 Calculate profit and price
           final offerActive =
               product.offer == true && product.offerCount != null;
+          //if (offerActive) {
+          //  final bundleCount = product.count! ~/ product.offerCount!;
+          //  final remaining = product.count! % product.offerCount!;
+          //  totalProfit += (product.offerPrice ?? 0 - (product.buyprice ?? 0)) *
+          //      bundleCount;
+          //  totalProfit +=
+          //      ((product.sellPrice ?? 0) - (product.buyprice ?? 0)) *
+          //          remaining;
+          //  totalPrice += (product.offerPrice ?? 0) * bundleCount +
+          //      (product.sellPrice ?? 0) * remaining;
+          //} else {
+          //  totalProfit +=
+          //      ((product.sellPrice ?? 0) - (product.buyprice ?? 0)) *
+          //          (product.count ?? 0);
+          //  totalPrice += (product.sellPrice ?? 0) * (product.count ?? 0);
+          //}
 
           final sellPrice =
               offerActive && product.count! % product.offerCount! == 0
@@ -273,6 +314,8 @@ class DB {
           totalPrice += sellPrice * (product.count ?? 0);
         }
       }
+
+      // debugPrint(updatedProducts.map((e) => e.toString()).toString());
 
       // 🔹 Apply discount
       if (discount > 0) {
@@ -312,7 +355,8 @@ class DB {
       );
 
       // 🔹 Perform a single batched transaction
-      await isar!.writeTxn(() async {
+      var success = false;
+      success = await isar!.writeTxn(() async {
         if (updatedOwners.isNotEmpty) {
           await isar!.owners.putAll(updatedOwners);
         }
@@ -325,13 +369,15 @@ class DB {
         if (updatedExpense != null) {
           await isar!.expenses.put(updatedExpense);
         }
-
+        //throw Exception();
         await isar!.logs.put(log);
-        // throw Exception('Intentional test failure');
+        return true;
       });
+      return success;
     } catch (e, st) {
       debugPrint('❌ Error in checkOut: $e\n$st');
-      rethrow;
+      return false;
+      //rethrow;
       // Optionally rethrow or handle more gracefully
     }
   }
@@ -606,7 +652,7 @@ class DB {
     return Pool.reInit();
   }
 
-  useLocalBacup() async {
+  Future<void> useLocalBacup() async {
     final backupFilePath =
         '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
     final dir = await getApplicationDocumentsDirectory();

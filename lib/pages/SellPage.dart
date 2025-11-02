@@ -229,20 +229,20 @@ class _SellPageState extends State<SellPage> {
                               },
                             );
                           } else {
-                            sa.db.insertInPostgres(
-                                name: 'name',
-                                ownerName: 'ownerName',
-                                buyPrice: 50,
-                                sellPrice: 100,
-                                barcode: 'barcode',
-                                count: 90,
-                                weightable: false,
-                                wholeUnit: 'wholeUnit',
-                                offer: false,
-                                offerCount: 0,
-                                offerPrice: 0,
-                                endDate: DateTime.now(),
-                                hot: false);
+                            //sa.db.insertInPostgres(
+                            //    name: 'name',
+                            //    ownerName: 'ownerName',
+                            //    buyPrice: 50,
+                            //    sellPrice: 100,
+                            //    barcode: 'barcode',
+                            //    count: 90,
+                            //    weightable: false,
+                            //    wholeUnit: 'wholeUnit',
+                            //    offer: false,
+                            //    offerCount: 0,
+                            //    offerPrice: 0,
+                            //    endDate: DateTime.now(),
+                            //    hot: false);
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text('يجب تحديد منتجات اولآ ')));
                           }

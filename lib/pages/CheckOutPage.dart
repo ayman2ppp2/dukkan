@@ -378,69 +378,104 @@ class _CheckOutState extends State<CheckOut> {
                                                           LoadingOverlay(),
                                                     );
 
-                                                    try {
-                                                      await li.checkOut(
-                                                          lst: widget.lst,
-                                                          total: widget.total,
-                                                          discount:
-                                                              double.tryParse(
-                                                                      discount) ??
-                                                                  0,
-                                                          LoID: loanerID,
-                                                          loaned: radio == 1,
-                                                          edit: li.editing,
-                                                          logID: li.logID,
-                                                          expense: radio == 2,
-                                                          expenseId: expenseID);
-                                                      li.editing = false;
-                                                      if (!widget.inbound) {
-                                                        await sa
-                                                            .refreshProductsList();
-                                                        await li.refresh();
-                                                        li.refreshListOfOwners();
-                                                        sa.defaultSellList();
-                                                        Navigator.pop(context);
-                                                        Navigator.pop(context);
-                                                        Navigator.pop(context);
-                                                      } else {
-                                                        await li.inboundReceipt(
-                                                            lst: widget.lst,
-                                                            total:
-                                                                widget.total);
-                                                        Navigator.pop(context);
-                                                        Navigator.pop(context);
-                                                        Navigator.pop(context);
-                                                      }
-                                                    } catch (e) {
-                                                      Navigator.pop(context);
-                                                      showDialog(
+                                                    //ScaffoldMessenger.of(
+                                                    //        context)
+                                                    //    .showSnackBar(
+                                                    //  const SnackBar(
+                                                    //      content: Text(
+                                                    //          'Processing checkout...')),
+                                                    //);
+
+                                                    final success =
+                                                        await li.checkOut(
+                                                      lst: widget.lst,
+                                                      total: widget.total,
+                                                      discount: double.tryParse(
+                                                              discount) ??
+                                                          0,
+                                                      LoID: loanerID,
+                                                      loaned: radio == 1,
+                                                      edit: li.editing,
+                                                      logID: li.logID,
+                                                      expense: radio == 2,
+                                                      expenseId: expenseID,
+                                                    );
+
+                                                    if (!success) {
+                                                      await showDialog(
                                                         context: context,
                                                         builder: (context) =>
                                                             AlertDialog(
-                                                          title: const Text(
-                                                            'حدث خطأ أثناء إتمام العملية',
-                                                            style: TextStyle(
-                                                                fontSize: 20),
-                                                          ),
-                                                          content:
-                                                              Text('الخطأ: $e'),
+                                                          title:
+                                                              const Text('فشل'),
+                                                          content: const Text(
+                                                              'فشل تسجيل الفاتورة.'),
                                                           actions: [
-                                                            TextButton(
-                                                              onPressed: () {
-                                                                Navigator.pop(
-                                                                    context);
-                                                              },
-                                                              child: const Text(
-                                                                'حسناً',
-                                                                style: TextStyle(
-                                                                    fontSize:
-                                                                        20),
+                                                            Center(
+                                                              child: TextButton(
+                                                                onPressed: () =>
+                                                                    Navigator.of(
+                                                                            context)
+                                                                        .pop(),
+                                                                child:
+                                                                    const Text(
+                                                                        'موافق'),
                                                               ),
                                                             ),
                                                           ],
                                                         ),
                                                       );
+
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                      return; // stop further UI updates
                                                     }
+
+// ✅ success: proceed
+                                                    li.editing = false;
+
+                                                    if (!widget.inbound) {
+                                                      await sa
+                                                          .refreshProductsList();
+                                                      await li.refresh();
+                                                      li.refreshListOfOwners();
+                                                      sa.defaultSellList();
+
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                    } else {
+                                                      await li.inboundReceipt(
+                                                          lst: widget.lst,
+                                                          total: widget.total);
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                    }
+
+// ✅ success dialog
+                                                    await showDialog(
+                                                      context: context,
+                                                      builder: (context) =>
+                                                          AlertDialog(
+                                                        title:
+                                                            const Text('نجاح'),
+                                                        content: const Text(
+                                                            '✅ تم تسجيل الفاتورة بنجاح'),
+                                                        actions: [
+                                                          Center(
+                                                            child: TextButton(
+                                                              onPressed: () =>
+                                                                  Navigator.of(
+                                                                          context)
+                                                                      .pop(),
+                                                              child: const Text(
+                                                                  'موافق'),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
                                                   },
                                                   child: const Text(
                                                     'نعم',
