@@ -65,16 +65,6 @@ class DB {
     }
   }
 
-  // void closeAll() {
-  //   inventory.close();
-  //   logs.close();
-  //   owners.close();
-  //   loaners.close();
-  //   invBack.close();
-  //   logBack.close();
-  //   ownersBack.close();
-  // }
-
   Future<bool> deleteLoaner(int id) {
     return isar!.writeTxn(() => isar!.loaners.delete(id));
   }
@@ -214,124 +204,183 @@ class DB {
     await isar!.writeTxn(() => isar!.products.putAll(products));
   }
 
-  Future<void> checkOut({
-  required List<Product> products,
-  required double total,
-  double discount = 0,
-  int? loanerId,
-  bool loaned = false,
-  bool expense = false,
-  int? expenseId,
-}) async {
-  try {
-    double totalPrice = 0;
-    double totalProfit = 0;
+  Future<bool> checkOut({
+    required List<Product> products,
+    required double total,
+    double discount = 0,
+    int? loanerId,
+    bool loaned = false,
+    bool expense = false,
+    int? expenseId,
+  }) async {
+    try {
+      var productsIds = products.map((e) => e.id);
 
-    // Collect updated entities for batch writing
-    final updatedOwners = <Owner>[];
-    final updatedProducts = <Product>[];
-    Owner? tempOwner;
+      productsIds = productsIds.toSet();
+      final productCounts = <int, int>{};
+      for (final product in products) {
+        final id = product.id;
+        final count = product.count ?? 0;
+        productCounts.update(
+          id,
+          (existing) => existing + count,
+          ifAbsent: () => count,
+        );
+      }
+      List<Product> clearedProducts = [];
+      productsIds.forEach((id) {
+        var product = products.firstWhere((e) => e.id == id);
+        clearedProducts.add(Product.named2(
+            id: product.id,
+            name: product.name,
+            ownerName: product.ownerName,
+            barcode: product.barcode,
+            buyprice: product.buyprice,
+            sellPrice: product.sellPrice,
+            count: productCounts[id],
+            weightable: product.weightable,
+            wholeUnit: product.wholeUnit,
+            offer: product.offer,
+            offerCount: product.offerCount,
+            offerPrice: product.offerPrice,
+            priceHistory: product.priceHistory,
+            endDate: product.endDate,
+            hot: product.hot));
+      });
 
-    for (final product in products) {
-      // 🔹 Update owner's due money
-      if ((product.ownerName ?? '').isNotEmpty) {
-        tempOwner = await isar!.owners
-            .where()
-            .filter()
-            .ownerNameEqualTo(product.ownerName!)
-            .findFirst();
+      debugPrint(clearedProducts.map((p) => p.toJson()).toString());
+      double totalPrice = 0;
+      double totalProfit = 0;
 
-        if (tempOwner != null) {
-          tempOwner.dueMoney = (tempOwner.dueMoney ?? 0) +
-              (product.buyprice ?? 0) * (product.count ?? 0);
-          updatedOwners.add(tempOwner);
+      // Collect updated entities for batch writing
+      final updatedOwners = <Owner>[];
+      final updatedProducts = <Product>[];
+      Owner? tempOwner;
+
+      for (final product in clearedProducts) {
+        // 🔹 Update owner's due money
+        if ((product.ownerName ?? '').isNotEmpty) {
+          tempOwner = await isar!.owners
+              .where()
+              .filter()
+              .ownerNameEqualTo(product.ownerName!)
+              .findFirst();
+
+          if (tempOwner != null) {
+            tempOwner.dueMoney = (tempOwner.dueMoney) +
+                (product.buyprice ?? 0) * (product.count ?? 0);
+            updatedOwners.add(tempOwner);
+          }
+        }
+
+        // 🔹 Update product count (skip if 'hot')
+        if (!(product.hot!)) {
+          final existing = await isar!.products.get(product.id);
+          if (existing == null) continue;
+
+          final updatedCount = (existing.count ?? 0) - (product.count ?? 0);
+          updatedProducts.add(
+            existing..count = updatedCount,
+          );
+
+          // 🔹 Calculate profit and price
+          final offerActive =
+              product.offer == true && product.offerCount != null;
+          //if (offerActive) {
+          //  final bundleCount = product.count! ~/ product.offerCount!;
+          //  final remaining = product.count! % product.offerCount!;
+          //  totalProfit += (product.offerPrice ?? 0 - (product.buyprice ?? 0)) *
+          //      bundleCount;
+          //  totalProfit +=
+          //      ((product.sellPrice ?? 0) - (product.buyprice ?? 0)) *
+          //          remaining;
+          //  totalPrice += (product.offerPrice ?? 0) * bundleCount +
+          //      (product.sellPrice ?? 0) * remaining;
+          //} else {
+          //  totalProfit +=
+          //      ((product.sellPrice ?? 0) - (product.buyprice ?? 0)) *
+          //          (product.count ?? 0);
+          //  totalPrice += (product.sellPrice ?? 0) * (product.count ?? 0);
+          //}
+
+          final sellPrice =
+              offerActive && product.count! % product.offerCount! == 0
+                  ? (product.offerPrice ?? 0)
+                  : (product.sellPrice ?? 0);
+
+          final unitProfit = sellPrice - (product.buyprice ?? 0);
+
+          totalProfit += unitProfit * (product.count ?? 0);
+          totalPrice += sellPrice * (product.count ?? 0);
         }
       }
 
-      // 🔹 Update product count (skip if 'hot')
-      if (product.hot == false) {
-        final existing = await isar!.products.get(product.id);
-        if (existing == null) continue;
+      // debugPrint(updatedProducts.map((e) => e.toString()).toString());
 
-        final updatedCount = (existing.count ?? 0) - (product.count ?? 0);
-        updatedProducts.add(
-          existing..count= updatedCount,
-        );
-
-        // 🔹 Calculate profit and price
-        final offerActive =
-            product.offer == true && product.offerCount != null;
-
-        final sellPrice = offerActive && product.count! % product.offerCount! == 0
-            ? (product.offerPrice ?? 0)
-            : (product.sellPrice ?? 0);
-
-        final unitProfit = sellPrice - (product.buyprice ?? 0);
-
-        totalProfit += unitProfit * (product.count ?? 0);
-        totalPrice += sellPrice * (product.count ?? 0);
+      // 🔹 Apply discount
+      if (discount > 0) {
+        totalPrice -= discount;
+        totalProfit -= discount;
       }
+
+      // 🔹 Prepare loaner and expense updates
+      Loaner? updatedLoaner;
+      if (loanerId != null) {
+        updatedLoaner = await isar!.loaners.get(loanerId);
+        if (updatedLoaner != null) {
+          updatedLoaner.loanedAmount =
+              (updatedLoaner.loanedAmount ?? 0) + total.round() - discount;
+        }
+      }
+
+      Expense? updatedExpense;
+      if (expenseId != null) {
+        updatedExpense = await isar!.expenses.get(expenseId);
+        if (updatedExpense != null) {
+          updatedExpense.amount = (updatedExpense.amount ?? 0) + totalPrice;
+        }
+      }
+
+      // 🔹 Create log
+      final log = Log.named2(
+        price: totalPrice,
+        profit: totalProfit,
+        products: products.map((p) => p.toEmbedded()).toList(),
+        date: DateTime.now(),
+        discount: discount,
+        loaned: loaned,
+        loanerID: loanerId,
+        expenseId: expenseId,
+        expense: expense,
+      );
+
+      // 🔹 Perform a single batched transaction
+      var success = false;
+      success= await isar!.writeTxn(() async {
+        if (updatedOwners.isNotEmpty) {
+          await isar!.owners.putAll(updatedOwners);
+        }
+        if (updatedProducts.isNotEmpty) {
+          await isar!.products.putAll(updatedProducts);
+        }
+        if (updatedLoaner != null) {
+          await isar!.loaners.put(updatedLoaner);
+        }
+        if (updatedExpense != null) {
+          await isar!.expenses.put(updatedExpense);
+        }
+        //throw Exception();
+        await isar!.logs.put(log);
+        return true;
+      });
+      return success;
+    } catch (e, st) {
+      debugPrint('❌ Error in checkOut: $e\n$st');
+      return false;
+      //rethrow;
+      // Optionally rethrow or handle more gracefully
     }
-
-    // 🔹 Apply discount
-    if (discount > 0) {
-      totalPrice -= discount;
-      totalProfit -= discount;
-    }
-
-    // 🔹 Prepare loaner and expense updates
-    Loaner? updatedLoaner;
-    if (loanerId != null) {
-      updatedLoaner = await isar!.loaners.get(loanerId);
-      if (updatedLoaner != null) {
-        updatedLoaner.loanedAmount =
-            (updatedLoaner.loanedAmount ?? 0) + total.round() - discount;
-      }
-    }
-
-    Expense? updatedExpense;
-    if (expenseId != null) {
-      updatedExpense = await isar!.expenses.get(expenseId);
-      if (updatedExpense != null) {
-        updatedExpense.amount = (updatedExpense.amount ?? 0) + totalPrice;
-      }
-    }
-
-    // 🔹 Create log
-    final log = Log.named2(
-      price: totalPrice,
-      profit: totalProfit,
-      products: products.map((p) => p.toEmbedded()).toList(),
-      date: DateTime.now(),
-      discount: discount,
-      loaned: loaned,
-      loanerID: loanerId,
-      expenseId: expenseId,
-      expense: expense,
-    );
-
-    // 🔹 Perform a single batched transaction
-    await isar!.writeTxn(() async {
-      if (updatedOwners.isNotEmpty) {
-        await isar!.owners.putAll(updatedOwners);
-      }
-      if (updatedProducts.isNotEmpty) {
-        await isar!.products.putAll(updatedProducts);
-      }
-      if (updatedLoaner != null) {
-        await isar!.loaners.put(updatedLoaner);
-      }
-      if (updatedExpense != null) {
-        await isar!.expenses.put(updatedExpense);
-      }
-
-      await isar!.logs.put(log);
-    });
-  } catch (e, st) {
-    debugPrint('❌ Error in checkOut: $e\n$st');
-    // Optionally rethrow or handle more gracefully
   }
-}
 
   Stream<List<Expense>> getExpenses({required bool fixed}) {
     var temp;
@@ -603,7 +652,7 @@ class DB {
     return Pool.reInit();
   }
 
-  useLocalBacup() async {
+  Future<void> useLocalBacup() async {
     final backupFilePath =
         '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
     final dir = await getApplicationDocumentsDirectory();

@@ -81,13 +81,13 @@ class Lists extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _initializeStreamListener() {
-    db.isar!.products.watchLazy(fireImmediately: true).listen((_) {
-      // Call clearCache with the desired cacheKey
-      clearCache(
-          'salesPerProduct'); // Replace 'yourCacheKey' with the actual key
-    });
-  }
+  //void _initializeStreamListener() {
+  //  db.isar!.products.watchLazy(fireImmediately: true).listen((_) {
+  //    // Call clearCache with the desired cacheKey
+  //    clearCache(
+  //        'salesPerProduct'); // Replace 'yourCacheKey' with the actual key
+  //  });
+  //}
 
   // void calculateEachOwnerSales(String ownerName) {
 
@@ -145,7 +145,7 @@ class Lists extends ChangeNotifier {
     clearAllCache();
   }
 
-  Future<void> checkOut({
+  Future<bool> checkOut({
     required List<Product> lst,
     required double total,
     required double discount,
@@ -156,7 +156,8 @@ class Lists extends ChangeNotifier {
     required bool expense,
     required int? expenseId,
   }) async {
-    await db.checkOut(
+    clearAllCache();
+    return await db.checkOut(
         products: lst,
         total: total,
         discount: discount,
@@ -166,7 +167,8 @@ class Lists extends ChangeNotifier {
         // logID: logID,
         expense: expense,
         expenseId: expenseId);
-    clearAllCache();
+
+    
   }
 
   Future<void> inboundReceipt(
@@ -309,24 +311,7 @@ class Lists extends ChangeNotifier {
 
     // Getting available network address (fallback for multiple interface names)
     String? wifiIp = await _networkInfo.getWifiIP();
-    // String? ipAddress = await NetworkInterface.list().then((interfaces) {
-    //   try {
-    //     return interfaces
-    //         .expand((interface) => interface.addresses)
-    //         .firstWhere(
-    //           (address) =>
-    //               address.type == InternetAddressType.IPv4 &&
-    //               !address
-    //                   .isLoopback, // Avoid loopback addresses like 127.0.0.1
-    //         )
-    //         .address;
-    //   } catch (e) {
-    //     shareList.add(Text('No suitable network interface found'));
-    //     notifyListeners();
-    //     // print('No suitable network interface found');
-    //     return null;
-    //   }
-    // });
+    
 
     if (wifiIp == null) {
       shareList.add(Text('No IP address found'));
@@ -343,7 +328,7 @@ class Lists extends ChangeNotifier {
     var te = await getApplicationDocumentsDirectory();
 
     // Handle file requests dynamically
-    void handleHttpRequest(HttpRequest request) async {
+    Future<void> handleHttpRequest(HttpRequest request) async {
       final fileName =
           request.uri.pathSegments.last; // Get the requested file name
       if (fileName == 'version') {
@@ -367,7 +352,8 @@ class Lists extends ChangeNotifier {
         }
         await request.response.close();
         return;
-      } else {
+      } 
+      if (fileName == 'backup.isar'){
         await createBackup(); // Copy the database
         File file = File('${te.path}/$fileName'); // Path to the requested file
         if (await file.exists()) {
@@ -423,7 +409,7 @@ class Lists extends ChangeNotifier {
           request.response.close();
           break;
         } else {
-          handleHttpRequest(request); // Handle file requests dynamically
+          await handleHttpRequest(request); // Handle file requests dynamically
         }
       }
     } catch (e) {
@@ -491,18 +477,6 @@ class Lists extends ChangeNotifier {
             ? '${te.path}/$fileName.received'
             : '${te.path}/$fileName';
 
-        // if (fileName == 'shutdown') {
-        //   try {
-        //     var response = await dio.get('http://$ip/shutdown');
-        //     shareList.add(Text(response.data));
-        //     notifyListeners();
-        //   } catch (e) {
-        //     shareList.add(Text('Error shutting down the server: $e'));
-        //     notifyListeners();
-        //   }
-        //   continue;
-        // }
-
         try {
           shareList.add(Text('Receiving: $fileName'));
           notifyListeners();
@@ -534,7 +508,7 @@ class Lists extends ChangeNotifier {
             .get('http://$ip/hash')
             .then((response) => response.data.toString());
         if (actualHash == expectedHash) {
-          if (Platform.isAndroid) db.useLocalBacup();
+          if (Platform.isAndroid) await db.useLocalBacup();
           shareList.add(Text('Hash verified ✅ — Restarting app...'));
           notifyListeners();
           Platform.isWindows ? null : Restart.restartApp(); // ⬅️ RESTART HERE
