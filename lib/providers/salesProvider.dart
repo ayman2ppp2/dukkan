@@ -6,7 +6,7 @@ import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:provider/provider.dart';
 

@@ -1,7 +1,6 @@
 import 'package:dukkan/util/models/Emap.dart';
-import 'package:hive/hive.dart';
-import 'package:isar/isar.dart';
-part '../adapters/Product.g.dart';
+import 'package:isar_community/isar.dart';
+
 part 'Product.g.dart';
 
 @Collection(inheritance: false)

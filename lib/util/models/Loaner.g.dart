@@ -74,7 +74,7 @@ const LoanerSchema = CollectionSchema(
   getId: _loanerGetId,
   getLinks: _loanerGetLinks,
   attach: _loanerAttach,
-  version: '3.1.0+1',
+  version: '3.3.2',
 );
 
 int _loanerEstimateSize(

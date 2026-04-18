@@ -86,7 +86,7 @@ const ExpenseSchema = CollectionSchema(
   getId: _expenseGetId,
   getLinks: _expenseGetLinks,
   attach: _expenseAttach,
-  version: '3.1.0+1',
+  version: '3.3.2',
 );
 
 int _expenseEstimateSize(

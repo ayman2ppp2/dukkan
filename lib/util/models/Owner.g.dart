@@ -68,7 +68,7 @@ const OwnerSchema = CollectionSchema(
   getId: _ownerGetId,
   getLinks: _ownerGetLinks,
   attach: _ownerAttach,
-  version: '3.1.0+1',
+  version: '3.3.2',
 );
 
 int _ownerEstimateSize(
