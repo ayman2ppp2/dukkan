@@ -284,34 +284,42 @@ class DB {
           );
 
           // 🔹 Calculate profit and price
-          final offerActive =
-              product.offer == true && product.offerCount != null;
-          //if (offerActive) {
-          //  final bundleCount = product.count! ~/ product.offerCount!;
-          //  final remaining = product.count! % product.offerCount!;
-          //  totalProfit += (product.offerPrice ?? 0 - (product.buyprice ?? 0)) *
-          //      bundleCount;
-          //  totalProfit +=
-          //      ((product.sellPrice ?? 0) - (product.buyprice ?? 0)) *
-          //          remaining;
-          //  totalPrice += (product.offerPrice ?? 0) * bundleCount +
-          //      (product.sellPrice ?? 0) * remaining;
-          //} else {
-          //  totalProfit +=
-          //      ((product.sellPrice ?? 0) - (product.buyprice ?? 0)) *
-          //          (product.count ?? 0);
-          //  totalPrice += (product.sellPrice ?? 0) * (product.count ?? 0);
-          //}
+          if ((product.offer == true) &&
+              (product.offerCount ?? 0) > 0 &&
+              (product.count ?? 0) >= (product.offerCount ?? 0)) {
+            final offerCount = product.offerCount!;
+            final count = product.count!;
+            final bundleCount = count ~/ offerCount;
+            final remaining = count % offerCount;
 
-          final sellPrice =
-              offerActive && product.count! % product.offerCount! == 0
-                  ? (product.offerPrice ?? 0)
-                  : (product.sellPrice ?? 0);
+            final buy = product.buyprice ?? 0;
+            final offerP = product.offerPrice ?? 0;
+            final sell = product.sellPrice ?? 0;
 
-          final unitProfit = sellPrice - (product.buyprice ?? 0);
+            // If offerPrice is per item, multiply by offerCount
+            totalProfit += (offerP - buy) * bundleCount * offerCount;
+            totalProfit += (sell - buy) * remaining;
 
-          totalProfit += unitProfit * (product.count ?? 0);
-          totalPrice += sellPrice * (product.count ?? 0);
+            totalPrice += offerP * bundleCount * offerCount;
+            totalPrice += sell * remaining;
+          } else {
+            final buy = product.buyprice ?? 0;
+            final sell = product.sellPrice ?? 0;
+            final count = product.count ?? 0;
+
+            totalProfit += (sell - buy) * count;
+            totalPrice += sell * count;
+          }
+
+          // final sellPrice =
+          //     offerActive && product.count! % product.offerCount! == 0
+          //         ? (product.offerPrice ?? 0)
+          //         : (product.sellPrice ?? 0);
+
+          // final unitProfit = sellPrice - (product.buyprice ?? 0);
+
+          // totalProfit += unitProfit * (product.count ?? 0);
+          // totalPrice += sellPrice * (product.count ?? 0);
         }
       }
 
@@ -786,6 +794,88 @@ class StopIsar extends PooledJob<bool> {
       isar = await Isar.getInstance('isarInstance')!;
     }
     return isar.close();
+  }
+}
+
+class CgetLowStockItemsPerMonth extends PooledJob<List<Product>> {
+  Map map;
+  CgetLowStockItemsPerMonth({required this.map});
+  @override
+  Future<List<Product>> job() async {
+    BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
+
+    Isar isar;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      isar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: dir.path,
+        name: 'isarInstance',
+      );
+      print(isar.name);
+    } catch (e) {
+      // print(e);
+      isar = await Isar.getInstance('isarInstance')!;
+    }
+    // List<Log> temp = await isar.logs
+    //     .where()
+    //     .dateBetween(
+    //         DateTime.now(), DateTime.now().add(const Duration(days: 30)))
+    //     .findAll();
+    try {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+
+      // Get all logs for the current month
+      final monthlyLogs = await isar.logs
+          .filter()
+          .dateBetween(startOfMonth, endOfMonth)
+          .findAll();
+
+      // Get all products
+      final products = await isar.products.where().anyId().findAll();
+
+      // Accumulate sold counts per product id and per name (fallback)
+      final Map<int, int> soldById = {};
+      final Map<String, int> soldByName = {};
+
+      for (final log in monthlyLogs) {
+        for (final ep in log.products) {
+          final soldCount = ep.count ?? 0;
+          if (ep.productId != null && ep.productId! > 0) {
+            soldById.update(ep.productId!, (v) => v + soldCount,
+                ifAbsent: () => soldCount);
+          } else if (ep.name != null) {
+            soldByName.update(ep.name!, (v) => v + soldCount,
+                ifAbsent: () => soldCount);
+          }
+        }
+      }
+
+      // Determine low stock products
+      final List<Product> lowStock = [];
+      for (final p in products) {
+        final currentStock = p.count ?? 0;
+        final soldThisMonth =
+            soldById[p.id ?? 0] ?? soldByName[p.name ?? ''] ?? 0;
+        final totalAvailable = currentStock + soldThisMonth;
+
+        if (totalAvailable <= 0) continue; // avoid division by zero
+
+        final percentRemaining = currentStock / totalAvailable;
+
+        // If remaining stock is less than 15% of total available this month
+        if (percentRemaining < 0.25) {
+          lowStock.add(p);
+        }
+      }
+
+      return lowStock;
+    } catch (e) {
+      debugPrint('Error in CgetLowStockItemsPerMonth.job: $e');
+      return <Product>[];
+    }
   }
 }
 

@@ -1,6 +1,5 @@
 import 'dart:async';
 // import 'package:mime';
-import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:dukkan/core/IsolatePool.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
@@ -18,9 +17,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:restart_app/restart_app.dart';
 import '../util/models/Log.dart';
-import '../util/models/searchQuery.dart'; // Import SearchQuery model
 
 class Lists extends ChangeNotifier {
   late DB db;
@@ -81,13 +78,13 @@ class Lists extends ChangeNotifier {
     notifyListeners();
   }
 
-  //void _initializeStreamListener() {
-  //  db.isar!.products.watchLazy(fireImmediately: true).listen((_) {
-  //    // Call clearCache with the desired cacheKey
-  //    clearCache(
-  //        'salesPerProduct'); // Replace 'yourCacheKey' with the actual key
-  //  });
-  //}
+  void _initializeStreamListener() {
+    db.isar!.products.watchLazy(fireImmediately: true).listen((_) {
+      // Call clearCache with the desired cacheKey
+      clearCache(
+          'salesPerProduct'); // Replace 'yourCacheKey' with the actual key
+    });
+  }
 
   // void calculateEachOwnerSales(String ownerName) {
 
@@ -145,7 +142,7 @@ class Lists extends ChangeNotifier {
     clearAllCache();
   }
 
-  Future<bool> checkOut({
+  Future<void> checkOut({
     required List<Product> lst,
     required double total,
     required double discount,
@@ -156,8 +153,7 @@ class Lists extends ChangeNotifier {
     required bool expense,
     required int? expenseId,
   }) async {
-    clearAllCache();
-    return await db.checkOut(
+    await db.checkOut(
         products: lst,
         total: total,
         discount: discount,
@@ -167,11 +163,6 @@ class Lists extends ChangeNotifier {
         // logID: logID,
         expense: expense,
         expenseId: expenseId);
-  }
-
-  Future<void> inboundReceipt(
-      {required List<Product> lst, required double total}) async {
-    await db.inboundReceipt(lst: lst, total: total);
     clearAllCache();
   }
 
@@ -309,6 +300,24 @@ class Lists extends ChangeNotifier {
 
     // Getting available network address (fallback for multiple interface names)
     String? wifiIp = await _networkInfo.getWifiIP();
+    // String? ipAddress = await NetworkInterface.list().then((interfaces) {
+    //   try {
+    //     return interfaces
+    //         .expand((interface) => interface.addresses)
+    //         .firstWhere(
+    //           (address) =>
+    //               address.type == InternetAddressType.IPv4 &&
+    //               !address
+    //                   .isLoopback, // Avoid loopback addresses like 127.0.0.1
+    //         )
+    //         .address;
+    //   } catch (e) {
+    //     shareList.add(Text('No suitable network interface found'));
+    //     notifyListeners();
+    //     // print('No suitable network interface found');
+    //     return null;
+    //   }
+    // });
 
     if (wifiIp == null) {
       shareList.add(Text('No IP address found'));
@@ -325,7 +334,7 @@ class Lists extends ChangeNotifier {
     var te = await getApplicationDocumentsDirectory();
 
     // Handle file requests dynamically
-    Future<void> handleHttpRequest(HttpRequest request) async {
+    void handleHttpRequest(HttpRequest request) async {
       final fileName =
           request.uri.pathSegments.last; // Get the requested file name
       if (fileName == 'version') {
@@ -334,27 +343,10 @@ class Lists extends ChangeNotifier {
         request.response.close();
         shareList.add(Text('vsersion sent'));
         notifyListeners();
-      }
-      if (fileName == 'hash') {
-        final originalFileName = fileName.replaceAll('hash', 'backup.isar');
-        final file = File('${te.path}/$originalFileName');
+      } else {
+        final file = File('${te.path}/$fileName'); // Path to the requested file
         if (await file.exists()) {
-          final bytes = await file.readAsBytes();
-          final digest = sha256.convert(bytes);
-          request.response.write(digest.toString());
-          shareList.add(Text('Hash sent for: $originalFileName'));
-        } else {
-          request.response.statusCode = HttpStatus.notFound;
-          request.response.write('File not found: $originalFileName');
-        }
-        await request.response.close();
-        return;
-      }
-      if (fileName == 'backup.isar') {
-        await createBackup(); // Copy the database
-        File file = File('${te.path}/$fileName'); // Path to the requested file
-        if (await file.exists()) {
-          print('Sending file: ${file.absolute.path}');
+          print('Sending file: $fileName');
           shareList.add(Text('Sending file: $fileName'));
           notifyListeners();
 
@@ -365,22 +357,22 @@ class Lists extends ChangeNotifier {
             request.response.headers
                 .set(HttpHeaders.contentTypeHeader, mimeType);
             request.response.headers.set(HttpHeaders.contentDisposition,
-                'attachment; filename="$fileName.copy"');
+                'attachment; filename="$fileName"');
 
             await file.openRead().pipe(request.response);
-            shareList.add(Text('File sent: $fileName.copy'));
+            shareList.add(Text('File sent: $fileName'));
             notifyListeners();
           } catch (error) {
             print('Error sending file: $error');
             request.response.statusCode = HttpStatus.internalServerError;
             request.response.write('Error sending file');
-            await request.response.close();
+            request.response.close();
           }
         } else {
           print('File not found: $fileName');
           request.response.statusCode = HttpStatus.notFound;
           request.response.write('File not found: $fileName');
-          await request.response.close();
+          request.response.close();
         }
       }
     }
@@ -396,17 +388,17 @@ class Lists extends ChangeNotifier {
       // Listen for requests
       await for (HttpRequest request in server) {
         if (request.uri.pathSegments.last == 'shutdown') {
-          // print('Shutting down server...');
+          request.response.write('server is down');
+          request.response.close();
+          print('Shutting down server...');
           shareList.add(Text('Server shutting down...'));
           notifyListeners();
           await server.close();
           shareList.add(Text('Server is down'));
           notifyListeners();
-          request.response.write('server is down');
-          request.response.close();
           break;
         } else {
-          await handleHttpRequest(request); // Handle file requests dynamically
+          handleHttpRequest(request); // Handle file requests dynamically
         }
       }
     } catch (e) {
@@ -416,35 +408,36 @@ class Lists extends ChangeNotifier {
     }
   }
 
-  Future<void> createBackup() async {
-    await db.createLocalBackup();
-    shareList.add(Text('Backup created for: isarInstance.isar'));
-    notifyListeners();
-  }
-
   void client(String ip) async {
-    String version = '';
+    String version = ''; // e.g., "1.0.0"
     var te = await getApplicationDocumentsDirectory();
     Dio dio = Dio();
 
-    // Create backup
+    // Function to create a backup of existing files
+    Future<void> createBackup() async {
+      await db.createLocalBackup();
+      shareList.add(Text('Backup created for : isarInstance.isar'));
+      notifyListeners();
+    }
 
     await createBackup();
 
     try {
-      // Fetch version
       try {
-        var versionResponse = await dio.get('http://$ip/version');
+        var versionResponse = await dio.get(
+          'http://$ip/version',
+          onReceiveProgress: (count, total) => print(count),
+        );
         version = versionResponse.data.toString();
-        shareList.add(Text('Version: $version'));
+        shareList.add(Text(version));
         notifyListeners();
       } catch (e) {
         shareList.add(Text('Error fetching version: $e'));
         notifyListeners();
-        return;
+        return; // Exit if version can't be fetched
       }
 
-      // Decide which files to download
+      // Determine file list based on version
       List<String> fileNames;
       if (version.startsWith('2.2.')) {
         fileNames = [
@@ -455,10 +448,11 @@ class Lists extends ChangeNotifier {
           'shutdown'
         ];
       } else if (version.startsWith('2.3.') || version.startsWith('2.4.')) {
-        fileNames = ['backup.isar'];
+        fileNames = ['isarInstance.isar', 'shutdown'];
       } else {
         shareList.add(Text('Unsupported version: $version'));
         notifyListeners();
+        // print('Unsupported version: $version');
         fileNames = [
           'inventoryv2.2.0.hive',
           'logsv2.2.0.hive',
@@ -466,67 +460,67 @@ class Lists extends ChangeNotifier {
           'loanersv2.2.0.hive',
           'shutdown'
         ];
+        // return; // Exit if the version is unsupported
       }
 
-      // Loop through and handle files
+      // Loop through the file list and download each one
       for (var fileName in fileNames) {
         var filePath = Platform.isWindows
-            ? '${te.path}/$fileName.received'
-            : '${te.path}/$fileName';
+            ? '${te.path}/$fileName+1'
+            : '${te.path}/$fileName'; // Local file path
 
+        // Handle shutdown separately
+        if (fileName == 'shutdown') {
+          try {
+            var response = await dio.get('http://$ip/shutdown');
+
+            shareList.add(Text(response.data));
+            notifyListeners();
+            // print('Server shut down successfully');
+          } catch (e) {
+            shareList.add(Text('Error shutting down the server: $e'));
+            notifyListeners();
+            // print('Error shutting down the server: $e');
+          }
+          continue; // Skip the shutdown file download
+        }
+
+        // Create a backup before downloading the file
+
+        // Download the file
         try {
-          shareList.add(Text('Receiving: $fileName'));
+          shareList.add(Text('receiving : $fileName'));
           notifyListeners();
-          var response = await dio.download('http://$ip/$fileName', filePath);
-          if (Platform.isWindows) db.windows();
+          var response = await dio
+              .download('http://$ip/$fileName', filePath)
+              .then((value) {
+            if (Platform.isWindows) {
+              db.windows();
+              return value;
+            }
+            return value;
+          });
 
           if (response.statusCode == 200) {
             shareList.add(Text('File received: $fileName'));
             notifyListeners();
+            // print('File received: $fileName');
           } else {
             shareList
                 .add(Text('Error receiving $fileName: ${response.statusCode}'));
             notifyListeners();
+            // print('Error receiving $fileName: ${response.statusCode}');
           }
         } catch (e) {
           shareList.add(Text('Failed to download $fileName: $e'));
           notifyListeners();
+          // print('Failed to download $fileName: $e');
         }
       }
-      if (fileNames.contains('backup.isar')) {
-        var filePath = Platform.isWindows
-            ? '${te.path}/backup.isar.received'
-            : '${te.path}/backup.isar';
-        final fileBytes = await File(filePath).readAsBytes();
-        final actualHash = sha256.convert(fileBytes).toString();
-        shareList.add(Text('Actual hash: $actualHash'));
-        notifyListeners();
-        var expectedHash = await dio
-            .get('http://$ip/hash')
-            .then((response) => response.data.toString());
-        if (actualHash == expectedHash) {
-          if (Platform.isAndroid) await db.useLocalBacup();
-          shareList.add(Text('Hash verified ✅ — Restarting app...'));
-          notifyListeners();
-          Platform.isWindows ? null : Restart.restartApp(); // ⬅️ RESTART HERE
-        } else {
-          shareList.add(Text('Hash mismatch ❌ — App not restarted'));
-          notifyListeners();
-        }
-      }
-
-      try {
-        var response = await dio.get('http://$ip/shutdown');
-        shareList.add(Text(response.data));
-        notifyListeners();
-      } catch (e) {
-        shareList.add(Text('Error shutting down the server: $e'));
-        notifyListeners();
-      }
-    } catch (e, s) {
-      print('Error: $s');
+    } catch (e) {
       shareList.add(Text('Error: $e'));
-      notifyListeners();
+
+      // print('Error: $e');
     }
   }
 

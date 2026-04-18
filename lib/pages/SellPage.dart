@@ -243,6 +243,7 @@ class _SellPageState extends State<SellPage> {
                             //    offerPrice: 0,
                             //    endDate: DateTime.now(),
                             //    hot: false);
+
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text('يجب تحديد منتجات اولآ ')));
                           }

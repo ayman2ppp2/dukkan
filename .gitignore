@@ -56,3 +56,11 @@ storage/emulated/0/dukkan/v2/owners.lock
 # Ignore Gradle build output directory
 build
 lib/secrets.dart
+.metadata
+android/build.gradle.kts
+android/settings.gradle.kts
+android/app/build.gradle.kts
+linux/runner/CMakeLists.txt
+linux/runner/main.cc
+linux/runner/my_application.cc
+linux/runner/my_application.h
