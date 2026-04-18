@@ -4,18 +4,22 @@ import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
+
+RootIsolateToken? _getRootIsolateToken() {
+  return RootIsolateToken.instance;
+}
 
 class ExpenseProvider extends ChangeNotifier {
   late DB db;
   late IsolatePool pool;
   ExpenseProvider() {
-    db = DB();
     init();
   }
-  init() async {
+  Future<void> init() async {
+    db = await DB.getInstance();
     pool = await Pool.init();
-    // pool = Pool.pool;
   }
 
   void refresh() {
@@ -53,7 +57,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<double> getProfitOfTheMonth() {
     Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
+    map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
   }
 
@@ -63,13 +67,13 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<double> getLoansOfMonth() {
     Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
+    map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(CgetMonthlyloans(map: map));
   }
 
   Future<double> getDailyLoans() {
     Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
+    map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(CgetDailyloans(map: map));
   }
 
@@ -81,7 +85,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<double> getTotalExpenses() async {
     Map map = Map();
-    map['1'] = RootIsolateToken.instance!;
+    map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(getTotalExpenseNow(map: map));
     // return (await getIndvidualExpenses()).fold<double>(
     //     0.0,

@@ -1,6 +1,5 @@
 // import 'dart:io';
 
-import 'package:dukkan/pages/lowStockItemesPage.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/inventoryPage.dart';
 

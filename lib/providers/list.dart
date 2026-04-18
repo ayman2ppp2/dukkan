@@ -20,6 +20,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../util/models/Log.dart';
 
+RootIsolateToken? _getRootIsolateToken() {
+  return RootIsolateToken.instance;
+}
+
 class Lists extends ChangeNotifier {
   late DB db;
 
@@ -33,16 +37,11 @@ class Lists extends ChangeNotifier {
   // For self signed certificates, only use for development
   Lists() {
     init();
-
-    db = DB();
   }
 
   void init() async {
+    db = await DB.getInstance();
     pool = await Pool.init();
-    // _initializeStreamListener();
-    // pool = Pool.pool;
-
-    // await pool.start();
   }
 
   List<Widget> shareList = [];
@@ -77,14 +76,6 @@ class Lists extends ChangeNotifier {
   void clearCache(String cacheKey) {
     _cache.remove(cacheKey);
     notifyListeners();
-  }
-
-  void _initializeStreamListener() {
-    db.isar!.products.watchLazy(fireImmediately: true).listen((_) {
-      // Call clearCache with the desired cacheKey
-      clearCache(
-          'salesPerProduct'); // Replace 'yourCacheKey' with the actual key
-    });
   }
 
   // void calculateEachOwnerSales(String ownerName) {
@@ -178,7 +169,7 @@ class Lists extends ChangeNotifier {
   Future<double> getProfitOfTheMonth() {
     return getCachedCalculation('profitOfTheMonth', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
     });
   }
@@ -186,7 +177,7 @@ class Lists extends ChangeNotifier {
   Future<double> getSalesOfTheMonth() {
     return getCachedCalculation('salesOfTheMonth', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
 
       return pool.scheduleJob(CgetSalesOfTheMonth(map: map));
     });
@@ -195,7 +186,7 @@ class Lists extends ChangeNotifier {
   Future<double> getDailySales(DateTime time) {
     return getCachedCalculation('dailySales', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetDailySales(map: map));
     });
@@ -204,7 +195,7 @@ class Lists extends ChangeNotifier {
   Future<double> getDailyProfits(DateTime time) {
     return getCachedCalculation('dailyProfits', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetDailyProfit(map: map));
     });
@@ -213,7 +204,7 @@ class Lists extends ChangeNotifier {
   Future<double> getAllProfit() {
     return getCachedCalculation('totalProfit', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = DateTime.now();
       return pool.scheduleJob(CgetTotalProfit(map: map));
     });
@@ -222,7 +213,7 @@ class Lists extends ChangeNotifier {
   Future<double> getAllSales() {
     return getCachedCalculation('allSales', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       return pool.scheduleJob(CgetAllSales(map: map));
     });
   }
@@ -230,7 +221,7 @@ class Lists extends ChangeNotifier {
   Future<int> getNumberOfSalesForAproduct({required String key}) {
     return getCachedCalculation('numberOfSalesPerProduct', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = key;
       return pool.scheduleJob(CgetNumberOfSalesForAproduct(map: map));
     });
@@ -239,7 +230,7 @@ class Lists extends ChangeNotifier {
   Future<List<Product>> getSaledProductsByDate(DateTime time) {
     return getCachedCalculation('saledProductsByDate', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetSaledProductsByDate(map: map));
     });
@@ -248,7 +239,7 @@ class Lists extends ChangeNotifier {
   Future<List<ProdStats>> getSalesPerProduct(int chunkSize) async {
     return getCachedCalculation('salesPerProduct', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = chunkSize;
       return pool
           .scheduleJob(CgetSalesPerProduct(chunkSize: chunkSize, map: map));
@@ -258,7 +249,7 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) async {
     return getCachedCalculation('dailySalesOfTheMonth', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetDailySalesOfTheMonth(map: map));
     });
@@ -267,7 +258,7 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) async {
     return getCachedCalculation('dailyProfitOfTheMonth', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetDailyProfitOfTheMont(map: map));
     });
@@ -276,7 +267,7 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getMonthlySalesOfTheYear(DateTime month) async {
     return getCachedCalculation('monthlySalesOfTheYear', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetMonthlySalesOfTheyear(map: map));
     });
@@ -285,7 +276,7 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getMonthlyProfitsOfTheYear(DateTime month) async {
     return getCachedCalculation('monthlyProfitsOfTheYear', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetMonthlyProfitsOfTheyear(map: map));
     });
@@ -341,7 +332,7 @@ class Lists extends ChangeNotifier {
       if (fileName == 'version') {
         String version = packageInfo.version;
         request.response.write(version);
-        request.response.close();
+        await request.response.close();
         shareList.add(Text('vsersion sent'));
         notifyListeners();
       } else {
@@ -355,19 +346,29 @@ class Lists extends ChangeNotifier {
             // Set headers based on file type (dynamically)
             var mimeType =
                 lookupMimeType(fileName) ?? 'application/octet-stream';
+            var fileSize = await file.length();
             request.response.headers
                 .set(HttpHeaders.contentTypeHeader, mimeType);
+            request.response.headers.set(HttpHeaders.contentLengthHeader,
+                fileSize);
             request.response.headers.set(HttpHeaders.contentDisposition,
                 'attachment; filename="$fileName"');
 
-            await file.openRead().pipe(request.response);
+            final fileStream = file.openRead();
+            await for (final chunk in fileStream) {
+              request.response.add(chunk);
+            }
+            await request.response.flush();
+            await request.response.close();
             shareList.add(Text('File sent: $fileName'));
             notifyListeners();
           } catch (error) {
             print('Error sending file: $error');
-            request.response.statusCode = HttpStatus.internalServerError;
-            request.response.write('Error sending file');
-            request.response.close();
+            try {
+              request.response.statusCode = HttpStatus.internalServerError;
+              request.response.write('Error sending file');
+              await request.response.close();
+            } catch (_) {}
           }
         } else {
           print('File not found: $fileName');

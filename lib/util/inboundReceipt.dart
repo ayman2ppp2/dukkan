@@ -1,11 +1,9 @@
 import 'package:dukkan/pages/CheckOutPage.dart';
 import 'package:dukkan/pages/searchPage.dart';
-import 'package:dukkan/providers/expenseProvider.dart';
+import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/inboundListItem.dart';
-import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/util/myListItem.dart';
-import 'package:dukkan/util/scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

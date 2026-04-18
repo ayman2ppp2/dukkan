@@ -1,6 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
-
-import 'package:dukkan/providers/expenseProvider.dart';
+import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loadingOverlay.dart';
@@ -388,18 +386,19 @@ class _CheckOutState extends State<CheckOut> {
 
                                                     try {
                                                       await li.checkOut(
-                                                      lst: widget.lst,
-                                                      total: widget.total,
-                                                      discount: double.tryParse(
-                                                              discount) ??
-                                                          0,
-                                                      LoID: loanerID,
-                                                      loaned: radio == 1,
-                                                      edit: li.editing,
-                                                      logID: li.logID,
-                                                      expense: radio == 2,
-                                                      expenseId: expenseID,
-                                                    );
+                                                        lst: widget.lst,
+                                                        total: widget.total,
+                                                        discount:
+                                                            double.tryParse(
+                                                                    discount) ??
+                                                                0,
+                                                        LoID: loanerID,
+                                                        loaned: radio == 1,
+                                                        edit: li.editing,
+                                                        logID: li.logID,
+                                                        expense: radio == 2,
+                                                        expenseId: expenseID,
+                                                      );
                                                     } catch (e) {
                                                       await showDialog(
                                                         context: context,
