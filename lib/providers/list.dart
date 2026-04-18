@@ -7,6 +7,7 @@ import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/prodStats.dart';
 import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/util/models/searchQuery.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -618,5 +619,9 @@ class Lists extends ChangeNotifier {
 
   getLogsChunk(int chunkSize, int currentLog) {
     return db.getLogsChunk(chunkSize, currentLog);
+  }
+
+  Future<List<Product>> getLowStockItems() async {
+    return db.getLowStockProducts();
   }
 }

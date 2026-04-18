@@ -386,8 +386,8 @@ class _CheckOutState extends State<CheckOut> {
                                                     //          'Processing checkout...')),
                                                     //);
 
-                                                    final success =
-                                                        await li.checkOut(
+                                                    try {
+                                                      await li.checkOut(
                                                       lst: widget.lst,
                                                       total: widget.total,
                                                       discount: double.tryParse(
@@ -400,8 +400,7 @@ class _CheckOutState extends State<CheckOut> {
                                                       expense: radio == 2,
                                                       expenseId: expenseID,
                                                     );
-
-                                                    if (!success) {
+                                                    } catch (e) {
                                                       await showDialog(
                                                         context: context,
                                                         builder: (context) =>
@@ -445,10 +444,6 @@ class _CheckOutState extends State<CheckOut> {
                                                       Navigator.pop(context);
                                                       Navigator.pop(context);
                                                     } else {
-                                                      await li.inboundReceipt(
-                                                          lst: widget.lst,
-                                                          total: widget.total);
-                                                      Navigator.pop(context);
                                                       Navigator.pop(context);
                                                       Navigator.pop(context);
                                                     }

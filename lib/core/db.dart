@@ -7,7 +7,6 @@ import 'dart:io';
 
 import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/core/postgres_connection.dart';
-import 'package:dukkan/test.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Product.dart';
@@ -15,7 +14,7 @@ import 'package:dukkan/util/models/prodStats.dart';
 import 'package:dukkan/util/models/searchQuery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -99,47 +98,10 @@ class DB {
         .writeTxn(() async => isar!.products.putAll(updatedRealProducts));
   }
 
-  Future<void> useBackup() async {
-    gg g = gg();
-    await g.init();
-    List<Product> temp = List.empty(growable: true);
-    for (Map<String, dynamic> element in g.getProducts()) {
-      temp.add(Product.fromJson(map: element));
-    }
-    await isar!.writeTxn(
-      () async => isar!.products.putAll(temp),
-    );
-    print('finished inventory');
-    List<Log> temp1 = List.empty(growable: true);
-    var logs = await g.getLogs();
-    for (Map<String, dynamic> map in logs) {
-      Log log = Log.fromMap(map);
-      temp1.add(log);
-    }
-    await isar!.writeTxn(() async {
-      return isar!.logs.putAll(temp1);
-    });
-
-    print('finished logs');
-    List<Owner> temp2 = List.empty(growable: true);
-
-    for (Map<String, dynamic> map in g.getOwners()) {
-      temp2.add(Owner.fromJson(map: map));
-    }
-    await isar!.writeTxn(
-      () async => isar!.owners.putAll(temp2),
-    );
-    print('finished owners');
-    List<Loaner> temp3 = List.empty(growable: true);
-
-    for (Map<String, dynamic> map in g.getLoaner()) {
-      temp3.add(Loaner.fromMap(map: map));
-    }
-    await isar!.writeTxn(
-      () async => isar!.loaners.putAll(temp3),
-    );
-    print('finished loaners');
-  }
+  // Future<void> useBackup() async {
+  //   // DEPRECATED: Removed due to migration to isar_community
+  //   // This function depended on old Hive backup code (gg class)
+  // }
 
   Future<int> insertLoaner(Loaner loaner) {
     return isar!.writeTxn(() => isar!.loaners.put(loaner));
@@ -194,6 +156,11 @@ class DB {
     List<Product> temp2 =
         await isar!.products.where(sort: Sort.asc).anyId().findAll();
     return temp2;
+  }
+
+  Future<List<Product>> getLowStockProducts() async {
+    final allProducts = await isar!.products.where().findAll();
+    return allProducts.where((p) => p.count != null && p.count! <= 5).toList();
   }
 
   Future<void> deleteLog(Log log) {

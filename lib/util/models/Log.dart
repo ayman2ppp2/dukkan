@@ -1,10 +1,6 @@
 import 'package:dukkan/util/models/Product.dart';
-import 'package:hive/hive.dart';
-import 'package:isar/isar.dart';
-// import 'package:uuid/uuid.dart';
+import 'package:isar_community/isar.dart';
 
-// import 'BcLog.dart';
-part '../adapters/Log.g.dart';
 part 'Log.g.dart';
 
 @collection

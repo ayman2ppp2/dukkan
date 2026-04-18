@@ -1,6 +1,5 @@
-import 'package:hive/hive.dart';
-import 'package:isar/isar.dart';
-part '../adapters/Owner.g.dart';
+import 'package:isar_community/isar.dart';
+
 part 'Owner.g.dart';
 
 @collection
