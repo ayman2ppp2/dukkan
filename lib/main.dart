@@ -16,7 +16,7 @@ import 'package:dukkan/providers/stats_provider.dart';
 import 'package:dukkan/providers/sync_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+// just a test
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
