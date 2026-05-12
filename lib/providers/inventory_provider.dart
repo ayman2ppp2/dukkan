@@ -1,5 +1,6 @@
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/util/models/LowStockProduct.dart';
 import 'package:flutter/material.dart';
 import 'package:isar_community/isar.dart';
 
@@ -49,5 +50,15 @@ class InventoryProvider extends ChangeNotifier {
 
   Stream<List<Product>> watchProducts() {
     return db.isar!.products.watchLazy().asyncMap((_) => db.getAllProducts());
+  }
+
+  Future<List<LowStockProduct>> getLowStockItems({double thresholdPercent = 0.25}) async {
+    final results = await db.getLowStockProductsWithPercent(thresholdPercent: thresholdPercent);
+    return results.map((r) => LowStockProduct(
+      product: r['product'] as Product,
+      percentRemaining: r['percentRemaining'] as double,
+      currentStock: r['currentStock'] as int,
+      soldLast30Days: r['soldLast30Days'] as int,
+    )).toList();
   }
 }

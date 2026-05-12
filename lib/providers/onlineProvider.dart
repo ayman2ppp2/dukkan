@@ -263,7 +263,7 @@ class AuthAPI extends ChangeNotifier {
 
   signInWithProvider({required String provider}) async {
     try {
-      // PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      // PacincompatiblekageInfo packageInfo = await PackageInfo.fromPlatform();
       // print(packageInfo!.packageName);
       final session = await account.createOAuth2Session(
         provider: OAuthProvider.google,

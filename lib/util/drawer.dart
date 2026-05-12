@@ -3,6 +3,7 @@ import 'package:dukkan/pages/lowStockItemesPage.dart';
 import 'package:dukkan/pages/settingsPage.dart';
 import 'package:dukkan/pages/spendings.dart';
 import 'package:dukkan/providers/expense_provider.dart';
+import 'package:dukkan/providers/inventory_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:dukkan/providers/salesProvider.dart';
@@ -111,18 +112,18 @@ class drawerItems extends StatelessWidget {
         ),
         ListTile(
           onTap: () async {
-            var li = Provider.of<Lists>(context, listen: false);
+            var inventory = context.read<InventoryProvider>();
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => ChangeNotifierProvider.value(
-                  value: li,
-                  child: LowStockItemsPage(),
+                  value: inventory,
+                  child: const LowStockItemsPage(),
                 ),
               ),
             );
           },
-          leading: Icon(Icons.upload_rounded),
+          leading: Icon(Icons.warning_amber_rounded),
           title: Text('عناصر منخفضة المخزون'),
           enabled: true,
         ),

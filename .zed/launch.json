@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter: Run with DevTools Extension",
+      "type": "dart",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "args": [
+        "--observatory-port=8181",
+        "--devtools-server-address=http://127.0.0.1:8080",
+      ],
+      "vmArgs": ["-Ddart.developer.ext.enabled=true"],
+    },
+  ],
+}

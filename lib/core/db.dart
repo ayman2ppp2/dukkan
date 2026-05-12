@@ -197,9 +197,57 @@ class DB {
     return temp2;
   }
 
-  Future<List<Product>> getLowStockProducts() async {
+  Future<List<Map<String, dynamic>>> getLowStockProductsWithPercent(
+      {double thresholdPercent = 0.25}) async {
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+
+    final logs =
+        await isar!.logs.filter().dateBetween(thirtyDaysAgo, now).findAll();
+
     final allProducts = await isar!.products.where().findAll();
-    return allProducts.where((p) => p.count != null && p.count! <= 5).toList();
+
+    final Map<int, int> soldById = {};
+    final Map<String, int> soldByName = {};
+
+    for (final log in logs) {
+      for (final ep in log.products) {
+        final soldCount = ep.count ?? 0;
+        if (ep.productId != null && ep.productId! > 0) {
+          soldById.update(ep.productId!, (v) => v + soldCount,
+              ifAbsent: () => soldCount);
+        } else if (ep.name != null) {
+          soldByName.update(ep.name!, (v) => v + soldCount,
+              ifAbsent: () => soldCount);
+        }
+      }
+    }
+
+    final List<Map<String, dynamic>> results = [];
+    for (final p in allProducts) {
+      final currentStock = p.count ?? 0;
+      final soldThisMonth = soldById[p.id] ?? soldByName[p.name ?? ''] ?? 0;
+      final totalAvailable = currentStock + soldThisMonth;
+
+      bool isLow;
+      if (totalAvailable <= 0) {
+        isLow = currentStock <= 0;
+      } else {
+        final percentRemaining = currentStock / totalAvailable;
+        isLow = percentRemaining < thresholdPercent;
+      }
+
+      if (isLow) {
+        results.add({
+          'product': p,
+          'percentRemaining':
+              totalAvailable > 0 ? currentStock / totalAvailable : 0.0,
+          'currentStock': currentStock,
+          'soldLast30Days': soldThisMonth,
+        });
+      }
+    }
+    return results;
   }
 
   Future<void> deleteLog(Log log) {

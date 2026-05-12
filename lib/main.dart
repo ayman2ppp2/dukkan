@@ -108,7 +108,7 @@ class MyApp extends StatelessWidget {
                 .addObserver(context.read<SalesProvider>());
             return Consumer<AuthAPI>(
               builder: (context, auth, child) {
-                print('Auth Status: ${auth.status}');
+                // print('Auth Status: ${auth.status}');
                 if (auth.status == AuthStatus.uninitialized) {
                   return const Center(child: CircularProgressIndicator());
                 }
