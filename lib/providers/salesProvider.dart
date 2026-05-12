@@ -15,11 +15,10 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   late DB db;
   SalesProvider() {
     init();
-    db = DB();
   }
   Future<void> init() async {
     _pref = await SharedPreferences.getInstance();
-    // _pref.clear();
+    db = await DB.getInstance();
   }
 
   List<Loaner> loanersList = [];

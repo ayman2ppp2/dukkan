@@ -1,4 +1,4 @@
-import 'package:dukkan/providers/expenseProvider.dart';
+import 'package:dukkan/providers/expense_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';

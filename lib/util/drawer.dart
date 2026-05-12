@@ -1,7 +1,9 @@
 import 'package:dukkan/pages/loans.dart';
+import 'package:dukkan/pages/lowStockItemesPage.dart';
 import 'package:dukkan/pages/settingsPage.dart';
 import 'package:dukkan/pages/spendings.dart';
-import 'package:dukkan/providers/expenseProvider.dart';
+import 'package:dukkan/providers/expense_provider.dart';
+import 'package:dukkan/providers/inventory_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:dukkan/providers/salesProvider.dart';
@@ -107,6 +109,23 @@ class drawerItems extends StatelessWidget {
               ),
             );
           },
+        ),
+        ListTile(
+          onTap: () async {
+            var inventory = context.read<InventoryProvider>();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChangeNotifierProvider.value(
+                  value: inventory,
+                  child: const LowStockItemsPage(),
+                ),
+              ),
+            );
+          },
+          leading: Icon(Icons.warning_amber_rounded),
+          title: Text('عناصر منخفضة المخزون'),
+          enabled: true,
         ),
         ListTile(
           onTap: () async {

@@ -162,6 +162,7 @@ class _ReceiptState extends State<Receipt> {
                             builder: (context, sa, child) => IconButton(
                               // onPressed: null,
                               onPressed: () async {
+                                print('edit receipt pressed');
                                 // var temp = await li.editReceipt(
                                 //     widget.log.date, widget.log);
                                 // li.editing = true;

@@ -29,6 +29,7 @@ class Transaction {
 }
 
 /// This widget represents a bank-like account statement page.
+// ignore: must_be_immutable
 class BankStatementPage extends StatefulWidget {
   final String customerName;
   final String accountNumber;
@@ -117,7 +118,7 @@ class _BankStatementPageState extends State<BankStatementPage> {
                 pw.SizedBox(height: 20),
 
                 // Table header
-                pw.Table.fromTextArray(
+                pw.TableHelper.fromTextArray(
                   headerStyle: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold, fontSize: 12),
                   cellStyle: const pw.TextStyle(fontSize: 10),

@@ -2,6 +2,7 @@
 
 // import 'package:device info_plus/device_info_plus.dart';
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -20,50 +21,87 @@ import 'package:path_provider/path_provider.dart';
 
 import '../util/models/Loaner.dart';
 import '../util/models/Owner.dart';
-// import 'package:uuid/uuid.dart';
+
+RootIsolateToken? _getRootIsolateToken() {
+  return RootIsolateToken.instance;
+}
 
 class DB {
   Isar? isar;
-  // static IsolatePool? _pool;
   static DB? _instance;
+  static bool _isInitializing = false;
+  static final _initCompleter = Completer<DB?>();
 
-  // Private constructor
   DB._internal();
 
-  // Factory constructor for singleton with automatic initialization
-  factory DB() {
-    _instance ??= DB._internal();
+  static Future<DB> getInstance() async {
+    if (_instance != null) return _instance!;
+    if (_isInitializing) {
+      return await _initCompleter.future ?? _instance!;
+    }
+    _isInitializing = true;
+    _instance = DB._internal();
+    _initCompleter.complete(_instance);
     _instance!._init();
     return _instance!;
   }
-  void _init() async {
-    // Step 1: Try to get existing instance first
-    isar = await Isar.getInstance("isarInstance");
 
-    // Step 2: If no existing instance, create new one
-    if (isar == null) {
-      final dir = await getApplicationDocumentsDirectory();
-      try {
-        isar = await Isar.open(
-          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-          directory: dir.path,
-          name: 'isarInstance',
-        );
-      } catch (e) {
-        throw Exception('Isar initialization failed: $e\nPath: ${dir.path}');
+  static Future<void> initialize() async {
+    if (_instance != null || (_isInitializing && _initCompleter.isCompleted))
+      return;
+    await getInstance();
+  }
+
+  static Future<Isar> _openIsar(String directoryPath) async {
+    final existing = await Isar.getInstance("isarInstance");
+    if (existing != null) return existing;
+    return await Isar.open(
+      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+      directory: directoryPath,
+      name: 'isarInstance',
+    );
+  }
+
+  static Future<Isar> openIsarSafely(String directoryPath) async {
+    try {
+      return await _openIsar(directoryPath);
+    } catch (e) {
+      debugPrint('Failed to open Isar: $e');
+      final fallback = await Isar.getInstance("isarInstance");
+      if (fallback != null) {
+        debugPrint('Using fallback Isar instance');
+        return fallback;
       }
+      throw StateError('No Isar instance available: $e');
     }
   }
 
-  // void closeAll() {
-  //   inventory.close();
-  //   logs.close();
-  //   owners.close();
-  //   loaners.close();
-  //   invBack.close();
-  //   logBack.close();
-  //   ownersBack.close();
-  // }
+  void _init() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final existingIsar = await Isar.getInstance("isarInstance");
+      if (existingIsar != null) {
+        isar = existingIsar;
+        _isInitializing = false;
+        return;
+      }
+      isar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: dir.path,
+        name: 'isarInstance',
+      );
+    } catch (e) {
+      debugPrint('Isar initialization failed: $e');
+      final fallback = await Isar.getInstance("isarInstance");
+      if (fallback != null) {
+        isar = fallback;
+      } else {
+        debugPrint('Isar getInstance also failed - database unavailable');
+      }
+    } finally {
+      _isInitializing = false;
+    }
+  }
 
   Future<bool> deleteLoaner(int id) {
     return isar!.writeTxn(() => isar!.loaners.delete(id));
@@ -101,8 +139,7 @@ class DB {
 
   // Future<void> useBackup() async {
   //   // DEPRECATED: Removed due to migration to isar_community
-  //   // This function depended on old Hive backup code (gg class from test.dart)
-  //   // If needed, implement new backup/restore logic
+  //   // This function depended on old Hive backup code (gg class)
   // }
 
   Future<int> insertLoaner(Loaner loaner) {
@@ -160,6 +197,70 @@ class DB {
     return temp2;
   }
 
+  Future<List<Map<String, dynamic>>> getLowStockProductsWithPercent(
+      {double thresholdPercent = 0.25}) async {
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+
+    final logs =
+        await isar!.logs.filter().dateBetween(thirtyDaysAgo, now).findAll();
+
+    final allProducts = await isar!.products.where().findAll();
+
+    final Map<int, int> soldById = {};
+    final Map<String, int> soldByName = {};
+
+    for (final log in logs) {
+      for (final ep in log.products) {
+        final soldCount = ep.count ?? 0;
+        if (ep.productId != null && ep.productId! > 0) {
+          soldById.update(ep.productId!, (v) => v + soldCount,
+              ifAbsent: () => soldCount);
+        } else if (ep.name != null) {
+          soldByName.update(ep.name!, (v) => v + soldCount,
+              ifAbsent: () => soldCount);
+        }
+      }
+    }
+
+    final List<Map<String, dynamic>> results = [];
+    for (final p in allProducts) {
+      final currentStock = p.count ?? 0;
+      final soldThisMonth = soldById[p.id] ?? soldByName[p.name ?? ''] ?? 0;
+      final totalAvailable = currentStock + soldThisMonth;
+
+      bool isLow;
+      if (totalAvailable <= 0) {
+        isLow = currentStock <= 0;
+      } else {
+        final percentRemaining = currentStock / totalAvailable;
+        isLow = percentRemaining < thresholdPercent;
+      }
+
+      if (isLow) {
+        results.add({
+          'product': p,
+          'percentRemaining':
+              totalAvailable > 0 ? currentStock / totalAvailable : 0.0,
+          'currentStock': currentStock,
+          'soldLast30Days': soldThisMonth,
+        });
+      }
+    }
+    results.sort((a, b) {
+      final lastDate = (Product p) => p.priceHistory.isEmpty
+          ? DateTime(2000)
+          : p.priceHistory
+              .map((e) => e.date ?? DateTime(2000))
+              .reduce((max, d) => d.isAfter(max) ? d : max);
+
+      final dateA = lastDate(a['product'] as Product);
+      final dateB = lastDate(b['product'] as Product);
+      return dateB.compareTo(dateA);
+    });
+    return results;
+  }
+
   Future<void> deleteLog(Log log) {
     return isar!.writeTxn(() async => isar!.logs.delete(log.id));
   }
@@ -168,115 +269,199 @@ class DB {
     await isar!.writeTxn(() => isar!.products.putAll(products));
   }
 
-  Future<void> checkOut({
-    required List<Product> lst,
+  Future<bool> checkOut({
+    required List<Product> products,
     required double total,
-    required double discount,
-    required int? LoID,
-    required bool loaned,
-    required bool edit,
-    required DateTime logID,
-    required bool expense,
-    required int? expenseId,
+    double discount = 0,
+    int? loanerId,
+    bool loaned = false,
+    bool expense = false,
+    int? expenseId,
   }) async {
     try {
-      double price = 0;
-      double profit = 0;
+      var productsIds = products.map((e) => e.id);
 
-      for (var element in lst) {
-        // Owner due money update with null check
-        if (element.ownerName != null && element.ownerName!.isNotEmpty) {
-          Owner? tempOwner = await (isar!.owners
+      productsIds = productsIds.toSet();
+      final productCounts = <int, int>{};
+      for (final product in products) {
+        final id = product.id;
+        final count = product.count ?? 0;
+        productCounts.update(
+          id,
+          (existing) => existing + count,
+          ifAbsent: () => count,
+        );
+      }
+      List<Product> clearedProducts = [];
+      productsIds.forEach((id) {
+        var product = products.firstWhere((e) => e.id == id);
+        clearedProducts.add(Product.named2(
+            id: product.id,
+            name: product.name,
+            ownerName: product.ownerName,
+            barcode: product.barcode,
+            buyprice: product.buyprice,
+            sellPrice: product.sellPrice,
+            count: productCounts[id],
+            weightable: product.weightable,
+            wholeUnit: product.wholeUnit,
+            offer: product.offer,
+            offerCount: product.offerCount,
+            offerPrice: product.offerPrice,
+            priceHistory: product.priceHistory,
+            endDate: product.endDate,
+            hot: product.hot));
+      });
+
+      debugPrint(clearedProducts.map((p) => p.toJson()).toString());
+      double totalPrice = 0;
+      double totalProfit = 0;
+
+      // Collect updated entities for batch writing
+      final updatedOwners = <Owner>[];
+      final updatedProducts = <Product>[];
+      Owner? tempOwner;
+
+      for (final product in clearedProducts) {
+        // 🔹 Update owner's due money
+        if ((product.ownerName ?? '').isNotEmpty) {
+          tempOwner = await isar!.owners
               .where()
               .filter()
-              .ownerNameEqualTo(element.ownerName!)
-              .findFirst());
+              .ownerNameEqualTo(product.ownerName!)
+              .findFirst();
+
           if (tempOwner != null) {
-            tempOwner.dueMoney = (tempOwner.dueMoney ?? 0) +
-                (element.buyprice ?? 0) * (element.count ?? 0);
-            await isar!.writeTxn(() async => await isar!.owners.put(tempOwner));
+            tempOwner.dueMoney = (tempOwner.dueMoney) +
+                (product.buyprice ?? 0) * (product.count ?? 0);
+            updatedOwners.add(tempOwner);
           }
         }
 
-        // Product count update with null check
-        if (element.hot == false) {
-          var num = await isar!.products.get(element.id);
-          if (num == null) continue;
-          await isar!.writeTxn(() async => await isar!.products.put(
-                Product.named2(
-                  id: element.id,
-                  name: element.name,
-                  barcode: element.barcode,
-                  buyprice: element.buyprice,
-                  sellPrice: element.sellPrice,
-                  count: (num.count ?? 0) - (element.count ?? 0),
-                  ownerName: element.ownerName,
-                  weightable: element.weightable,
-                  wholeUnit: element.wholeUnit,
-                  offer: element.offer,
-                  offerCount: element.offerCount,
-                  offerPrice: element.offerPrice,
-                  priceHistory: element.priceHistory,
-                  endDate: element.endDate,
-                  hot: false,
-                ),
-              ));
-          // Use full precision for calculations, round only for display
-          double unitProfit = ((element.offer == true &&
-                      element.count! % (element.offerCount ?? 1) == 0)
-                  ? (element.offerPrice ?? 0)
-                  : (element.sellPrice ?? 0)) -
-              (element.buyprice ?? 0);
-          profit += unitProfit * (element.count ?? 0);
-          price += ((element.offer == true &&
-                      element.count! % (element.offerCount ?? 1) == 0
-                  ? (element.offerPrice ?? 0)
-                  : (element.sellPrice ?? 0)) *
-              (element.count ?? 0));
+        // 🔹 Update product count (skip if 'hot')
+        if (!(product.hot!)) {
+          final existing = await isar!.products.get(product.id);
+          if (existing == null) continue;
+
+          final updatedCount = (existing.count ?? 0) - (product.count ?? 0);
+          updatedProducts.add(
+            existing..count = updatedCount,
+          );
+
+          // 🔹 Calculate profit and price
+          if ((product.offer == true) &&
+              (product.offerCount ?? 0) > 0 &&
+              (product.count ?? 0) >= (product.offerCount ?? 0)) {
+            final offerCount = product.offerCount!;
+            final count = product.count!;
+            final bundleCount = count ~/ offerCount;
+            final remaining = count % offerCount;
+
+            final buy = product.buyprice ?? 0;
+            final offerP = product.offerPrice ?? 0;
+            final sell = product.sellPrice ?? 0;
+
+            // If offerPrice is per item, multiply by offerCount
+            totalProfit += (offerP - buy) * bundleCount * offerCount;
+            totalProfit += (sell - buy) * remaining;
+
+            totalPrice += offerP * bundleCount * offerCount;
+            totalPrice += sell * remaining;
+          } else {
+            final buy = product.buyprice ?? 0;
+            final sell = product.sellPrice ?? 0;
+            final count = product.count ?? 0;
+
+            totalProfit += (sell - buy) * count;
+            totalPrice += sell * count;
+          }
+
+          // final sellPrice =
+          //     offerActive && product.count! % product.offerCount! == 0
+          //         ? (product.offerPrice ?? 0)
+          //         : (product.sellPrice ?? 0);
+
+          // final unitProfit = sellPrice - (product.buyprice ?? 0);
+
+          // totalProfit += unitProfit * (product.count ?? 0);
+          // totalPrice += sellPrice * (product.count ?? 0);
         }
       }
 
-      // Apply discount if present
-      if (discount != null && discount > 0) {
-        price -= discount;
-        profit -= discount;
+      // debugPrint(updatedProducts.map((e) => e.toString()).toString());
+
+      // 🔹 Apply discount
+      if (discount > 0) {
+        totalPrice -= discount;
+        totalProfit -= discount;
       }
 
-      // Loaner update with null check
-      if (LoID != null) {
-        var tempLoner = await isar!.loaners.get(LoID);
-        if (tempLoner != null) {
-          tempLoner.loanedAmount =
-              (tempLoner.loanedAmount ?? 0) + total.round() - discount;
-          await isar!.writeTxn(() async => await isar!.loaners.put(tempLoner));
+      // 🔹 Prepare loaner and expense updates
+      Loaner? updatedLoaner;
+      if (loanerId != null) {
+        updatedLoaner = await isar!.loaners.get(loanerId);
+        if (updatedLoaner != null) {
+          updatedLoaner.loanedAmount =
+              (updatedLoaner.loanedAmount ?? 0) + total.round() - discount;
         }
       }
 
-      // Expense update with null check
+      Expense? updatedExpense;
       if (expenseId != null) {
-        var tempExpense = await isar!.expenses.get(expenseId);
-        if (tempExpense != null) {
-          tempExpense.amount = (tempExpense.amount ?? 0) + price;
-          await isar!
-              .writeTxn(() async => await isar!.expenses.put(tempExpense));
+        updatedExpense = await isar!.expenses.get(expenseId);
+        if (updatedExpense != null) {
+          updatedExpense.amount = (updatedExpense.amount ?? 0) + totalPrice;
         }
       }
 
-      // Save the log/receipt
+      // 🔹 Create log
       final log = Log.named2(
-          price: price,
-          profit: profit,
-          products: lst.map((e) => e.toEmbedded()).toList(),
-          date: DateTime.now(),
-          discount: discount ?? 0,
-          loaned: loaned,
-          loanerID: LoID,
-          expenseId: expenseId,
-          expense: expense);
-      await isar!.writeTxn(() async => await isar!.logs.put(log));
-    } catch (e) {
-      print('Error in checkOut: $e');
-      // Optionally, handle or rethrow
+        price: totalPrice,
+        profit: totalProfit,
+        products: products.map((p) => p.toEmbedded()).toList(),
+        date: DateTime.now(),
+        discount: discount,
+        loaned: loaned,
+        loanerID: loanerId,
+        expenseId: expenseId,
+        expense: expense,
+      );
+
+      // 🔹 Perform a single batched transaction with retry
+      const maxRetries = 3;
+      var success = false;
+      for (var attempt = 0; attempt < maxRetries && !success; attempt++) {
+        try {
+          success = await isar!.writeTxn(() async {
+            if (updatedOwners.isNotEmpty) {
+              await isar!.owners.putAll(updatedOwners);
+            }
+            if (updatedProducts.isNotEmpty) {
+              await isar!.products.putAll(updatedProducts);
+            }
+            if (updatedLoaner != null) {
+              await isar!.loaners.put(updatedLoaner);
+            }
+            if (updatedExpense != null) {
+              await isar!.expenses.put(updatedExpense);
+            }
+            await isar!.logs.put(log);
+            return true;
+          });
+        } catch (e) {
+          debugPrint(
+              '❌ checkOut transaction failed (attempt ${attempt + 1}/$maxRetries): $e');
+          if (attempt == maxRetries - 1) {
+            debugPrint('❌ checkOut failed after $maxRetries attempts');
+            rethrow;
+          }
+          await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
+        }
+      }
+      return success;
+    } catch (e, st) {
+      debugPrint('❌ Error in checkOut: $e\n$st');
+      return false;
     }
   }
 
@@ -366,13 +551,10 @@ class DB {
                 .productsElement((p) => p.nameContains(searchQuery.queryText));
           }
         })
-        .optional(searchQuery.startDate != null && searchQuery.endDate != null,
-            (q) {
-          return q.dateBetween(searchQuery.startDate, searchQuery.endDate);
-        })
         .optional(searchQuery.userId != null, (q) {
           return q.loanerIDEqualTo(int.tryParse(searchQuery.userId!) ?? 0);
         })
+        .dateBetween(searchQuery.startDate, searchQuery.endDate)
         .sortByDateDesc()
         .limit(chunkSize)
         .watch(fireImmediately: true);
@@ -399,15 +581,9 @@ class DB {
   Future<void> exportData() async {
     final jsonData = <String, dynamic>{};
 
-    await isar!.writeTxn(() async {
-      // Export data from each collection
-      final myCollectionData = await isar!.logs.where().findAll();
-      jsonData['logs'] = myCollectionData.map((e) => e.toMap()).toList();
-
-      // Add more collections if needed
-      // final anotherCollectionData = await isar!.anotherCollection.where().findAll();
-      // jsonData['anotherCollection'] = anotherCollectionData.map((e) => e.toMap()).toList();
-    });
+    // Read data outside transaction
+    final logs = await isar!.logs.where().findAll();
+    jsonData['logs'] = logs.map((e) => e.toMap()).toList();
 
     // Convert to JSON string
     final jsonString = jsonEncode(jsonData);
@@ -416,11 +592,9 @@ class DB {
     var te = await getApplicationDocumentsDirectory();
     var file = File('${te.path}/backup.txt');
     await file.writeAsString(jsonString);
-    // print(jsonString); // You can write this to a file instead of printing
   }
 
   Future<void> importData() async {
-    await isar!.writeTxn(() async => await isar!.logs.clear());
     var jsonFilePath = await getApplicationDocumentsDirectory();
     final jsonString =
         await File('${jsonFilePath.path}/backup.txt').readAsString();
@@ -538,10 +712,14 @@ class DB {
 
   Future<void> closeAllIsarInstances() async {
     IsolatePool pool = await Pool.init();
+    final token = _getRootIsolateToken();
+    if (token == null) {
+      debugPrint('RootIsolateToken not available');
+      return;
+    }
     List<Future> futures = [];
     for (var i = 0; i < pool.numberOfIsolates; i++) {
-      futures.add(
-          pool.scheduleJob(StopIsar(map: {'1': RootIsolateToken.instance!})));
+      futures.add(pool.scheduleJob(StopIsar(map: {'1': token})));
     }
     await Future.wait(futures);
   }
@@ -550,7 +728,7 @@ class DB {
     return Pool.reInit();
   }
 
-  useLocalBacup() async {
+  Future<void> useLocalBacup() async {
     final backupFilePath =
         '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
     final dir = await getApplicationDocumentsDirectory();
@@ -680,10 +858,91 @@ class StopIsar extends PooledJob<bool> {
       );
       print(isar.name);
     } catch (e) {
-      // print(e);
-      isar = await Isar.getInstance('isarInstance')!;
+      final fallbackDir = await getApplicationDocumentsDirectory();
+      isar = await DB.openIsarSafely(fallbackDir.path);
     }
     return isar.close();
+  }
+}
+
+class CgetLowStockItemsPerMonth extends PooledJob<List<Product>> {
+  Map map;
+  CgetLowStockItemsPerMonth({required this.map});
+  @override
+  Future<List<Product>> job() async {
+    BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
+
+    Isar isar;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      isar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: dir.path,
+        name: 'isarInstance',
+      );
+      print(isar.name);
+    } catch (e) {
+      final fallbackDir = await getApplicationDocumentsDirectory();
+      isar = await DB.openIsarSafely(fallbackDir.path);
+    }
+    // List<Log> temp = await isar.logs
+    //     .where()
+    //     .dateBetween(
+    //         DateTime.now(), DateTime.now().add(const Duration(days: 30)))
+    //     .findAll();
+    try {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+
+      // Get all logs for the current month
+      final monthlyLogs = await isar.logs
+          .filter()
+          .dateBetween(startOfMonth, endOfMonth)
+          .findAll();
+
+      // Get all products
+      final products = await isar.products.where().anyId().findAll();
+
+      // Accumulate sold counts per product id and per name (fallback)
+      final Map<int, int> soldById = {};
+      final Map<String, int> soldByName = {};
+
+      for (final log in monthlyLogs) {
+        for (final ep in log.products) {
+          final soldCount = ep.count ?? 0;
+          if (ep.productId != null && ep.productId! > 0) {
+            soldById.update(ep.productId!, (v) => v + soldCount,
+                ifAbsent: () => soldCount);
+          } else if (ep.name != null) {
+            soldByName.update(ep.name!, (v) => v + soldCount,
+                ifAbsent: () => soldCount);
+          }
+        }
+      }
+
+      // Determine low stock products
+      final List<Product> lowStock = [];
+      for (final p in products) {
+        final currentStock = p.count ?? 0;
+        final soldThisMonth = soldById[p.id] ?? soldByName[p.name ?? ''] ?? 0;
+        final totalAvailable = currentStock + soldThisMonth;
+
+        if (totalAvailable <= 0) continue; // avoid division by zero
+
+        final percentRemaining = currentStock / totalAvailable;
+
+        // If remaining stock is less than 15% of total available this month
+        if (percentRemaining < 0.25) {
+          lowStock.add(p);
+        }
+      }
+
+      return lowStock;
+    } catch (e) {
+      debugPrint('Error in CgetLowStockItemsPerMonth.job: $e');
+      return <Product>[];
+    }
   }
 }
 
@@ -705,8 +964,8 @@ class CgetSalesOfTheMonth extends PooledJob<double> {
       );
       print(isar.name);
     } catch (e) {
-      // print(e);
-      isar = await Isar.getInstance('isarInstance')!;
+      final fallbackDir = await getApplicationDocumentsDirectory();
+      isar = await DB.openIsarSafely(fallbackDir.path);
     }
     List<Log> temp = await isar.logs.where().anyId().findAll();
     temp = temp
@@ -753,7 +1012,7 @@ class CgetProfitOfTheMonth extends PooledJob<double> {
         );
       } catch (e) {
         // print(e);
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       List<Log> temp = await isar.logs.where().anyId().findAll();
       temp = temp
@@ -791,7 +1050,7 @@ class CgetDailyProfit extends PooledJob<double> {
         );
       } catch (e) {
         // print(e);
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       List<Log> temp = await isar.logs.where().anyId().findAll();
       double profit = 0;
@@ -828,7 +1087,7 @@ class CgetDailySales extends PooledJob<double> {
           name: 'isarInstance',
         );
       } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       var time = map['2'];
       List<Log> temp = await isar.logs
@@ -867,7 +1126,7 @@ class CgetAllSales extends PooledJob<double> {
         );
       } catch (e) {
         // debugPrint(e.toString());
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       List<Log> temp = await isar.logs.where().anyId().findAll();
       double sales = 0;
@@ -899,8 +1158,12 @@ class CgetSaledProductsByDate extends PooledJob<List<Product>> {
           name: 'isarInstance',
         );
       } catch (e) {
-        // debugPrint(e.toString());
-        isar = await Isar.getInstance("isarInstance")!;
+        final existing = await Isar.getInstance("isarInstance");
+        if (existing == null) {
+          debugPrint('No Isar instance available: $e');
+          return [];
+        }
+        isar = existing;
       }
       Iterable<Log> temp = await isar.logs.where().anyId().findAll();
       DateTime time = map['2'];
@@ -967,7 +1230,7 @@ class CgetTotalProfit extends PooledJob<double> {
           name: 'isarInstance',
         );
       } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       List<Log> temp = await isar.logs.where().anyId().findAll();
       double profit = 0;
@@ -1001,7 +1264,7 @@ class CgetNumberOfSalesForAproduct extends PooledJob<int> {
           name: 'isarInstance',
         );
       } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       List<Log> logs = await isar.logs.where().anyId().findAll();
       String key = map['2'];
@@ -1081,7 +1344,9 @@ class CgetSalesPerProduct extends PooledJob<List<ProdStats>> {
         name: 'isarInstance',
       );
     } catch (e) {
-      return Isar.getInstance('isarInstance')!;
+      final existing = await Isar.getInstance('isarInstance');
+      if (existing != null) return existing;
+      rethrow;
     }
   }
 
@@ -1115,7 +1380,7 @@ class CgetDailyProfitOfTheMont extends PooledJob<List<SalesStats>> {
           name: 'isarInstance',
         );
       } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
         // print(e);
       }
       DateTime month = map['2'];
@@ -1185,7 +1450,7 @@ class CgetDailySalesOfTheMonth extends PooledJob<List<SalesStats>> {
           name: 'isarInstance',
         );
       } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       DateTime tt = map['2'];
       final startOfMonth = DateTime(tt.year, tt.month, 1);
@@ -1239,7 +1504,7 @@ class CgetMonthlySalesOfTheyear extends PooledJob<List<SalesStats>> {
           name: 'isarInstance',
         );
       } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       DateTime tt = map['2'];
       final startOfYear = DateTime(tt.year, 1);
@@ -1313,7 +1578,7 @@ class CgetMonthlyProfitsOfTheyear extends PooledJob<List<SalesStats>> {
           name: 'isarInstance',
         );
       } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       List<Log> temp = await isar.logs.where().anyId().findAll();
       double getMonthlyProfits(DateTime time) {
@@ -1458,7 +1723,7 @@ class getTotalExpenseNow extends PooledJob<double> {
           name: 'isarInstance',
         );
       } catch (e) {
-        isar = await Isar.getInstance('isarInstance')!;
+        isar = await DB.openIsarSafely(dir.path);
       }
       var expenses = await isar.expenses.where().anyID().findAll();
       double total = 0.0;

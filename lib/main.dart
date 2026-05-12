@@ -2,14 +2,21 @@ import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:dukkan/pages/LoginPage.dart';
 import 'package:dukkan/pages/landingPge.dart';
-import 'package:dukkan/providers/expenseProvider.dart';
+import 'package:dukkan/providers/expense_provider.dart';
+import 'package:dukkan/providers/inventory_provider.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/loan_provider.dart';
 import 'package:dukkan/pages/homePage.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
+import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/salesProvider.dart';
+import 'package:dukkan/providers/share_provider.dart';
+import 'package:dukkan/providers/stats_provider.dart';
+import 'package:dukkan/providers/sync_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+// just a test2
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
@@ -61,32 +68,52 @@ class MyApp extends StatelessWidget {
         ),
         nextScreen: MultiProvider(
           providers: [
-            ChangeNotifierProvider<Lists>(
-              create: (context) => Lists(),
-            ),
-            ChangeNotifierProvider<SalesProvider>(
-              create: (context) => SalesProvider(),
-            ),
             ChangeNotifierProvider<AuthAPI>(
               create: (context) => AuthAPI(),
             ),
             ChangeNotifierProvider<ExpenseProvider>(
               create: (context) => ExpenseProvider(),
-            )
+            ),
+            ChangeNotifierProvider<SalesProvider>(
+              create: (context) => SalesProvider(),
+            ),
+            ChangeNotifierProvider<LoanProvider>(
+              create: (context) => LoanProvider(),
+            ),
+            ChangeNotifierProvider<StatsProvider>(
+              create: (context) => StatsProvider(),
+            ),
+            ChangeNotifierProvider<InventoryProvider>(
+              create: (context) => InventoryProvider(),
+            ),
+            ChangeNotifierProvider<LogProvider>(
+              create: (context) => LogProvider(),
+            ),
+            ChangeNotifierProvider<OwnerProvider>(
+              create: (context) => OwnerProvider(),
+            ),
+            ChangeNotifierProvider<ShareProvider>(
+              create: (context) => ShareProvider(),
+            ),
+            ChangeNotifierProvider<SyncProvider>(
+              create: (context) => SyncProvider(),
+            ),
+            // Keep Lists for backward compatibility during migration
+            ChangeNotifierProvider<Lists>(
+              create: (context) => Lists(),
+            ),
           ],
           builder: (context, child) {
             WidgetsBinding.instance
-                .addObserver(Provider.of<SalesProvider>(context));
+                .addObserver(context.read<SalesProvider>());
             return Consumer<AuthAPI>(
               builder: (context, auth, child) {
-                print('Auth Status: ${auth.status}');
+                // print('Auth Status: ${auth.status}');
                 if (auth.status == AuthStatus.uninitialized) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (auth.status == AuthStatus.authenticated) {
-                  return Provider.of<SalesProvider>(context)
-                              .getWeightPrececsion() ==
-                          null
+                  return context.read<SalesProvider>().getWeightPrececsion() == null
                       ? LandingPage()
                       : HomePage();
                 }

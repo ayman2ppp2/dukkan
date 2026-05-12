@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
-import 'package:dukkan/secrets.dart';
+// import 'package:dukkan/secrets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/widgets.dart';
@@ -201,8 +201,8 @@ class AuthAPI extends ChangeNotifier {
 
   Future<int> verifyUser({required String email}) async {
     int temp = Random().nextInt(9999);
-    String username = User_Name;
-    String password = Password;
+    String username = "test";
+    String password = "089890808";
     final smtpServer = gmail(username, password);
     final message = Message()
       ..from = Address(username, 'Dukkan')
@@ -263,7 +263,7 @@ class AuthAPI extends ChangeNotifier {
 
   signInWithProvider({required String provider}) async {
     try {
-      // PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      // PacincompatiblekageInfo packageInfo = await PackageInfo.fromPlatform();
       // print(packageInfo!.packageName);
       final session = await account.createOAuth2Session(
         provider: OAuthProvider.google,

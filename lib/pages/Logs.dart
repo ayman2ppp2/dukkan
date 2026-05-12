@@ -153,7 +153,7 @@ class _LogsState extends State<Logs> {
                     }
                     if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                       return DropdownButtonFormField<String>(
-                        value: _selectedLoaner,
+                        initialValue: _selectedLoaner,
                         items: snapshot.data!
                             .map((loaner) => DropdownMenuItem(
                                   value: loaner.ID.toString(),

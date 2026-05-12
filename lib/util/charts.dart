@@ -112,7 +112,12 @@ class _CircularChartState extends State<CircularChart>
   }
 
   @override
-  bool get wantKeepAlive => false;
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 }
 
 class BarChart extends StatefulWidget {
@@ -240,8 +245,13 @@ class _BarChartState extends State<BarChart>
   }
 
   @override
-  bool get wantKeepAlive => false;
-  // Provider.of<Lists>(context, listen: false).keepAlive;
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 }
 
 class LineChart extends StatefulWidget {
@@ -370,8 +380,12 @@ class _LineChartState extends State<LineChart>
   }
 
   @override
-  bool get wantKeepAlive => false;
-  // Provider.of<Lists>(context, listen: false).keepAlive;
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 }
 
 class MOY extends StatefulWidget {
@@ -381,11 +395,11 @@ class MOY extends StatefulWidget {
   State<MOY> createState() => _MOYState();
 }
 
-class _MOYState extends State<MOY> {
+class _MOYState extends State<MOY> with AutomaticKeepAliveClientMixin {
   DateTime time = DateTime.now();
   @override
   Widget build(BuildContext context) {
-    // super.build(context);
+    super.build(context);
     // print(' month daily sales');
     return GestureDetector(
       onDoubleTap: () {
@@ -489,6 +503,14 @@ class _MOYState extends State<MOY> {
         },
       ),
     );
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
 
@@ -618,8 +640,13 @@ class _OwnertileState extends State<Ownertile>
   }
 
   @override
-  bool get wantKeepAlive => false;
-  // Provider.of<Lists>(context, listen: false).keepAlive;
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    payCon.dispose();
+    super.dispose();
+  }
 }
 
 class ExpensesPieChart extends StatefulWidget {
@@ -630,6 +657,11 @@ class ExpensesPieChart extends StatefulWidget {
 }
 
 class _ExpensesPieChartState extends State<ExpensesPieChart> {
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<ChartData> chartData = [

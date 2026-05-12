@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:provider/provider.dart';
 
+// ignore: must_be_immutable
 class inboundItem extends StatefulWidget {
   final Product product;
   TextEditingController nameCon = TextEditingController();
@@ -43,25 +44,6 @@ class _inboundItemState extends State<inboundItem> {
 
   double unPadd({required String padded, required String wholeUnit}) {
     return double.tryParse(padded) ?? 0 * getWholeUnitNumber(wholeUnit);
-  }
-
-  void _initializeControllers() {
-    widget.nameCon.text = widget.product.name!;
-    widget.BarcodeCon.text = widget.product.barcode!;
-    widget.ownerCon.text = widget.product.ownerName!;
-    widget.buyCon.text = (widget.product.buyprice! *
-            getWholeUnitNumber(widget.product.wholeUnit!))
-        .toString();
-    widget.sellCon.text = (widget.product.sellPrice! *
-            getWholeUnitNumber(widget.product.wholeUnit!))
-        .toString();
-    widget.countCon.text = widget.product.count.toString();
-    widget.wholeUnitCon.text = widget.product.wholeUnit!;
-    widget.offerCountCon.text = widget.product.offerCount.toString();
-    widget.offerPriceCon.text = unPadd(
-            padded: widget.product.offerPrice.toString(),
-            wholeUnit: widget.product.offerCount.toString())
-        .toString();
   }
 
   int productCount = 0;
@@ -175,7 +157,7 @@ class _inboundItemState extends State<inboundItem> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: widget.product.wholeUnit,
+                      initialValue: widget.product.wholeUnit,
                       decoration: InputDecoration(labelText: 'وحدة القياس'),
                       items: ['كيلو', 'رطل', 'تمنة', '']
                           .map((unit) => DropdownMenuItem<String>(

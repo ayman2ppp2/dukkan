@@ -1,5 +1,5 @@
 import 'package:dukkan/pages/paymentVerficaion.dart';
-import 'package:dukkan/providers/expenseProvider.dart';
+import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:dukkan/providers/salesProvider.dart';
@@ -81,7 +81,7 @@ class _LandingPageState extends State<LandingPage> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _selectedPrecision,
+                        initialValue: _selectedPrecision,
                         items: _precisions
                             .map((precision) => DropdownMenuItem<String>(
                                   value: precision,

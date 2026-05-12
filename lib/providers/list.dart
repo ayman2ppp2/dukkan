@@ -1,13 +1,16 @@
 import 'dart:async';
 // import 'package:mime';
-import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:restart_app/restart_app.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dukkan/core/IsolatePool.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/prodStats.dart';
 import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/util/models/searchQuery.dart';
+import 'package:dukkan/util/models/LowStockProduct.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,9 +21,11 @@ import 'package:package_info_plus/package_info_plus.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:restart_app/restart_app.dart';
 import '../util/models/Log.dart';
-import '../util/models/searchQuery.dart'; // Import SearchQuery model
+
+RootIsolateToken? _getRootIsolateToken() {
+  return RootIsolateToken.instance;
+}
 
 class Lists extends ChangeNotifier {
   late DB db;
@@ -35,16 +40,11 @@ class Lists extends ChangeNotifier {
   // For self signed certificates, only use for development
   Lists() {
     init();
-
-    db = DB();
   }
 
   void init() async {
+    db = await DB.getInstance();
     pool = await Pool.init();
-    // _initializeStreamListener();
-    // pool = Pool.pool;
-
-    // await pool.start();
   }
 
   List<Widget> shareList = [];
@@ -79,14 +79,6 @@ class Lists extends ChangeNotifier {
   void clearCache(String cacheKey) {
     _cache.remove(cacheKey);
     notifyListeners();
-  }
-
-  void _initializeStreamListener() {
-    db.isar!.products.watchLazy(fireImmediately: true).listen((_) {
-      // Call clearCache with the desired cacheKey
-      clearCache(
-          'salesPerProduct'); // Replace 'yourCacheKey' with the actual key
-    });
   }
 
   // void calculateEachOwnerSales(String ownerName) {
@@ -157,21 +149,15 @@ class Lists extends ChangeNotifier {
     required int? expenseId,
   }) async {
     await db.checkOut(
-        lst: lst,
+        products: lst,
         total: total,
         discount: discount,
-        LoID: LoID,
+        loanerId: LoID,
         loaned: loaned,
-        edit: edit,
-        logID: logID,
+        // edit: edit,
+        // logID: logID,
         expense: expense,
         expenseId: expenseId);
-    clearAllCache();
-  }
-
-  Future<void> inboundReceipt(
-      {required List<Product> lst, required double total}) async {
-    await db.inboundReceipt(lst: lst, total: total);
     clearAllCache();
   }
 
@@ -186,7 +172,7 @@ class Lists extends ChangeNotifier {
   Future<double> getProfitOfTheMonth() {
     return getCachedCalculation('profitOfTheMonth', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
     });
   }
@@ -194,7 +180,7 @@ class Lists extends ChangeNotifier {
   Future<double> getSalesOfTheMonth() {
     return getCachedCalculation('salesOfTheMonth', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
 
       return pool.scheduleJob(CgetSalesOfTheMonth(map: map));
     });
@@ -203,7 +189,7 @@ class Lists extends ChangeNotifier {
   Future<double> getDailySales(DateTime time) {
     return getCachedCalculation('dailySales', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetDailySales(map: map));
     });
@@ -212,7 +198,7 @@ class Lists extends ChangeNotifier {
   Future<double> getDailyProfits(DateTime time) {
     return getCachedCalculation('dailyProfits', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetDailyProfit(map: map));
     });
@@ -221,7 +207,7 @@ class Lists extends ChangeNotifier {
   Future<double> getAllProfit() {
     return getCachedCalculation('totalProfit', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = DateTime.now();
       return pool.scheduleJob(CgetTotalProfit(map: map));
     });
@@ -230,7 +216,7 @@ class Lists extends ChangeNotifier {
   Future<double> getAllSales() {
     return getCachedCalculation('allSales', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       return pool.scheduleJob(CgetAllSales(map: map));
     });
   }
@@ -238,7 +224,7 @@ class Lists extends ChangeNotifier {
   Future<int> getNumberOfSalesForAproduct({required String key}) {
     return getCachedCalculation('numberOfSalesPerProduct', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = key;
       return pool.scheduleJob(CgetNumberOfSalesForAproduct(map: map));
     });
@@ -247,7 +233,7 @@ class Lists extends ChangeNotifier {
   Future<List<Product>> getSaledProductsByDate(DateTime time) {
     return getCachedCalculation('saledProductsByDate', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetSaledProductsByDate(map: map));
     });
@@ -256,7 +242,7 @@ class Lists extends ChangeNotifier {
   Future<List<ProdStats>> getSalesPerProduct(int chunkSize) async {
     return getCachedCalculation('salesPerProduct', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = chunkSize;
       return pool
           .scheduleJob(CgetSalesPerProduct(chunkSize: chunkSize, map: map));
@@ -266,7 +252,7 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) async {
     return getCachedCalculation('dailySalesOfTheMonth', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetDailySalesOfTheMonth(map: map));
     });
@@ -275,7 +261,7 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) async {
     return getCachedCalculation('dailyProfitOfTheMonth', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetDailyProfitOfTheMont(map: map));
     });
@@ -284,7 +270,7 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getMonthlySalesOfTheYear(DateTime month) async {
     return getCachedCalculation('monthlySalesOfTheYear', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetMonthlySalesOfTheyear(map: map));
     });
@@ -293,7 +279,7 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getMonthlyProfitsOfTheYear(DateTime month) async {
     return getCachedCalculation('monthlyProfitsOfTheYear', () {
       Map map = Map();
-      map['1'] = RootIsolateToken.instance!;
+      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetMonthlyProfitsOfTheyear(map: map));
     });
@@ -342,6 +328,14 @@ class Lists extends ChangeNotifier {
     // Get the application documents directory
     var te = await getApplicationDocumentsDirectory();
 
+    Future<void> createBackup() async {
+      await db.createLocalBackup();
+      shareList.add(Text('Backup created for: isarInstance.isar'));
+      notifyListeners();
+    }
+
+    await createBackup();
+
     // Handle file requests dynamically
     void handleHttpRequest(HttpRequest request) async {
       final fileName =
@@ -349,9 +343,10 @@ class Lists extends ChangeNotifier {
       if (fileName == 'version') {
         String version = packageInfo.version;
         request.response.write(version);
-        request.response.close();
+        await request.response.close();
         shareList.add(Text('vsersion sent'));
         notifyListeners();
+        return;
       }
       if (fileName == 'hash') {
         final originalFileName = fileName.replaceAll('hash', 'backup.isar');
@@ -368,8 +363,7 @@ class Lists extends ChangeNotifier {
         await request.response.close();
         return;
       } else {
-        await createBackup(); // Copy the database
-        File file = File('${te.path}/$fileName'); // Path to the requested file
+        final file = File('${te.path}/$fileName'); // Path to the requested file
         if (await file.exists()) {
           print('Sending file: ${file.absolute.path}');
           shareList.add(Text('Sending file: $fileName'));
@@ -382,10 +376,10 @@ class Lists extends ChangeNotifier {
             request.response.headers
                 .set(HttpHeaders.contentTypeHeader, mimeType);
             request.response.headers.set(HttpHeaders.contentDisposition,
-                'attachment; filename="$fileName.copy"');
+                'attachment; filename="$fileName"');
 
             await file.openRead().pipe(request.response);
-            shareList.add(Text('File sent: $fileName.copy'));
+            shareList.add(Text('File sent: $fileName'));
             notifyListeners();
           } catch (error) {
             print('Error sending file: $error');
@@ -413,14 +407,14 @@ class Lists extends ChangeNotifier {
       // Listen for requests
       await for (HttpRequest request in server) {
         if (request.uri.pathSegments.last == 'shutdown') {
-          // print('Shutting down server...');
+          request.response.write('server is down');
+          request.response.close();
+          print('Shutting down server...');
           shareList.add(Text('Server shutting down...'));
           notifyListeners();
           await server.close();
           shareList.add(Text('Server is down'));
           notifyListeners();
-          request.response.write('server is down');
-          request.response.close();
           break;
         } else {
           handleHttpRequest(request); // Handle file requests dynamically
@@ -433,23 +427,20 @@ class Lists extends ChangeNotifier {
     }
   }
 
-  Future<void> createBackup() async {
-    await db.createLocalBackup();
-    shareList.add(Text('Backup created for: isarInstance.isar'));
-    notifyListeners();
-  }
-
   void client(String ip) async {
     String version = '';
     var te = await getApplicationDocumentsDirectory();
     Dio dio = Dio();
 
-    // Create backup
+    Future<void> createBackup() async {
+      await db.createLocalBackup();
+      shareList.add(Text('Backup created for: isarInstance.isar'));
+      notifyListeners();
+    }
 
     await createBackup();
 
     try {
-      // Fetch version
       try {
         var versionResponse = await dio.get('http://$ip/version');
         version = versionResponse.data.toString();
@@ -461,7 +452,6 @@ class Lists extends ChangeNotifier {
         return;
       }
 
-      // Decide which files to download
       List<String> fileNames;
       if (version.startsWith('2.2.')) {
         fileNames = [
@@ -485,29 +475,16 @@ class Lists extends ChangeNotifier {
         ];
       }
 
-      // Loop through and handle files
       for (var fileName in fileNames) {
-        var filePath = Platform.isWindows
+        var filePath = Platform.isWindows || Platform.isLinux
             ? '${te.path}/$fileName.received'
             : '${te.path}/$fileName';
-
-        // if (fileName == 'shutdown') {
-        //   try {
-        //     var response = await dio.get('http://$ip/shutdown');
-        //     shareList.add(Text(response.data));
-        //     notifyListeners();
-        //   } catch (e) {
-        //     shareList.add(Text('Error shutting down the server: $e'));
-        //     notifyListeners();
-        //   }
-        //   continue;
-        // }
 
         try {
           shareList.add(Text('Receiving: $fileName'));
           notifyListeners();
           var response = await dio.download('http://$ip/$fileName', filePath);
-          if (Platform.isWindows) db.windows();
+          if (Platform.isWindows || Platform.isLinux) db.windows();
 
           if (response.statusCode == 200) {
             shareList.add(Text('File received: $fileName'));
@@ -523,7 +500,7 @@ class Lists extends ChangeNotifier {
         }
       }
       if (fileNames.contains('backup.isar')) {
-        var filePath = Platform.isWindows
+        var filePath = Platform.isWindows || Platform.isLinux
             ? '${te.path}/backup.isar.received'
             : '${te.path}/backup.isar';
         final fileBytes = await File(filePath).readAsBytes();
@@ -534,11 +511,16 @@ class Lists extends ChangeNotifier {
             .get('http://$ip/hash')
             .then((response) => response.data.toString());
         if (actualHash == expectedHash) {
-          shareList.add(Text('Hash verified ✅ — Restarting app...'));
+          shareList.add(Text('Hash verified'));
           notifyListeners();
-          Platform.isWindows ? null : Restart.restartApp(); // ⬅️ RESTART HERE
+          if (Platform.isWindows || Platform.isLinux) {
+            clearAllCache();
+          } else {
+            await db.useLocalBacup();
+            Restart.restartApp();
+          }
         } else {
-          shareList.add(Text('Hash mismatch ❌ — App not restarted'));
+          shareList.add(Text('Hash mismatch - App not restarted'));
           notifyListeners();
         }
       }
@@ -551,8 +533,8 @@ class Lists extends ChangeNotifier {
         shareList.add(Text('Error shutting down the server: $e'));
         notifyListeners();
       }
-    } catch (e, s) {
-      print('Error: $s');
+    } catch (e) {
+      print('Error: $e');
       shareList.add(Text('Error: $e'));
       notifyListeners();
     }
@@ -652,5 +634,15 @@ class Lists extends ChangeNotifier {
 
   getLogsChunk(int chunkSize, int currentLog) {
     return db.getLogsChunk(chunkSize, currentLog);
+  }
+
+  Future<List<LowStockProduct>> getLowStockItems() async {
+    final results = await db.getLowStockProductsWithPercent();
+    return results.map((r) => LowStockProduct(
+      product: r['product'] as Product,
+      percentRemaining: r['percentRemaining'] as double,
+      currentStock: r['currentStock'] as int,
+      soldLast30Days: r['soldLast30Days'] as int,
+    )).toList();
   }
 }
