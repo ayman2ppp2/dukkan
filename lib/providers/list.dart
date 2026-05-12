@@ -346,6 +346,7 @@ class Lists extends ChangeNotifier {
         await request.response.close();
         shareList.add(Text('vsersion sent'));
         notifyListeners();
+        return;
       }
       if (fileName == 'hash') {
         final originalFileName = fileName.replaceAll('hash', 'backup.isar');
@@ -512,7 +513,12 @@ class Lists extends ChangeNotifier {
         if (actualHash == expectedHash) {
           shareList.add(Text('Hash verified'));
           notifyListeners();
-          Platform.isWindows || Platform.isLinux ? clearAllCache() : Restart.restartApp();
+          if (Platform.isWindows || Platform.isLinux) {
+            clearAllCache();
+          } else {
+            await db.useLocalBacup();
+            Restart.restartApp();
+          }
         } else {
           shareList.add(Text('Hash mismatch - App not restarted'));
           notifyListeners();
