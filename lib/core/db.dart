@@ -247,6 +247,17 @@ class DB {
         });
       }
     }
+    results.sort((a, b) {
+      final lastDate = (Product p) => p.priceHistory.isEmpty
+          ? DateTime(2000)
+          : p.priceHistory
+              .map((e) => e.date ?? DateTime(2000))
+              .reduce((max, d) => d.isAfter(max) ? d : max);
+
+      final dateA = lastDate(a['product'] as Product);
+      final dateB = lastDate(b['product'] as Product);
+      return dateB.compareTo(dateA);
+    });
     return results;
   }
 
