@@ -110,17 +110,79 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-      - run: |
+      - name: Install Linux build dependencies
+        run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build libgtk-3-dev
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build \
+            libgtk-3-dev \
+            liblzma-dev \
+            fuse
       - run: flutter pub get
-      - run: flutter build linux
-      - name: Tar release bundle
+      - run: flutter build linux --release
+
+      - name: Extract version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build AppImage
+        run: |
+          APPDIR="AppDir"
+          mkdir -p "$APPDIR/usr/bin"
+          mkdir -p "$APPDIR/usr/lib"
+          mkdir -p "$APPDIR/usr/share/applications"
+          mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+
+          cp -r build/linux/x64/release/bundle/* "$APPDIR/usr/"
+          chmod +x "$APPDIR/usr/dukkan"
+
+          cp packaging/linux/dukkan.desktop "$APPDIR/usr/share/applications/"
+          cp packaging/linux/dukkan.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/"
+
+          ln -s usr/share/applications/dukkan.desktop "$APPDIR/dukkan.desktop"
+          ln -s usr/share/icons/hicolor/256x256/apps/dukkan.png "$APPDIR/dukkan.png"
+          ln -s usr/dukkan "$APPDIR/AppRun"
+
+          wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool
+          chmod +x appimagetool
+          ./appimagetool --no-appstream "$APPDIR" "Dukkan-${{ env.APP_VERSION }}-x86_64.AppImage"
+
+      - name: Build .deb package
+        run: |
+          DEB_DIR="Dukkan-${{ env.APP_VERSION }}"
+          mkdir -p "$DEB_DIR/DEBIAN"
+          mkdir -p "$DEB_DIR/opt/dukkan"
+          mkdir -p "$DEB_DIR/usr/bin"
+          mkdir -p "$DEB_DIR/usr/share/applications"
+          mkdir -p "$DEB_DIR/usr/share/icons/hicolor/256x256/apps"
+
+          cp -r build/linux/x64/release/bundle/* "$DEB_DIR/opt/dukkan/"
+          chmod +x "$DEB_DIR/opt/dukkan/dukkan"
+
+          cp packaging/linux/deb/DEBIAN/control "$DEB_DIR/DEBIAN/"
+          sed -i "s/^Version:.*/Version: ${{ env.APP_VERSION }}/" "$DEB_DIR/DEBIAN/control"
+
+          cp packaging/linux/deb/usr/bin/dukkan "$DEB_DIR/usr/bin/"
+          chmod +x "$DEB_DIR/usr/bin/dukkan"
+
+          cp packaging/linux/dukkan.desktop "$DEB_DIR/usr/share/applications/"
+          cp packaging/linux/dukkan.png "$DEB_DIR/usr/share/icons/hicolor/256x256/apps/"
+
+          dpkg-deb --build "$DEB_DIR"
+          mv "${DEB_DIR}.deb" "Dukkan-${{ env.APP_VERSION }}.deb"
+
+      - name: Tar release bundle (fallback)
         run: tar -czf linux-${{ github.ref_name }}.tar.gz -C build/linux/x64/release/bundle .
       - uses: actions/upload-artifact@v4
         with:
           name: linux-${{ github.ref_name }}
-          path: linux-${{ github.ref_name }}.tar.gz
+          path: |
+            Dukkan-*.AppImage
+            Dukkan-*.deb
+            linux-${{ github.ref_name }}.tar.gz
 
   # ─────────── Beta pre‑release (push to hot) ──────────
   release-beta:
@@ -150,6 +212,8 @@ jobs:
             artifacts/**/*.exe
             artifacts/**/*.zip
             artifacts/**/*.tar.gz
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
 
   # ─────────── Stable release (PR merged to master) ────
   release-stable:
@@ -204,3 +268,5 @@ jobs:
             artifacts/**/*.exe
             artifacts/**/*.zip
             artifacts/**/*.tar.gz
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb

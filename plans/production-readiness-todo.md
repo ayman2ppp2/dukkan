@@ -61,13 +61,13 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 5: Linux Production Release
 
-- [ ] Build Linux with `flutter build linux --release` in GitHub Actions.
-- [ ] Install required Linux build dependencies in CI.
-- [ ] Package release bundle as tar.gz fallback.
-- [ ] Package AppImage as the primary Linux artifact.
-- [ ] Set Linux application id away from `com.example.dukkan`.
-- [ ] Upload AppImage and tar.gz to GitHub Releases.
-- [ ] Consider `.deb` later if most users are on Ubuntu/Debian.
+- [x] Build Linux with `flutter build linux --release` in GitHub Actions.
+- [x] Install required Linux build dependencies in CI.
+- [x] Package release bundle as tar.gz fallback.
+- [x] Package AppImage as the primary Linux artifact.
+- [x] Set Linux application id away from `com.example.dukkan`.
+- [x] Upload AppImage and tar.gz to GitHub Releases.
+- [x] Package `.deb` as a system package option.
 
 ## Phase 6: Appwrite And Auth Hardening
 
@@ -153,7 +153,7 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 ## Done Criteria For Production v1
 
 - [x] CI blocks releases when analyze or tests fail.
-- [ ] GitHub Releases publish Android APK/AAB, Windows installer, and Linux AppImage/tar.gz.
+- [x] GitHub Releases publish Android APK/AAB, Windows installer, and Linux AppImage/tar.gz/deb.
 - [x] Android release is not signed with the debug key.
 - [x] Windows installer identifies publisher as Golden.
 - [ ] Appwrite production config has no hardcoded secrets or self-signed cloud setting.

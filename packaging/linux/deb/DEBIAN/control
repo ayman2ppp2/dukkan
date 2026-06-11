@@ -1,0 +1,10 @@
+Package: dukkan
+Version: 2.4.7
+Section: misc
+Priority: optional
+Architecture: amd64
+Depends: libgtk-3-0 (>= 3.22), libstdc++6 (>= 4.9)
+Maintainer: Golden <info@golden.com>
+Description: A retail shop management app.
+ Manages sales, inventory, loans, expenses, and more
+ for retail shops. Supports offline operation and LAN sync.
