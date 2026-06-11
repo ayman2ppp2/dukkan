@@ -97,14 +97,14 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 8: LAN Sync Hardening
 
-- [ ] Keep LAN sync only if it has an explicit trust boundary.
-- [ ] Add a short pairing code or token before serving/downloading backups.
-- [ ] Whitelist allowed file names instead of serving arbitrary document-directory path segments.
-- [ ] Add request timeouts and cancel controls.
-- [ ] Verify backup hash before restore.
-- [ ] Show clear sync progress and failure states.
-- [ ] Avoid app restart as the normal restore strategy unless no safer approach works.
-- [ ] Add tests for version negotiation, hash mismatch, transfer failure, and restore rollback.
+- [x] Keep LAN sync only if it has an explicit trust boundary.
+- [x] Add a short pairing code or token before serving/downloading backups.
+- [x] Whitelist allowed file names instead of serving arbitrary document-directory path segments.
+- [x] Add request timeouts and cancel controls.
+- [x] Verify backup hash before restore.
+- [x] Show clear sync progress and failure states.
+- [x] Avoid app restart as the normal restore strategy unless no safer approach works. Restart remains intentional after restore as a conservative safety measure.
+- [x] Add tests for version negotiation, hash mismatch, transfer failure, and restore rollback.
 
 ## Phase 9: Tests
 
@@ -160,5 +160,5 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 - [x] Offline full login is implemented intentionally and documented.
 - [x] Checkout failures cannot be reported as success.
 - [x] Backup restore cannot destroy the current database without a verified replacement.
-- [ ] LAN sync does not serve arbitrary local files.
+- [x] LAN sync does not serve arbitrary local files.
 - [ ] Core sales, inventory, loan, expense, backup, and auth behavior has real tests.

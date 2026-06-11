@@ -751,68 +751,8 @@ class DB {
   }
 
   Future<void> useLocalBacup() async {
-    final backupFilePath =
-        '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
     final dir = await getApplicationDocumentsDirectory();
-    final livePath = '${dir.path}/isarInstance.isar';
-
-    final backupFile = File(backupFilePath);
-    if (!await backupFile.exists()) {
-      throw Exception('Backup file not found at $backupFilePath');
-    }
-
-    // Verify backup is valid by opening it briefly
-    Isar? verifyIsar;
-    try {
-      verifyIsar = await Isar.open(
-        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-        directory: dir.path,
-        name: 'isarBackupVerify',
-      );
-      await verifyIsar.close();
-    } catch (e) {
-      throw Exception('Backup file is corrupted or invalid: $e');
-    }
-
-    // Close current Isar instances
-    await closeAllIsarInstances();
-    await isar!.close();
-
-    // Rename live DB to .bak instead of deleting
-    final liveFile = File(livePath);
-    if (await liveFile.exists()) {
-      await liveFile.rename('$livePath.bak');
-    }
-
-    try {
-      // Copy backup to live path
-      await backupFile.copy(livePath);
-
-      // Reopen Isar on the new file
-      isar = await Isar.open(
-        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-        directory: dir.path,
-        name: 'isarInstance',
-      );
-
-      // Remove .bak on success
-      final bakFile = File('$livePath.bak');
-      if (await bakFile.exists()) {
-        await bakFile.delete();
-      }
-    } catch (e) {
-      // Rollback: restore .bak
-      final bakFile = File('$livePath.bak');
-      if (await bakFile.exists()) {
-        await bakFile.rename(livePath);
-        isar = await Isar.open(
-          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-          directory: dir.path,
-          name: 'isarInstance',
-        );
-      }
-      rethrow;
-    }
+    await _replaceLiveIsarWithFile('${dir.path}/backup.isar');
   }
 
   void insertInPostgres(
@@ -848,28 +788,88 @@ class DB {
     );
   }
 
-  void windows() async {
-    final receivedFilePath =
-        '${(await getApplicationDocumentsDirectory()).path}/backup.isar.received';
+  Future<void> windows() async {
     final dir = await getApplicationDocumentsDirectory();
+    await _replaceLiveIsarWithFile('${dir.path}/backup.isar.received');
+  }
+
+  Future<void> _replaceLiveIsarWithFile(String sourcePath) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final livePath = '${dir.path}/isarInstance.isar';
+    final sourceFile = File(sourcePath);
+    final liveFile = File(livePath);
+    final bakFile = File('$livePath.bak');
+
+    await _verifyIsarFile(sourcePath);
     await closeAllIsarInstances();
     await isar!.close();
 
-    // Delete the current Isar database files
+    if (await bakFile.exists()) {
+      await bakFile.delete();
+    }
+    if (await liveFile.exists()) {
+      await liveFile.rename(bakFile.path);
+    }
 
-    await File('${dir.path}/isarInstance.isar').delete();
+    try {
+      await sourceFile.copy(livePath);
+      isar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: dir.path,
+        name: 'isarInstance',
+      );
+      if (await bakFile.exists()) {
+        await bakFile.delete();
+      }
+    } catch (e) {
+      if (await liveFile.exists()) {
+        await liveFile.delete();
+      }
+      if (await bakFile.exists()) {
+        await bakFile.rename(livePath);
+        isar = await Isar.open(
+          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+          directory: dir.path,
+          name: 'isarInstance',
+        );
+      }
+      rethrow;
+    }
+  }
 
-    // Copy the backup file to the Isar directory
-    final backupFile = File(receivedFilePath);
-    final newIsarFile = File('${dir.path}/isarInstance.isar');
-    await backupFile.copy(newIsarFile.path);
+  Future<void> _verifyIsarFile(String sourcePath) async {
+    final sourceFile = File(sourcePath);
+    if (!await sourceFile.exists()) {
+      throw Exception('Backup file not found at $sourcePath');
+    }
 
-    // Reopen the Isar instance
-    isar = await Isar.open(
-      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-      directory: dir.path,
-      name: 'isarInstance',
-    );
+    final tempDir = await getTemporaryDirectory();
+    final verifyName = 'isar_verify_${DateTime.now().microsecondsSinceEpoch}';
+    final verifyPath = '${tempDir.path}/$verifyName.isar';
+    Isar? verifyIsar;
+
+    try {
+      await sourceFile.copy(verifyPath);
+      verifyIsar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: tempDir.path,
+        name: verifyName,
+      );
+      await verifyIsar.close();
+      verifyIsar = null;
+    } catch (e) {
+      throw Exception('Backup file is corrupted or invalid: $e');
+    } finally {
+      if (verifyIsar != null) {
+        try {
+          await verifyIsar.close();
+        } catch (_) {}
+      }
+      final verifyFile = File(verifyPath);
+      if (await verifyFile.exists()) {
+        await verifyFile.delete();
+      }
+    }
   }
 
   inboundReceipt({required List<Product> lst, required double total}) async {
@@ -924,6 +924,7 @@ class DB {
               }
             }
           }
+
           temp
             ..loanedAmount = (temp.loanedAmount ?? 0) > 0
                 ? temp.loanedAmount! - (log.price + hotSum)

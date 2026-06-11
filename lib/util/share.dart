@@ -1,6 +1,10 @@
+import 'dart:io';
+
+import 'package:dukkan/core/lan_sync.dart';
 import 'package:dukkan/util/scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/list.dart';
 
 class Share extends StatefulWidget {
@@ -33,20 +37,13 @@ class _ShareState extends State<Share> {
             children: [
               Expanded(
                 child: Consumer<Lists>(
-                  builder: (context, li, child) => ListView.builder(
+                  builder: (context, li, child) => ListView(
                     padding:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    itemCount: li.shareList.length,
-                    itemBuilder: (context, index) => Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: li.shareList[index],
-                      ),
-                    ),
+                    children: [
+                      _statusCard(li),
+                      if (li.pairingAddress != null) _pairingCard(li),
+                    ],
                   ),
                 ),
               ),
@@ -80,6 +77,10 @@ class _ShareState extends State<Share> {
                         Consumer<Lists>(
                           builder: (context, li, child) => IconButton(
                             onPressed: () async {
+                              if (Platform.isWindows || Platform.isLinux) {
+                                _showManualConnectDialog(context, li);
+                                return;
+                              }
                               showGeneralDialog(
                                 context: context,
                                 pageBuilder:
@@ -91,36 +92,7 @@ class _ShareState extends State<Share> {
                               );
                             },
                             onLongPress: () {
-                              var ip = '';
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text(
-                                      'قم بكتابة الأرقام الظاهرة على الجهاز المُرسل'),
-                                  content: TextField(
-                                    onChanged: (value) {
-                                      setState(() {
-                                        ip = value;
-                                      });
-                                    },
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () {
-                                        li.client(ip + ':30000');
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Connect'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('cancel'),
-                                    ),
-                                  ],
-                                ),
-                              );
+                              _showManualConnectDialog(context, li);
                             },
                             icon: const Icon(Icons.call_received_rounded,
                                 color: Colors.white),
@@ -137,6 +109,113 @@ class _ShareState extends State<Share> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showManualConnectDialog(BuildContext context, Lists li) {
+    var address = '';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('اكتب عنوان المشاركة والكود الظاهر على جهاز الإرسال'),
+        content: TextField(
+          decoration: const InputDecoration(
+            hintText: '192.168.1.10:30000:123456',
+          ),
+          onChanged: (value) {
+            address = value;
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              li.client(address);
+              Navigator.pop(context);
+            },
+            child: const Text('Connect'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusCard(Lists li) {
+    final isBusy = li.syncStatus == SyncStatus.connecting ||
+        li.syncStatus == SyncStatus.downloading ||
+        li.syncStatus == SyncStatus.verifying ||
+        li.syncStatus == SyncStatus.restoring;
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              li.syncStatus.label,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(li.syncMessage),
+            if (li.syncErrorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                li.syncErrorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ],
+            if (isBusy) ...[
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: li.syncStatus == SyncStatus.downloading
+                    ? li.syncProgress
+                    : null,
+              ),
+            ],
+            if (li.canCancelSync) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: li.cancelSync,
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Cancel sync'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pairingCard(Lists li) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            QrImageView(data: li.pairingAddress!, size: 220),
+            const SizedBox(height: 12),
+            SelectableText(
+              li.pairingAddress!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            if (li.pairingCode != null) ...[
+              const SizedBox(height: 8),
+              Text('Pairing code: ${li.pairingCode}'),
+            ],
+          ],
         ),
       ),
     );

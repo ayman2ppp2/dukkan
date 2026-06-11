@@ -2,8 +2,8 @@ import 'dart:async';
 // import 'package:mime';
 import 'package:dio/dio.dart';
 import 'package:restart_app/restart_app.dart';
-import 'package:crypto/crypto.dart';
 import 'package:dukkan/core/IsolatePool.dart';
+import 'package:dukkan/core/lan_sync.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/core/db.dart';
@@ -20,14 +20,13 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import '../util/models/Log.dart';
 
 RootIsolateToken? _getRootIsolateToken() {
   return RootIsolateToken.instance;
 }
 
-class Lists extends ChangeNotifier {
+class Lists extends ChangeNotifier with LanSyncState {
   late DB db;
 
   late IsolatePool pool;
@@ -35,6 +34,8 @@ class Lists extends ChangeNotifier {
   bool editing = false;
   Stream<String> downloadProgress = Stream.empty();
   DateTime logID = DateTime.now();
+  CancelToken? _syncCancelToken;
+  HttpServer? _syncServer;
   // late Socket socket;
 
   // For self signed certificates, only use for development
@@ -48,6 +49,7 @@ class Lists extends ChangeNotifier {
   }
 
   List<Widget> shareList = [];
+  bool get canCancelSync => _syncCancelToken != null || _syncServer != null;
   // List<Product> searchTemp = [];
   // List<Product> productsList = [];
   // List<Product> sellList = [];
@@ -170,7 +172,8 @@ class Lists extends ChangeNotifier {
   Future<double> getProfitOfTheMonth() {
     return getCachedCalculation('profitOfTheMonth', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
     });
   }
@@ -178,7 +181,8 @@ class Lists extends ChangeNotifier {
   Future<double> getSalesOfTheMonth() {
     return getCachedCalculation('salesOfTheMonth', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
 
       return pool.scheduleJob(CgetSalesOfTheMonth(map: map));
     });
@@ -187,7 +191,8 @@ class Lists extends ChangeNotifier {
   Future<double> getDailySales(DateTime time) {
     return getCachedCalculation('dailySales', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetDailySales(map: map));
     });
@@ -196,7 +201,8 @@ class Lists extends ChangeNotifier {
   Future<double> getDailyProfits(DateTime time) {
     return getCachedCalculation('dailyProfits', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetDailyProfit(map: map));
     });
@@ -205,7 +211,8 @@ class Lists extends ChangeNotifier {
   Future<double> getAllProfit() {
     return getCachedCalculation('totalProfit', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = DateTime.now();
       return pool.scheduleJob(CgetTotalProfit(map: map));
     });
@@ -214,7 +221,8 @@ class Lists extends ChangeNotifier {
   Future<double> getAllSales() {
     return getCachedCalculation('allSales', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       return pool.scheduleJob(CgetAllSales(map: map));
     });
   }
@@ -222,7 +230,8 @@ class Lists extends ChangeNotifier {
   Future<int> getNumberOfSalesForAproduct({required String key}) {
     return getCachedCalculation('numberOfSalesPerProduct', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = key;
       return pool.scheduleJob(CgetNumberOfSalesForAproduct(map: map));
     });
@@ -231,7 +240,8 @@ class Lists extends ChangeNotifier {
   Future<List<Product>> getSaledProductsByDate(DateTime time) {
     return getCachedCalculation('saledProductsByDate', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = time;
       return pool.scheduleJob(CgetSaledProductsByDate(map: map));
     });
@@ -240,7 +250,8 @@ class Lists extends ChangeNotifier {
   Future<List<ProdStats>> getSalesPerProduct(int chunkSize) async {
     return getCachedCalculation('salesPerProduct', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = chunkSize;
       return pool
           .scheduleJob(CgetSalesPerProduct(chunkSize: chunkSize, map: map));
@@ -250,7 +261,8 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) async {
     return getCachedCalculation('dailySalesOfTheMonth', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetDailySalesOfTheMonth(map: map));
     });
@@ -259,7 +271,8 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) async {
     return getCachedCalculation('dailyProfitOfTheMonth', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetDailyProfitOfTheMont(map: map));
     });
@@ -268,7 +281,8 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getMonthlySalesOfTheYear(DateTime month) async {
     return getCachedCalculation('monthlySalesOfTheYear', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetMonthlySalesOfTheyear(map: map));
     });
@@ -277,7 +291,8 @@ class Lists extends ChangeNotifier {
   Future<List<SalesStats>> getMonthlyProfitsOfTheYear(DateTime month) async {
     return getCachedCalculation('monthlyProfitsOfTheYear', () {
       Map map = Map();
-      map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
       map['2'] = month;
       return pool.scheduleJob(CgetMonthlyProfitsOfTheyear(map: map));
     });
@@ -287,255 +302,284 @@ class Lists extends ChangeNotifier {
 // import 'package:path_provider/path_provider.dart';
 // import 'package:qr_flutter/qr_flutter.dart'; // Assuming you're using this for QrImageView
 
-  void runServer() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    final NetworkInfo _networkInfo = NetworkInfo();
+  Future<void> runServer() async {
+    await _syncServer?.close(force: true);
+    _syncServer = null;
+    setSyncState(
+      SyncStatus.connecting,
+      message: 'Preparing LAN sync server...',
+      progress: 0,
+    );
 
-    // Getting available network address (fallback for multiple interface names)
-    String? wifiIp = await _networkInfo.getWifiIP();
-    // String? ipAddress = await NetworkInterface.list().then((interfaces) {
-    //   try {
-    //     return interfaces
-    //         .expand((interface) => interface.addresses)
-    //         .firstWhere(
-    //           (address) =>
-    //               address.type == InternetAddressType.IPv4 &&
-    //               !address
-    //                   .isLoopback, // Avoid loopback addresses like 127.0.0.1
-    //         )
-    //         .address;
-    //   } catch (e) {
-    //     shareList.add(Text('No suitable network interface found'));
-    //     notifyListeners();
-    //     // print('No suitable network interface found');
-    //     return null;
-    //   }
-    // });
-
-    if (wifiIp == null) {
-      shareList.add(Text('No IP address found'));
-      notifyListeners();
-      // print('No IP address found');
-      return;
-    }
-
-    // Show QR code with the server's IP and port
-    shareList.add(QrImageView(data: '$wifiIp:30000'));
-    notifyListeners();
-
-    // Get the application documents directory
-    var te = await getApplicationDocumentsDirectory();
-
-    Future<void> createBackup() async {
-      await db.createLocalBackup();
-      shareList.add(Text('Backup created for: isarInstance.isar'));
-      notifyListeners();
-    }
-
-    await createBackup();
-
-    // Handle file requests dynamically
-    void handleHttpRequest(HttpRequest request) async {
-      final fileName =
-          request.uri.pathSegments.last; // Get the requested file name
-      if (fileName == 'version') {
-        String version = packageInfo.version;
-        request.response.write(version);
-        await request.response.close();
-        shareList.add(Text('vsersion sent'));
-        notifyListeners();
-        return;
-      }
-      if (fileName == 'hash') {
-        final originalFileName = fileName.replaceAll('hash', 'backup.isar');
-        final file = File('${te.path}/$originalFileName');
-        if (await file.exists()) {
-          final bytes = await file.readAsBytes();
-          final digest = sha256.convert(bytes);
-          request.response.write(digest.toString());
-          shareList.add(Text('Hash sent for: $originalFileName'));
-        } else {
-          request.response.statusCode = HttpStatus.notFound;
-          request.response.write('File not found: $originalFileName');
-        }
-        await request.response.close();
-        return;
-      } else {
-        final file = File('${te.path}/$fileName'); // Path to the requested file
-        if (await file.exists()) {
-          print('Sending file: ${file.absolute.path}');
-          shareList.add(Text('Sending file: $fileName'));
-          notifyListeners();
-
-          try {
-            // Set headers based on file type (dynamically)
-            var mimeType =
-                lookupMimeType(fileName) ?? 'application/octet-stream';
-            request.response.headers
-                .set(HttpHeaders.contentTypeHeader, mimeType);
-            request.response.headers.set(HttpHeaders.contentDisposition,
-                'attachment; filename="$fileName"');
-
-            await file.openRead().pipe(request.response);
-            shareList.add(Text('File sent: $fileName'));
-            notifyListeners();
-          } catch (error) {
-            print('Error sending file: $error');
-            request.response.statusCode = HttpStatus.internalServerError;
-            request.response.write('Error sending file');
-            await request.response.close();
-          }
-        } else {
-          print('File not found: $fileName');
-          request.response.statusCode = HttpStatus.notFound;
-          request.response.write('File not found: $fileName');
-          await request.response.close();
-        }
-      }
-    }
-
-    // Start the HTTP server
     try {
-      final server = await HttpServer.bind(wifiIp, 30000);
-      print('Server listening on ${server.address.address}:${server.port}');
-      shareList.add(
-          Text('Server listening on ${server.address.address}:${server.port}'));
-      notifyListeners();
+      final packageInfo = await PackageInfo.fromPlatform();
+      final networkInfo = NetworkInfo();
+      final wifiIp = await networkInfo.getWifiIP();
+      if (wifiIp == null) {
+        throw Exception('No Wi-Fi IP address found');
+      }
 
-      // Listen for requests
-      await for (HttpRequest request in server) {
-        if (request.uri.pathSegments.last == 'shutdown') {
-          request.response.write('server is down');
-          request.response.close();
-          print('Shutting down server...');
-          shareList.add(Text('Server shutting down...'));
-          notifyListeners();
+      final code = LanSync.generatePairingCode();
+      final endpoint = LanSyncEndpoint(
+        host: wifiIp,
+        port: LanSync.port,
+        code: code,
+      );
+      pairingCode = code;
+      pairingAddress = endpoint.qrPayload;
+
+      await db.createLocalBackup();
+      final dir = await getApplicationDocumentsDirectory();
+      final server = await HttpServer.bind(wifiIp, LanSync.port);
+      server.idleTimeout = LanSync.receiveTimeout;
+      _syncServer = server;
+
+      setSyncState(
+        SyncStatus.done,
+        message: 'Server listening. Pairing code: $code',
+        progress: 1,
+      );
+
+      await for (final request in server) {
+        final shouldShutdown = await _handleLanRequest(
+          request,
+          packageInfo.version,
+          dir,
+          code,
+        );
+        if (shouldShutdown) {
           await server.close();
-          shareList.add(Text('Server is down'));
-          notifyListeners();
           break;
-        } else {
-          handleHttpRequest(request); // Handle file requests dynamically
         }
+      }
+      if (syncStatus != SyncStatus.cancelled) {
+        setSyncState(SyncStatus.done, message: 'Server is down', progress: 1);
       }
     } catch (e) {
-      print('Error starting server: $e');
-      shareList.add(Text('Error starting server: $e'));
+      if (syncStatus != SyncStatus.cancelled) {
+        setSyncState(
+          SyncStatus.error,
+          message: 'Server failed',
+          error: e.toString(),
+        );
+      }
+    } finally {
+      _syncServer = null;
       notifyListeners();
     }
   }
 
-  void client(String ip) async {
-    String version = '';
-    var te = await getApplicationDocumentsDirectory();
-    Dio dio = Dio();
-
-    Future<void> createBackup() async {
-      await db.createLocalBackup();
-      shareList.add(Text('Backup created for: isarInstance.isar'));
-      notifyListeners();
+  Future<void> client(String input) async {
+    final endpoint = LanSyncEndpoint.tryParse(input);
+    if (endpoint == null) {
+      setSyncState(
+        SyncStatus.error,
+        message: 'Invalid pairing address',
+        error: 'Use ip:code or ip:port:code from the sender device.',
+      );
+      return;
     }
 
-    await createBackup();
+    final dir = await getApplicationDocumentsDirectory();
+    final downloadPath = _downloadedBackupPath(dir.path);
+    final dio = LanSync.createDio();
+    final cancelToken = CancelToken();
+    _syncCancelToken = cancelToken;
+    pairingCode = endpoint.code;
+    pairingAddress = endpoint.qrPayload;
 
     try {
-      try {
-        var versionResponse = await dio.get('http://$ip/version');
-        version = versionResponse.data.toString();
-        shareList.add(Text('Version: $version'));
-        notifyListeners();
-      } catch (e) {
-        shareList.add(Text('Error fetching version: $e'));
-        notifyListeners();
-        return;
+      setSyncState(
+        SyncStatus.connecting,
+        message: 'Connecting to sender...',
+        progress: 0,
+      );
+      await db.createLocalBackup();
+
+      final versionResponse = await dio.getUri(
+        endpoint.uri('version'),
+        cancelToken: cancelToken,
+      );
+      final version = versionResponse.data.toString().trim();
+      final fileNames = LanSync.filesForVersion(version);
+      final fileName = fileNames.single;
+
+      await LanSync.deleteIfExists(downloadPath);
+      setSyncState(
+        SyncStatus.downloading,
+        message: 'Downloading backup...',
+        progress: 0,
+      );
+      final response = await dio.downloadUri(
+        endpoint.uri(fileName),
+        downloadPath,
+        cancelToken: cancelToken,
+        onReceiveProgress: (received, total) {
+          if (total <= 0) return;
+          setSyncState(
+            SyncStatus.downloading,
+            message: 'Downloading backup...',
+            progress: received / total,
+          );
+        },
+      );
+      if (response.statusCode != HttpStatus.ok) {
+        throw Exception('Download failed with status ${response.statusCode}');
       }
 
-      List<String> fileNames;
-      if (version.startsWith('2.2.')) {
-        fileNames = [
-          'inventoryv2.2.0.hive',
-          'logsv2.2.0.hive',
-          'ownersv2.2.0.hive',
-          'loanersv2.2.0.hive',
-          'shutdown'
-        ];
-      } else if (version.startsWith('2.3.') || version.startsWith('2.4.')) {
-        fileNames = ['backup.isar'];
+      setSyncState(
+        SyncStatus.verifying,
+        message: 'Verifying backup...',
+        progress: 1,
+      );
+      final actualHash = await LanSync.sha256File(File(downloadPath));
+      final expectedHash = await dio
+          .getUri(endpoint.uri('hash'), cancelToken: cancelToken)
+          .then((response) => response.data.toString().trim());
+      if (actualHash != expectedHash) {
+        await LanSync.deleteIfExists(downloadPath);
+        throw Exception('Backup hash mismatch');
+      }
+
+      await _shutdownPeer(dio, endpoint, cancelToken);
+      setSyncState(
+        SyncStatus.restoring,
+        message: 'Restoring verified backup...',
+        progress: 1,
+      );
+      await _restoreDownloadedBackup();
+      setSyncState(
+        SyncStatus.done,
+        message: 'Sync completed successfully',
+        progress: 1,
+      );
+    } on DioException catch (e) {
+      await LanSync.deleteIfExists(downloadPath);
+      if (CancelToken.isCancel(e)) {
+        setSyncState(SyncStatus.cancelled, message: 'Sync cancelled');
       } else {
-        shareList.add(Text('Unsupported version: $version'));
-        notifyListeners();
-        fileNames = [
-          'inventoryv2.2.0.hive',
-          'logsv2.2.0.hive',
-          'ownersv2.2.0.hive',
-          'loanersv2.2.0.hive',
-          'shutdown'
-        ];
-      }
-
-      for (var fileName in fileNames) {
-        var filePath = Platform.isWindows || Platform.isLinux
-            ? '${te.path}/$fileName.received'
-            : '${te.path}/$fileName';
-
-        try {
-          shareList.add(Text('Receiving: $fileName'));
-          notifyListeners();
-          var response = await dio.download('http://$ip/$fileName', filePath);
-          if (Platform.isWindows || Platform.isLinux) db.windows();
-
-          if (response.statusCode == 200) {
-            shareList.add(Text('File received: $fileName'));
-            notifyListeners();
-          } else {
-            shareList
-                .add(Text('Error receiving $fileName: ${response.statusCode}'));
-            notifyListeners();
-          }
-        } catch (e) {
-          shareList.add(Text('Failed to download $fileName: $e'));
-          notifyListeners();
-        }
-      }
-      if (fileNames.contains('backup.isar')) {
-        var filePath = Platform.isWindows || Platform.isLinux
-            ? '${te.path}/backup.isar.received'
-            : '${te.path}/backup.isar';
-        final fileBytes = await File(filePath).readAsBytes();
-        final actualHash = sha256.convert(fileBytes).toString();
-        shareList.add(Text('Actual hash: $actualHash'));
-        notifyListeners();
-        var expectedHash = await dio
-            .get('http://$ip/hash')
-            .then((response) => response.data.toString());
-        if (actualHash == expectedHash) {
-          shareList.add(Text('Hash verified'));
-          notifyListeners();
-          if (Platform.isWindows || Platform.isLinux) {
-            clearAllCache();
-          } else {
-            await db.useLocalBacup();
-            Restart.restartApp();
-          }
-        } else {
-          shareList.add(Text('Hash mismatch - App not restarted'));
-          notifyListeners();
-        }
-      }
-
-      try {
-        var response = await dio.get('http://$ip/shutdown');
-        shareList.add(Text(response.data));
-        notifyListeners();
-      } catch (e) {
-        shareList.add(Text('Error shutting down the server: $e'));
-        notifyListeners();
+        setSyncState(
+          SyncStatus.error,
+          message: 'Sync failed',
+          error: e.message ?? e.toString(),
+        );
       }
     } catch (e) {
-      print('Error: $e');
-      shareList.add(Text('Error: $e'));
+      await LanSync.deleteIfExists(downloadPath);
+      setSyncState(
+        SyncStatus.error,
+        message: 'Sync failed',
+        error: e.toString(),
+      );
+    } finally {
+      _syncCancelToken = null;
       notifyListeners();
     }
+  }
+
+  void cancelSync() {
+    _syncCancelToken?.cancel('Sync cancelled');
+    _syncCancelToken = null;
+    _syncServer?.close(force: true);
+    _syncServer = null;
+    setSyncState(SyncStatus.cancelled, message: 'Sync cancelled', progress: 0);
+  }
+
+  Future<bool> _handleLanRequest(
+    HttpRequest request,
+    String version,
+    Directory dir,
+    String code,
+  ) async {
+    final fileName =
+        request.uri.pathSegments.isEmpty ? '' : request.uri.pathSegments.last;
+    request.response.deadline = LanSync.receiveTimeout;
+
+    if (!LanSync.isAuthorizedRequest(request, code)) {
+      await _respond(request, HttpStatus.unauthorized, 'Unauthorized');
+      return false;
+    }
+    if (!LanSync.isAllowedSegment(fileName)) {
+      await _respond(request, HttpStatus.notFound, 'File not found');
+      return false;
+    }
+
+    if (fileName == 'shutdown') {
+      await _respond(request, HttpStatus.ok, 'server is down');
+      return true;
+    }
+    if (fileName == 'version') {
+      await _respond(request, HttpStatus.ok, version);
+      return false;
+    }
+
+    final backupFile = File('${dir.path}/${LanSync.backupFileName}');
+    if (!await backupFile.exists()) {
+      await _respond(request, HttpStatus.notFound, 'Backup file not found');
+      return false;
+    }
+    if (fileName == 'hash') {
+      await _respond(
+          request, HttpStatus.ok, await LanSync.sha256File(backupFile));
+      return false;
+    }
+
+    try {
+      final mimeType = lookupMimeType(fileName) ?? 'application/octet-stream';
+      request.response.headers.set(HttpHeaders.contentTypeHeader, mimeType);
+      request.response.headers.set(
+        HttpHeaders.contentLengthHeader,
+        await backupFile.length(),
+      );
+      request.response.headers.set(
+        HttpHeaders.contentDisposition,
+        'attachment; filename="$fileName"',
+      );
+      await backupFile.openRead().pipe(request.response);
+    } catch (e) {
+      try {
+        await _respond(
+            request, HttpStatus.internalServerError, 'Error sending file');
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  Future<void> _respond(
+      HttpRequest request, int statusCode, String message) async {
+    request.response.statusCode = statusCode;
+    request.response.write(message);
+    await request.response.close();
+  }
+
+  String _downloadedBackupPath(String directoryPath) {
+    if (Platform.isWindows || Platform.isLinux) {
+      return '$directoryPath/${LanSync.backupFileName}.received';
+    }
+    return '$directoryPath/${LanSync.backupFileName}';
+  }
+
+  Future<void> _shutdownPeer(
+    Dio dio,
+    LanSyncEndpoint endpoint,
+    CancelToken cancelToken,
+  ) async {
+    try {
+      await dio.getUri(endpoint.uri('shutdown'), cancelToken: cancelToken);
+    } catch (_) {
+      // Sync has already succeeded; a shutdown failure should not roll it back.
+    }
+  }
+
+  Future<void> _restoreDownloadedBackup() async {
+    if (Platform.isWindows || Platform.isLinux) {
+      await db.windows();
+      clearAllCache();
+      return;
+    }
+    await db.useLocalBacup();
+    // Keep restart after restore as a conservative safety measure.
+    Restart.restartApp();
   }
 
   void updateOwner(Owner owner) {
@@ -616,11 +660,13 @@ class Lists extends ChangeNotifier {
 
   Future<List<LowStockProduct>> getLowStockItems() async {
     final results = await db.getLowStockProductsWithPercent();
-    return results.map((r) => LowStockProduct(
-      product: r['product'] as Product,
-      percentRemaining: r['percentRemaining'] as double,
-      currentStock: r['currentStock'] as int,
-      soldLast30Days: r['soldLast30Days'] as int,
-    )).toList();
+    return results
+        .map((r) => LowStockProduct(
+              product: r['product'] as Product,
+              percentRemaining: r['percentRemaining'] as double,
+              currentStock: r['currentStock'] as int,
+              soldLast30Days: r['soldLast30Days'] as int,
+            ))
+        .toList();
   }
 }
