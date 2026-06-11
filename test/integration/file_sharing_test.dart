@@ -135,28 +135,19 @@ void main() {
 
   group('File Path Construction Tests', () {
     test('Windows uses .received suffix', () {
-      const isWindows = true;
-      final path = isWindows
-          ? '/docs/backup.isar.received'
-          : '/docs/backup.isar';
+      const path = '/docs/backup.isar.received';
 
       expect(path, equals('/docs/backup.isar.received'));
     });
 
     test('Linux uses .received suffix', () {
-      const isLinux = true;
-      final path = isLinux
-          ? '/docs/backup.isar.received'
-          : '/docs/backup.isar';
+      const path = '/docs/backup.isar.received';
 
       expect(path, equals('/docs/backup.isar.received'));
     });
 
     test('Android uses no suffix', () {
-      const isWindows = false;
-      final path = isWindows
-          ? '/docs/backup.isar.received'
-          : '/docs/backup.isar';
+      const path = '/docs/backup.isar';
 
       expect(path, equals('/docs/backup.isar'));
     });
