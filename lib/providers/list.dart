@@ -117,23 +117,20 @@ class Lists extends ChangeNotifier {
 
   Future<void> cancelReceipt(DateTime date, Log log) async {
     double sum = 0;
+    List<EmbeddedProduct> products = List.empty(growable: true);
     for (var product in log.products) {
       if (product.hot!) {
         sum += product.buyPrice! * product.count!;
-      }
-    }
-    if (log.loaned) {
-      db.updateLoaner(log, sum);
-    }
-
-    List<EmbeddedProduct> products = List.empty(growable: true);
-    for (var product in log.products) {
-      if (!(product.hot!)) {
+      } else {
         products.add(product);
       }
     }
-    await db.updateProducts(products);
-    await db.deleteLog(log);
+    await db.cancelReceiptAtomically(
+      log: log,
+      hotSum: sum,
+      wasLoaned: log.loaned,
+      productsToRestore: products,
+    );
     clearAllCache();
   }
 
@@ -148,16 +145,17 @@ class Lists extends ChangeNotifier {
     required bool expense,
     required int? expenseId,
   }) async {
-    await db.checkOut(
+    final ok = await db.checkOut(
         products: lst,
         total: total,
         discount: discount,
         loanerId: LoID,
         loaned: loaned,
-        // edit: edit,
-        // logID: logID,
         expense: expense,
         expenseId: expenseId);
+    if (!ok) {
+      throw Exception('Checkout failed');
+    }
     clearAllCache();
   }
 
@@ -593,42 +591,22 @@ class Lists extends ChangeNotifier {
 
   Future<List<Product?>> editReceipt(DateTime date, Log log) async {
     double sum = 0;
+    List<EmbeddedProduct> products = List.empty(growable: true);
     for (var product in log.products) {
       if (product.hot!) {
         sum += product.buyPrice! * product.count!;
-      }
-    }
-    if (log.loaned) {
-      db.updateLoaner(log, sum);
-      // Loaner temp =
-      //     (await db.isar.loaners.where().iDEqualTo(log.loanerID!).findFirst())!;
-      // db.loaners.put(
-      //   log.loanerID,
-      //   Loaner(
-      //     name: temp.name,
-      //     // ID: temp.ID,
-      //     phoneNumber: temp.phoneNumber,
-      //     location: temp.location,
-      //     lastPayment: temp.lastPayment,
-      //     lastPaymentDate: temp.lastPaymentDate,
-      //     loanedAmount: temp.loanedAmount - (log.price + sum),
-      //   ),
-      // );
-    }
-    List<EmbeddedProduct> products = List.empty(growable: true);
-    for (var product in log.products) {
-      if (!(product.hot!)) {
+      } else {
         products.add(product);
       }
     }
-    await db.updateProducts(products);
-    db.deleteLog(log);
-    // db.logs.delete(
-    //     '${date.year}-${date.month}-${date.day}-${date.hour}-${date.minute}-${date.second}');
-    // refreshLogsList();
-    notifyListeners();
-
+    await db.cancelReceiptAtomically(
+      log: log,
+      hotSum: sum,
+      wasLoaned: log.loaned,
+      productsToRestore: products,
+    );
     clearAllCache();
+    notifyListeners();
     return embeddedToProduct(log.products);
   }
 

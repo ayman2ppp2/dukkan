@@ -83,17 +83,17 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 7: Database And Data Integrity
 
-- [ ] Fix `DB.getInstance()` so it awaits Isar initialization before returning.
-- [ ] Expose provider readiness/error states instead of using late fields immediately after async init.
-- [ ] Make checkout return a real success/failure result through provider and UI layers.
-- [ ] Do not show checkout success dialog if database write fails.
-- [ ] Add validation for product name, owner, barcode, prices, count, discount, offer count, and offer price.
-- [ ] Prevent unintended negative stock or make negative stock an explicit setting.
-- [ ] Validate loaner and expense selections before checkout.
-- [ ] Ensure sale, stock update, owner due money, loan update, expense update, and log write stay transactionally consistent.
+- [x] Fix `DB.getInstance()` so it awaits Isar initialization before returning.
+- [x] Expose provider readiness/error states instead of using late fields immediately after async init.
+- [x] Make checkout return a real success/failure result through provider and UI layers.
+- [x] Do not show checkout success dialog if database write fails.
+- [x] Add validation for product name, owner, barcode, prices, count, discount, offer count, and offer price.
+- [x] Prevent unintended negative stock or make negative stock an explicit setting.
+- [x] Validate loaner and expense selections before checkout.
+- [x] Ensure sale, stock update, owner due money, loan update, expense update, and log write stay transactionally consistent.
 - [ ] Review offer pricing calculations and add tests for bundle and remainder cases.
-- [ ] Make backup restore atomic: verify, copy to temp, close DB, swap, reopen, rollback on failure.
-- [ ] Keep the previous database until restore succeeds.
+- [x] Make backup restore atomic: verify, copy to temp, close DB, swap, reopen, rollback on failure.
+- [x] Keep the previous database until restore succeeds.
 
 ## Phase 8: LAN Sync Hardening
 
@@ -158,7 +158,7 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 - [x] Windows installer identifies publisher as Golden.
 - [x] Appwrite production config has no hardcoded secrets or self-signed cloud setting.
 - [x] Offline full login is implemented intentionally and documented.
-- [ ] Checkout failures cannot be reported as success.
-- [ ] Backup restore cannot destroy the current database without a verified replacement.
+- [x] Checkout failures cannot be reported as success.
+- [x] Backup restore cannot destroy the current database without a verified replacement.
 - [ ] LAN sync does not serve arbitrary local files.
 - [ ] Core sales, inventory, loan, expense, backup, and auth behavior has real tests.

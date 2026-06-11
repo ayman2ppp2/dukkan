@@ -30,25 +30,25 @@ class DB {
   Isar? isar;
   static DB? _instance;
   static bool _isInitializing = false;
-  static final _initCompleter = Completer<DB?>();
+  static final _initCompleter = Completer<DB>();
 
   DB._internal();
 
   static Future<DB> getInstance() async {
     if (_instance != null) return _instance!;
     if (_isInitializing) {
-      return await _initCompleter.future ?? _instance!;
+      return await _initCompleter.future;
     }
     _isInitializing = true;
     _instance = DB._internal();
+    await _instance!._init();
     _initCompleter.complete(_instance);
-    _instance!._init();
+    _isInitializing = false;
     return _instance!;
   }
 
   static Future<void> initialize() async {
-    if (_instance != null || (_isInitializing && _initCompleter.isCompleted))
-      return;
+    if (_instance != null) return;
     await getInstance();
   }
 
@@ -76,13 +76,12 @@ class DB {
     }
   }
 
-  void _init() async {
+  Future<void> _init() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final existingIsar = await Isar.getInstance("isarInstance");
       if (existingIsar != null) {
         isar = existingIsar;
-        _isInitializing = false;
         return;
       }
       isar = await Isar.open(
@@ -98,8 +97,6 @@ class DB {
       } else {
         debugPrint('Isar getInstance also failed - database unavailable');
       }
-    } finally {
-      _isInitializing = false;
     }
   }
 
@@ -427,7 +424,32 @@ class DB {
         expense: expense,
       );
 
-      // 🔹 Perform a single batched transaction with retry
+      // 🔹 Validate stock and entities before transaction
+      for (final product in clearedProducts) {
+        if (product.hot == true) continue;
+        final existing = await isar!.products.get(product.id);
+        if (existing == null) {
+          throw Exception('Product "${product.name}" not found in database');
+        }
+        final remaining = (existing.count ?? 0) - (product.count ?? 0);
+        if (remaining < 0) {
+          throw Exception('Insufficient stock for "${product.name}": '
+              'have ${existing.count}, need ${product.count}');
+        }
+      }
+
+      if (loanerId != null) {
+        final existingLoaner = await isar!.loaners.get(loanerId);
+        if (existingLoaner == null) {
+          throw Exception('Selected loaner not found (ID $loanerId)');
+        }
+      }
+      if (expenseId != null) {
+        final existingExpense = await isar!.expenses.get(expenseId);
+        if (existingExpense == null) {
+          throw Exception('Selected expense not found (ID $expenseId)');
+        }
+      }
       const maxRetries = 3;
       var success = false;
       for (var attempt = 0; attempt < maxRetries && !success; attempt++) {
@@ -461,7 +483,7 @@ class DB {
       return success;
     } catch (e, st) {
       debugPrint('❌ Error in checkOut: $e\n$st');
-      return false;
+      rethrow;
     }
   }
 
@@ -732,28 +754,65 @@ class DB {
     final backupFilePath =
         '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
     final dir = await getApplicationDocumentsDirectory();
+    final livePath = '${dir.path}/isarInstance.isar';
 
-    // Close the current Isar instance
+    final backupFile = File(backupFilePath);
+    if (!await backupFile.exists()) {
+      throw Exception('Backup file not found at $backupFilePath');
+    }
+
+    // Verify backup is valid by opening it briefly
+    Isar? verifyIsar;
+    try {
+      verifyIsar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: dir.path,
+        name: 'isarBackupVerify',
+      );
+      await verifyIsar.close();
+    } catch (e) {
+      throw Exception('Backup file is corrupted or invalid: $e');
+    }
+
+    // Close current Isar instances
     await closeAllIsarInstances();
     await isar!.close();
 
-    // Delete the current Isar database files
-    await File('${dir.path}/isarInstance.isar').delete();
+    // Rename live DB to .bak instead of deleting
+    final liveFile = File(livePath);
+    if (await liveFile.exists()) {
+      await liveFile.rename('$livePath.bak');
+    }
 
-    // Copy the backup file to the Isar directory
-    final backupFile = File(backupFilePath);
-    final newIsarFile = File('${dir.path}/isarInstance.isar');
-    await backupFile.copy(newIsarFile.path);
+    try {
+      // Copy backup to live path
+      await backupFile.copy(livePath);
 
-    // Reopen the Isar instance
-    isar = await Isar.open(
-      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-      directory: dir.path,
-      name: 'isarInstance',
-    );
-    // await reOpenPool();
+      // Reopen Isar on the new file
+      isar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: dir.path,
+        name: 'isarInstance',
+      );
 
-    print('Backup restored successfully.');
+      // Remove .bak on success
+      final bakFile = File('$livePath.bak');
+      if (await bakFile.exists()) {
+        await bakFile.delete();
+      }
+    } catch (e) {
+      // Rollback: restore .bak
+      final bakFile = File('$livePath.bak');
+      if (await bakFile.exists()) {
+        await bakFile.rename(livePath);
+        isar = await Isar.open(
+          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+          directory: dir.path,
+          name: 'isarInstance',
+        );
+      }
+      rethrow;
+    }
   }
 
   void insertInPostgres(
@@ -814,29 +873,74 @@ class DB {
   }
 
   inboundReceipt({required List<Product> lst, required double total}) async {
-    for (var element in lst) {
-      var num = await isar!.products.get(element.id);
-      await isar!.writeTxn(() async => await isar!.products.put(
-            // element.name,
-            Product.named2(
-              id: element.id,
-              name: element.name,
-              barcode: element.barcode,
-              buyprice: element.buyprice,
-              sellPrice: element.sellPrice,
-              count: (num!.count!) + element.count!,
-              ownerName: element.ownerName,
-              weightable: element.weightable,
-              wholeUnit: element.wholeUnit,
-              offer: element.offer,
-              offerCount: element.offerCount,
-              offerPrice: element.offerPrice,
-              priceHistory: element.priceHistory,
-              endDate: element.endDate,
-              hot: false,
-            ),
-          ));
-    }
+    await isar!.writeTxn(() async {
+      for (var element in lst) {
+        var num = await isar!.products.get(element.id);
+        if (num == null) continue;
+        await isar!.products.put(
+          Product.named2(
+            id: element.id,
+            name: element.name,
+            barcode: element.barcode,
+            buyprice: element.buyprice,
+            sellPrice: element.sellPrice,
+            count: (num.count!) + element.count!,
+            ownerName: element.ownerName,
+            weightable: element.weightable,
+            wholeUnit: element.wholeUnit,
+            offer: element.offer,
+            offerCount: element.offerCount,
+            offerPrice: element.offerPrice,
+            priceHistory: element.priceHistory,
+            endDate: element.endDate,
+            hot: false,
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> cancelReceiptAtomically({
+    required Log log,
+    required double hotSum,
+    required bool wasLoaned,
+    required List<EmbeddedProduct> productsToRestore,
+  }) async {
+    await isar!.writeTxn(() async {
+      if (wasLoaned && log.loanerID != null) {
+        Loaner? temp = await isar!.loaners.get(log.loanerID!);
+        if (temp != null) {
+          DateTime calculateDate() {
+            if (temp.loanedAmount! == 0) {
+              return DateTime.parse(temp.lastPayment!.last.key!);
+            }
+            if (temp.loanedAmount! - (log.price + hotSum) == 0) {
+              return DateTime.now();
+            } else {
+              try {
+                return DateTime.parse(temp.lastPayment!.last.key!);
+              } catch (e) {
+                return DateTime(1900);
+              }
+            }
+          }
+          temp
+            ..loanedAmount = (temp.loanedAmount ?? 0) > 0
+                ? temp.loanedAmount! - (log.price + hotSum)
+                : 0
+            ..zeroingDate = calculateDate();
+          await isar!.loaners.put(temp);
+        }
+      }
+      for (final ep in productsToRestore) {
+        final existing = await isar!.products.get(ep.productId!);
+        if (existing != null) {
+          existing.count = (existing.count ?? 0) + (ep.count ?? 0);
+          await isar!.products.put(existing);
+        }
+      }
+      await isar!.logs.delete(log.id);
+    });
   }
 }
 
