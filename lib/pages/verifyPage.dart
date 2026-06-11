@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class VerficationPage extends StatefulWidget {
-  final int code;
+  final String userId;
   final String email;
   final String password;
   final String name;
   const VerficationPage({
     super.key,
-    required this.code,
+    required this.userId,
     required this.email,
     required this.password,
     required this.name,
@@ -24,25 +24,57 @@ class VerficationPage extends StatefulWidget {
 class _VerficationPageState extends State<VerficationPage> {
   final TextEditingController _codeController = TextEditingController();
   bool _isLoading = false;
+  bool _emailSent = false;
 
   @override
   void initState() {
     super.initState();
-    // Show the verification code in debug mode
-    print('Verification code: ${widget.code}');
+    _sendVerification();
   }
 
-  createAccount() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _sendVerification() async {
+    setState(() => _isLoading = true);
+    try {
+      final AuthAPI appwrite = context.read<AuthAPI>();
+      await appwrite.sendVerification();
+      setState(() => _emailSent = true);
+    } on Exception catch (e) {
+      if (!mounted) return;
+      showAlert(title: 'Verification failed', text: e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  verifyAndCreateAccount() async {
+    setState(() => _isLoading = true);
 
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
-      await appwrite.createUser(
+      final enteredCode = _codeController.text.trim();
+
+      if (enteredCode.isEmpty) {
+        showAlert(title: 'Invalid Code', text: 'Please enter the verification code');
+        return;
+      }
+
+      final verified = await appwrite.confirmVerification(
+        userId: widget.userId,
+        secret: enteredCode,
+      );
+
+      if (!verified) {
+        if (!mounted) return;
+        showAlert(
+          title: 'Invalid Code',
+          text: 'Please enter the correct verification code from your email',
+        );
+        return;
+      }
+
+      await appwrite.createEmailSession(
         email: widget.email,
         password: widget.password,
-        name: widget.name,
       );
 
       if (!mounted) return;
@@ -54,7 +86,6 @@ class _VerficationPageState extends State<VerficationPage> {
         ),
       );
 
-      // Navigate to the app's main screen
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const MyApp()),
@@ -62,13 +93,9 @@ class _VerficationPageState extends State<VerficationPage> {
       );
     } on AppwriteException catch (e) {
       if (!mounted) return;
-      showAlert(title: 'Account creation failed', text: e.message.toString());
+      showAlert(title: 'Verification failed', text: e.message.toString());
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -97,7 +124,7 @@ class _VerficationPageState extends State<VerficationPage> {
       appBar: AppBar(
         title: const Text('Verify Email'),
       ),
-      body: _isLoading
+      body: _isLoading && !_emailSent
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(20.0),
@@ -132,19 +159,9 @@ class _VerficationPageState extends State<VerficationPage> {
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      final enteredCode = int.tryParse(_codeController.text) ?? 0;
-                      if (enteredCode == widget.code) {
-                        createAccount();
-                      } else {
-                        showAlert(
-                          title: 'Invalid Code',
-                          text: 'Please enter the correct verification code',
-                        );
-                      }
-                    },
+                    onPressed: _isLoading ? null : verifyAndCreateAccount,
                     icon: const Icon(Icons.check_circle),
-                    label: const Text('Verify and Create Account'),
+                    label: Text(_isLoading ? 'Verifying...' : 'Verify and Create Account'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,

@@ -1,6 +1,6 @@
+import 'package:appwrite/appwrite.dart';
 import 'package:dukkan/pages/verifyPage.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
-// import 'package:appwrite_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -54,8 +54,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
-      final code =
-          await appwrite.verifyUser(email: emailTextController.text.trim());
+      final user = await appwrite.createUser(
+        email: emailTextController.text.trim(),
+        password: passwordTextController.text.trim(),
+        name: nameTextController.text.trim(),
+      );
 
       if (!mounted) return;
 
@@ -65,15 +68,19 @@ class _RegisterPageState extends State<RegisterPage> {
           builder: (context) => ChangeNotifierProvider.value(
             value: appwrite,
             child: VerficationPage(
-              code: code,
-              email: emailTextController.text,
-              password: passwordTextController.text,
-              name: nameTextController.text,
+              userId: user.$id,
+              email: emailTextController.text.trim(),
+              password: passwordTextController.text.trim(),
+              name: nameTextController.text.trim(),
             ),
           ),
         ),
       );
+    } on AppwriteException catch (e) {
+      if (!mounted) return;
+      showAlert(title: 'Account creation failed', text: e.message.toString());
     } on Exception catch (e) {
+      if (!mounted) return;
       showAlert(title: 'Verification failed', text: e.toString());
     } finally {
       if (mounted) {

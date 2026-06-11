@@ -71,15 +71,15 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 6: Appwrite And Auth Hardening
 
-- [ ] Move Appwrite endpoint, project id, bucket id, and other environment config to build-time configuration.
-- [ ] Remove `setSelfSigned()` for Appwrite Cloud production clients.
-- [ ] Remove hardcoded mail credentials from client code.
-- [ ] Replace client-side Gmail verification with Appwrite or server-side verification.
-- [ ] Stop logging user email, user id, backup paths, and sensitive auth details in production logs.
-- [ ] Define the offline full-login policy, including expiration and revalidation behavior.
-- [ ] Store offline login state in secure storage instead of plain `SharedPreferences`.
-- [ ] Keep enough local auth state for offline login without storing plaintext passwords.
-- [ ] Add UI messaging when the app is running offline but fully logged in.
+- [x] Move Appwrite endpoint, project id, bucket id, and other environment config to build-time configuration.
+- [x] Remove `setSelfSigned()` for Appwrite Cloud production clients.
+- [x] Remove hardcoded mail credentials from client code.
+- [x] Replace client-side Gmail verification with Appwrite or server-side verification.
+- [x] Stop logging user email, user id, backup paths, and sensitive auth details in production logs.
+- [x] Define the offline full-login policy, including expiration and revalidation behavior.
+- [x] Store offline login state in secure storage instead of plain `SharedPreferences`.
+- [x] Keep enough local auth state for offline login without storing plaintext passwords.
+- [x] Add UI messaging when the app is running offline but fully logged in.
 
 ## Phase 7: Database And Data Integrity
 
@@ -156,8 +156,8 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 - [x] GitHub Releases publish Android APK/AAB, Windows installer, and Linux AppImage/tar.gz/deb.
 - [x] Android release is not signed with the debug key.
 - [x] Windows installer identifies publisher as Golden.
-- [ ] Appwrite production config has no hardcoded secrets or self-signed cloud setting.
-- [ ] Offline full login is implemented intentionally and documented.
+- [x] Appwrite production config has no hardcoded secrets or self-signed cloud setting.
+- [x] Offline full login is implemented intentionally and documented.
 - [ ] Checkout failures cannot be reported as success.
 - [ ] Backup restore cannot destroy the current database without a verified replacement.
 - [ ] LAN sync does not serve arbitrary local files.

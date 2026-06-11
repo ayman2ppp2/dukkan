@@ -56,8 +56,14 @@ jobs:
             printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
             printf 'storeFile=upload-keystore.jks\n'
           } > android/key.properties
-      - run: flutter build apk --release --split-per-abi
-      - run: flutter build appbundle --release
+      - run: flutter build apk --release --split-per-abi \
+          --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
+          --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
+          --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769
+      - run: flutter build appbundle --release \
+          --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
+          --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
+          --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769
       - uses: actions/upload-artifact@v4
         with:
           name: android-release-${{ github.ref_name }}
@@ -78,7 +84,10 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - run: flutter pub get
-      - run: flutter build windows --release
+      - run: flutter build windows --release `
+          --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 `
+          --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f `
+          --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769
 
       - name: Extract version from pubspec.yaml
         run: |
@@ -117,9 +126,14 @@ jobs:
             ninja-build \
             libgtk-3-dev \
             liblzma-dev \
+            libsecret-1-dev \
+            libjsoncpp-dev \
             fuse
       - run: flutter pub get
-      - run: flutter build linux --release
+      - run: flutter build linux --release \
+          --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
+          --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
+          --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769
 
       - name: Extract version from pubspec.yaml
         id: version

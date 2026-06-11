@@ -1,5 +1,6 @@
 import 'dart:io' as IO;
 import 'package:appwrite/appwrite.dart';
+import 'package:dukkan/core/appwrite_config.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/widgets.dart';
 
@@ -7,16 +8,17 @@ class SyncProvider extends ChangeNotifier {
   Client client = Client();
   late final Storage storage;
 
-  static const String APPWRITE_PROJECT_ID = "65e616d10bd9110e806f";
-  static const String APPWRITE_URL = "https://cloud.appwrite.io/v1";
-  static const String BUCKET_ID = "6762672a0033f48ae769";
-
   SyncProvider() {
     init();
   }
 
   void init() {
-    client.setEndpoint(APPWRITE_URL).setProject(APPWRITE_PROJECT_ID).setSelfSigned();
+    client
+        .setEndpoint(AppwriteConfig.endpoint)
+        .setProject(AppwriteConfig.projectId);
+    if (!AppwriteConfig.isCloud) {
+      client.setSelfSigned();
+    }
     storage = Storage(client);
   }
 
@@ -32,8 +34,8 @@ class SyncProvider extends ChangeNotifier {
       }
 
       try {
-        await storage.getFile(bucketId: BUCKET_ID, fileId: fileId);
-        await storage.deleteFile(bucketId: BUCKET_ID, fileId: fileId);
+        await storage.getFile(bucketId: AppwriteConfig.bucketId, fileId: fileId);
+        await storage.deleteFile(bucketId: AppwriteConfig.bucketId, fileId: fileId);
         print('Existing backup deleted.');
       } catch (e) {
         if (e.toString().contains('File not found')) {
@@ -42,7 +44,7 @@ class SyncProvider extends ChangeNotifier {
       }
 
       await storage.createFile(
-        bucketId: BUCKET_ID,
+        bucketId: AppwriteConfig.bucketId,
         fileId: fileId,
         file: InputFile(path: file.path, filename: 'backup.isar'),
       );
@@ -58,7 +60,7 @@ class SyncProvider extends ChangeNotifier {
       final dir = await getApplicationDocumentsDirectory();
       final fileId = 'backup_$userId.isar';
 
-      final fileBytes = await storage.getFileDownload(bucketId: BUCKET_ID, fileId: fileId);
+      final fileBytes = await storage.getFileDownload(bucketId: AppwriteConfig.bucketId, fileId: fileId);
       final saveFile = IO.File('${dir.path}/downloaded_backup.isar');
       await saveFile.writeAsBytes(fileBytes);
       print('Backup downloaded successfully');
@@ -71,7 +73,7 @@ class SyncProvider extends ChangeNotifier {
   Future<bool> hasBackup(String userId) async {
     try {
       final fileId = 'backup_$userId.isar';
-      await storage.getFile(bucketId: BUCKET_ID, fileId: fileId);
+      await storage.getFile(bucketId: AppwriteConfig.bucketId, fileId: fileId);
       return true;
     } catch (e) {
       return false;
