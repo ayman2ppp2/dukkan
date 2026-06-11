@@ -36,11 +36,34 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - run: flutter pub get
-      - run: flutter build apk --split-per-abi
+      - name: Configure Android signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for secret_name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!secret_name}" ]; then
+              echo "::error::$secret_name is not configured"
+              exit 1
+            fi
+          done
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            printf 'storePassword=%s\n' "$ANDROID_KEYSTORE_PASSWORD"
+            printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
+            printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
+            printf 'storeFile=upload-keystore.jks\n'
+          } > android/key.properties
+      - run: flutter build apk --release --split-per-abi
+      - run: flutter build appbundle --release
       - uses: actions/upload-artifact@v4
         with:
-          name: android-apks-${{ github.ref_name }}
-          path: build/app/outputs/flutter-apk/*.apk
+          name: android-release-${{ github.ref_name }}
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
 
   build-windows:
     needs: quality
@@ -105,6 +128,7 @@ jobs:
           body: "Automated pre‑release from the `hot` branch."
           files: |
             artifacts/**/*.apk
+            artifacts/**/*.aab
             artifacts/**/*.zip
             artifacts/**/*.tar.gz
 
@@ -157,5 +181,6 @@ jobs:
           tag_name: ${{ steps.parse.outputs.version }}
           files: |
             artifacts/**/*.apk
+            artifacts/**/*.aab
             artifacts/**/*.zip
             artifacts/**/*.tar.gz

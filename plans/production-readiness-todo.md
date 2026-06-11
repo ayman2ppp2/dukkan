@@ -37,15 +37,16 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 3: Android Production Release
 
-- [ ] Replace release debug signing in `android/app/build.gradle` with real release signing.
-- [ ] Add GitHub Secrets for Android signing: keystore base64, key alias, key password, store password.
-- [ ] Add CI step to decode the keystore only inside the workflow.
-- [ ] Build split APKs for GitHub Releases.
-- [ ] Build AAB for future Play Store distribution.
-- [ ] Upload APKs and AAB as release artifacts.
-- [ ] Verify Android `applicationId` remains `com.golden.dukkan`.
-- [ ] Review Android permissions and remove unused dangerous permissions.
-- [ ] Avoid `MANAGE_EXTERNAL_STORAGE` unless there is no scoped-storage alternative.
+- [x] Replace release debug signing in `android/app/build.gradle` with real release signing.
+- [ ] Add GitHub Secrets for Android signing: keystore base64, key alias, key password, store password. Pending external repo setup; `gh` is not installed in this environment.
+- [x] Add CI step to decode the keystore only inside the workflow.
+- [x] Build split APKs for GitHub Releases.
+- [x] Build AAB for future Play Store distribution.
+- [x] Upload APKs and AAB as release artifacts.
+- [x] Verify Android `applicationId` remains `com.golden.dukkan`.
+- [x] Review Android permissions and remove unused dangerous permissions.
+- [x] Avoid `MANAGE_EXTERNAL_STORAGE` unless there is no scoped-storage alternative.
+- [x] Verify local Android release outputs: `flutter analyze`, `flutter test`, split release APK build, release AAB build, APK `apksigner`, and AAB `jarsigner`.
 
 ## Phase 4: Windows Production Release
 
@@ -151,9 +152,9 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Done Criteria For Production v1
 
-- [ ] CI blocks releases when analyze or tests fail.
+- [x] CI blocks releases when analyze or tests fail.
 - [ ] GitHub Releases publish Android APK/AAB, Windows installer, and Linux AppImage/tar.gz.
-- [ ] Android release is not signed with the debug key.
+- [x] Android release is not signed with the debug key.
 - [ ] Windows installer identifies publisher as Golden.
 - [ ] Appwrite production config has no hardcoded secrets or self-signed cloud setting.
 - [ ] Offline full login is implemented intentionally and documented.
