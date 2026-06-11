@@ -38,7 +38,7 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 ## Phase 3: Android Production Release
 
 - [x] Replace release debug signing in `android/app/build.gradle` with real release signing.
-- [ ] Add GitHub Secrets for Android signing: keystore base64, key alias, key password, store password. Pending external repo setup; `gh` is not installed in this environment.
+- [x] Add GitHub Secrets for Android signing: keystore base64, key alias, key password, store password.
 - [x] Add CI step to decode the keystore only inside the workflow.
 - [x] Build split APKs for GitHub Releases.
 - [x] Build AAB for future Play Store distribution.
@@ -50,13 +50,13 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 4: Windows Production Release
 
-- [ ] Build Windows with `flutter build windows --release` in GitHub Actions.
-- [ ] Add Inno Setup script under a packaging directory.
-- [ ] Set installer publisher/company to `Golden`.
-- [ ] Set installer app name to `Dukkan`.
-- [ ] Generate installer artifact named `Dukkan-Setup-<version>.exe`.
-- [ ] Upload installer to GitHub Releases.
-- [ ] Keep Windows zip artifact as a fallback.
+- [x] Build Windows with `flutter build windows --release` in GitHub Actions.
+- [x] Add Inno Setup script under a packaging directory.
+- [x] Set installer publisher/company to `Golden`.
+- [x] Set installer app name to `Dukkan`.
+- [x] Generate installer artifact named `Dukkan-Setup-<version>.exe`.
+- [x] Upload installer to GitHub Releases.
+- [x] Keep Windows zip artifact as a fallback.
 - [ ] Add Windows code signing later if a signing certificate becomes available.
 
 ## Phase 5: Linux Production Release
@@ -155,7 +155,7 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 - [x] CI blocks releases when analyze or tests fail.
 - [ ] GitHub Releases publish Android APK/AAB, Windows installer, and Linux AppImage/tar.gz.
 - [x] Android release is not signed with the debug key.
-- [ ] Windows installer identifies publisher as Golden.
+- [x] Windows installer identifies publisher as Golden.
 - [ ] Appwrite production config has no hardcoded secrets or self-signed cloud setting.
 - [ ] Offline full login is implemented intentionally and documented.
 - [ ] Checkout failures cannot be reported as success.
