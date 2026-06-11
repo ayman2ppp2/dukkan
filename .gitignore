@@ -31,6 +31,41 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+/.metadata
+
+# Flutter native build intermediates
+/android/.gradle/
+/android/app/.cxx/
+/android/local.properties
+/linux/flutter/ephemeral/
+/macos/Flutter/ephemeral/
+/windows/flutter/ephemeral/
+
+# Accidental root Gradle init artifacts. The Android project keeps its own Gradle files under /android.
+/build.gradle.kts
+/settings.gradle.kts
+/gradlew
+/gradlew.bat
+/gradle/
+
+# Local environment and signing secrets
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+key.properties
+
+# Release artifacts
+/dist/
+/release/
+*.apk
+*.aab
+*.ipa
+*.msix
+*.AppImage
+*.tar.gz
+*.zip
 
 # Symbolication related
 app.*.symbols
@@ -56,7 +91,6 @@ storage/emulated/0/dukkan/v2/owners.lock
 # Ignore Gradle build output directory
 build
 lib/secrets.dart
-.metadata
 android/build.gradle.kts
 android/settings.gradle.kts
 android/app/build.gradle.kts
