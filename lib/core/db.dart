@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dukkan/core/IsolatePool.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/core/postgres_connection.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
@@ -27,9 +28,12 @@ RootIsolateToken? _getRootIsolateToken() {
 }
 
 class DB {
+  static const isarName = 'isarInstance';
+  static const liveDatabaseFileName = '$isarName.isar';
+
   Isar? isar;
   Directory? _documentsDirectoryOverride;
-  String _isarName = 'isarInstance';
+  String _isarName = isarName;
   static DB? _instance;
   static bool _isInitializing = false;
   static Completer<DB> _initCompleter = Completer<DB>();
@@ -96,11 +100,13 @@ class DB {
   static Future<Isar> openIsarSafely(String directoryPath) async {
     try {
       return await _openIsar(directoryPath);
-    } catch (e) {
-      debugPrint('Failed to open Isar: $e');
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'database.open');
       final fallback = await Isar.getInstance("isarInstance");
       if (fallback != null) {
-        debugPrint('Using fallback Isar instance');
+        AppLogger.warning('Using fallback Isar instance',
+            data: {'area': 'database.open'});
         return fallback;
       }
       throw StateError('No Isar instance available: $e');
@@ -120,13 +126,15 @@ class DB {
         directory: dir.path,
         name: _isarName,
       );
-    } catch (e) {
-      debugPrint('Isar initialization failed: $e');
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'database.initialize');
       final fallback = await Isar.getInstance("isarInstance");
       if (fallback != null) {
         isar = fallback;
       } else {
-        debugPrint('Isar getInstance also failed - database unavailable');
+        AppLogger.warning('Isar fallback unavailable',
+            data: {'area': 'database.initialize'});
       }
     }
   }
@@ -348,7 +356,8 @@ class DB {
             hot: product.hot));
       });
 
-      debugPrint(clearedProducts.map((p) => p.toJson()).toString());
+      AppLogger.debug('Checkout products prepared',
+          data: {'productCount': clearedProducts.length});
       double totalPrice = 0;
       double totalProfit = 0;
 
@@ -508,11 +517,16 @@ class DB {
             await isar!.logs.put(log);
             return true;
           });
-        } catch (e) {
-          debugPrint(
-              '❌ checkOut transaction failed (attempt ${attempt + 1}/$maxRetries): $e');
+        } catch (e, st) {
+          AppLogger.warning('Checkout transaction retry failed', data: {
+            'attempt': attempt + 1,
+            'maxRetries': maxRetries,
+          });
           if (attempt == maxRetries - 1) {
-            debugPrint('❌ checkOut failed after $maxRetries attempts');
+            await AppLogger.captureException(e,
+                stackTrace: st,
+                area: 'checkout.transaction',
+                data: {'attempt': attempt + 1, 'maxRetries': maxRetries});
             rethrow;
           }
           await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
@@ -520,7 +534,7 @@ class DB {
       }
       return success;
     } catch (e, st) {
-      debugPrint('❌ Error in checkOut: $e\n$st');
+      await AppLogger.captureException(e, stackTrace: st, area: 'checkout');
       rethrow;
     }
   }
@@ -766,14 +780,15 @@ class DB {
     }
 
     await isar!.copyToFile(backupFilePath);
-    print('Backup created successfully.');
+    AppLogger.info('Local backup created', data: {'area': 'backup.local'});
   }
 
   Future<void> closeAllIsarInstances() async {
     IsolatePool pool = await Pool.init();
     final token = _getRootIsolateToken();
     if (token == null) {
-      debugPrint('RootIsolateToken not available');
+      AppLogger.warning('RootIsolateToken not available',
+          data: {'area': 'database.isolate'});
       return;
     }
     List<Future> futures = [];
@@ -1003,7 +1018,6 @@ class StopIsar extends PooledJob<bool> {
         directory: dir.path,
         name: 'isarInstance',
       );
-      print(isar.name);
     } catch (e) {
       final fallbackDir = await getApplicationDocumentsDirectory();
       isar = await DB.openIsarSafely(fallbackDir.path);
@@ -1027,7 +1041,6 @@ class CgetLowStockItemsPerMonth extends PooledJob<List<Product>> {
         directory: dir.path,
         name: 'isarInstance',
       );
-      print(isar.name);
     } catch (e) {
       final fallbackDir = await getApplicationDocumentsDirectory();
       isar = await DB.openIsarSafely(fallbackDir.path);
@@ -1087,7 +1100,8 @@ class CgetLowStockItemsPerMonth extends PooledJob<List<Product>> {
 
       return lowStock;
     } catch (e) {
-      debugPrint('Error in CgetLowStockItemsPerMonth.job: $e');
+      AppLogger.warning('Low-stock calculation failed',
+          data: {'area': 'stats.low_stock'});
       return <Product>[];
     }
   }
@@ -1109,7 +1123,6 @@ class CgetSalesOfTheMonth extends PooledJob<double> {
         directory: dir.path,
         name: 'isarInstance',
       );
-      print(isar.name);
     } catch (e) {
       final fallbackDir = await getApplicationDocumentsDirectory();
       isar = await DB.openIsarSafely(fallbackDir.path);
@@ -1173,8 +1186,9 @@ class CgetProfitOfTheMonth extends PooledJob<double> {
       }
 
       return profit;
-    } on Exception catch (e) {
-      print(e);
+    } on Exception {
+      AppLogger.warning('Monthly profit calculation failed',
+          data: {'area': 'stats.monthly_profit'});
       return -1;
     }
   }
@@ -1212,7 +1226,8 @@ class CgetDailyProfit extends PooledJob<double> {
 
       return profit;
     } catch (e) {
-      print(e);
+      AppLogger.warning('Daily profit calculation failed',
+          data: {'area': 'stats.daily_profit'});
       return -1;
     }
   }
@@ -1250,7 +1265,8 @@ class CgetDailySales extends PooledJob<double> {
 
       return sales;
     } catch (e) {
-      print(e);
+      AppLogger.warning('Daily sales calculation failed',
+          data: {'area': 'stats.daily_sales'});
       return -1;
     }
   }
@@ -1283,7 +1299,8 @@ class CgetAllSales extends PooledJob<double> {
 
       return sales;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('All-sales calculation failed',
+          data: {'area': 'stats.all_sales'});
       return -1;
     }
   }
@@ -1307,19 +1324,20 @@ class CgetSaledProductsByDate extends PooledJob<List<Product>> {
       } catch (e) {
         final existing = await Isar.getInstance("isarInstance");
         if (existing == null) {
-          debugPrint('No Isar instance available: $e');
+          AppLogger.warning('No Isar instance available',
+              data: {'area': 'stats.saled_products'});
           return [];
         }
         isar = existing;
       }
       Iterable<Log> temp = await isar.logs.where().anyId().findAll();
       DateTime time = map['2'];
-      print(time);
       temp = temp.where((element) =>
           element.date.day == time.day &&
           element.date.month == time.month &&
           element.date.year == time.year);
-      debugPrint(temp.length.toString());
+      AppLogger.debug('Daily sale-product query completed',
+          data: {'resultCount': temp.length});
       List<EmbeddedProduct> products = [];
       List<Product> result = [];
       for (var log in temp) {
@@ -1355,7 +1373,8 @@ class CgetSaledProductsByDate extends PooledJob<List<Product>> {
       }
       return result;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Saled-products query failed',
+          data: {'area': 'stats.saled_products'});
       return [];
     }
   }
@@ -1387,7 +1406,8 @@ class CgetTotalProfit extends PooledJob<double> {
 
       return profit;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Total profit calculation failed',
+          data: {'area': 'stats.total_profit'});
       return -1;
     }
   }
@@ -1426,7 +1446,8 @@ class CgetNumberOfSalesForAproduct extends PooledJob<int> {
 
       return count;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Product sales count calculation failed',
+          data: {'area': 'stats.product_sales_count'});
       return -1;
     }
   }
@@ -1478,7 +1499,8 @@ class CgetSalesPerProduct extends PooledJob<List<ProdStats>> {
       // Return the required chunk
       return _cachedStats!.take(chunkSize).toList();
     } catch (e) {
-      debugPrint('Error in job: $e');
+      AppLogger.warning('Product stats calculation failed',
+          data: {'area': 'stats.sales_per_product'});
       return [];
     }
   }
@@ -1538,8 +1560,6 @@ class CgetDailyProfitOfTheMont extends PooledJob<List<SalesStats>> {
           .dateBetween(startOfMonth, endOfMonth)
           .sortByDateDesc()
           .findAll();
-      print(month);
-
       List<SalesStats> result = [];
       // // List<BcLog> temp = map['1'];
       // // temp.sort(
@@ -1629,7 +1649,8 @@ class CgetDailySalesOfTheMonth extends PooledJob<List<SalesStats>> {
           .toList();
       return result;
     } catch (e) {
-      debugPrint(e.toString() + 'heree2');
+      AppLogger.warning('Daily sales of month calculation failed',
+          data: {'area': 'stats.daily_sales_month'});
       return [];
     }
   }
@@ -1703,7 +1724,8 @@ class CgetMonthlySalesOfTheyear extends PooledJob<List<SalesStats>> {
 
       // print(result);
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Monthly sales calculation failed',
+          data: {'area': 'stats.monthly_sales'});
       return [];
     }
   }
@@ -1767,7 +1789,8 @@ class CgetMonthlyProfitsOfTheyear extends PooledJob<List<SalesStats>> {
       result = result.reversed.toList();
       return result;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Monthly profit series calculation failed',
+          data: {'area': 'stats.monthly_profit_series'});
       return [];
     }
   }
@@ -1791,7 +1814,8 @@ class CgetMonthlyloans extends PooledJob<double> {
                 final paymentDate = DateTime.parse(value.key!);
                 return paymentDate.year == year && paymentDate.month == month;
               } catch (e) {
-                debugPrint('Error parsing payment date: $e');
+                AppLogger.warning('Payment date parse failed',
+                    data: {'area': 'stats.loan_payments'});
                 return false;
               }
             }).fold(
@@ -1800,7 +1824,8 @@ class CgetMonthlyloans extends PooledJob<double> {
                     double.parse(element.value ?? '0') + previousValue);
       });
     } catch (e) {
-      debugPrint('Error calculating total payments: $e');
+      AppLogger.warning('Total payments calculation failed',
+          data: {'area': 'stats.loan_payments'});
       return 0.0;
     }
   }
@@ -1848,7 +1873,8 @@ class CgetMonthlyloans extends PooledJob<double> {
 
       return totalUnpaidLoans - totalPayments;
     } catch (e) {
-      debugPrint('Error in CgetMonthlyloans.job: $e');
+      AppLogger.warning('Monthly loans calculation failed',
+          data: {'area': 'stats.monthly_loans'});
       return -1;
     }
   }
@@ -1895,7 +1921,8 @@ class getTotalExpenseNow extends PooledJob<double> {
       }
       return total;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Expense total calculation failed',
+          data: {'area': 'stats.expense_total'});
       return -1;
     }
   }
@@ -1948,7 +1975,8 @@ class CgetDailyloans extends PooledJob<double> {
 
       return totalUnpaidLoans;
     } catch (e) {
-      debugPrint('Error in CgetDailyloans.job: $e');
+      AppLogger.warning('Daily loans calculation failed',
+          data: {'area': 'stats.daily_loans'});
       return -1;
     }
   }

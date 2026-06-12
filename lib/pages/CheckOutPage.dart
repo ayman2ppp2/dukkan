@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
@@ -78,7 +79,8 @@ class _CheckOutState extends State<CheckOut> {
                                   .refreshLoanersList(),
                               builder: (context, snapshot) {
                                 if (snapshot.hasError) {
-                                  return Text(snapshot.error.toString());
+                                  return const Text(
+                                      UserSafeMessages.loadFailed);
                                 }
                                 if (snapshot.hasData) {
                                   var loanerOptions = snapshot.data!
@@ -119,7 +121,8 @@ class _CheckOutState extends State<CheckOut> {
                                   .getIndvidualExpenses(fixed: false),
                               builder: (context, snapshot) {
                                 if (snapshot.hasError) {
-                                  return Text(snapshot.error.toString());
+                                  return const Text(
+                                      UserSafeMessages.loadFailed);
                                 }
                                 if (snapshot.hasData) {
                                   var expenseOptions = snapshot.data!
@@ -416,14 +419,19 @@ class _CheckOutState extends State<CheckOut> {
                                                   expense: radio == 2,
                                                   expenseId: expenseID,
                                                 );
-                                              } catch (e) {
+                                              } catch (e, st) {
+                                                await AppLogger
+                                                    .captureException(e,
+                                                        stackTrace: st,
+                                                        area: 'checkout.ui');
                                                 await showDialog(
                                                   context: context,
                                                   builder: (context) =>
                                                       AlertDialog(
                                                     title: const Text('فشل'),
                                                     content: const Text(
-                                                        'فشل تسجيل الفاتورة.'),
+                                                        UserSafeMessages
+                                                            .checkoutFailed),
                                                     actions: [
                                                       Center(
                                                         child: TextButton(

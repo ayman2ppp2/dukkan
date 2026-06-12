@@ -74,6 +74,7 @@ dependencies:
   crypto: ^3.0.6
   isar_community: ^3.3.2
   isar_community_flutter_libs: ^3.3.2
+  sentry_flutter: ^8.14.2
 dependency_overrides:
   flutter_web_auth_2: 4.1.0
 

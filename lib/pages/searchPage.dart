@@ -1,6 +1,7 @@
 // import 'package:dukkan/providers/list.dart';
 import 'dart:async';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/util/scanner.dart';
@@ -98,7 +99,7 @@ class _SearchPageState extends State<SearchPage> {
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Center(
-                      child: Text('خطأ: ${snapshot.error}',
+                      child: Text(UserSafeMessages.loadFailed,
                           style: TextStyle(color: Colors.red)),
                     );
                   }

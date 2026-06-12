@@ -1,4 +1,5 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/verifyPage.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:flutter/material.dart';
@@ -76,12 +77,17 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       );
-    } on AppwriteException catch (e) {
+    } on AppwriteException catch (e, st) {
       if (!mounted) return;
-      showAlert(title: 'فشل إنشاء الحساب', text: e.message.toString());
-    } on Exception catch (e) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.register');
+      showAlert(
+          title: 'فشل إنشاء الحساب', text: UserSafeMessages.registerFailed);
+    } on Exception catch (e, st) {
       if (!mounted) return;
-      showAlert(title: 'فشل التحقق', text: e.toString());
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.register');
+      showAlert(title: 'فشل التحقق', text: UserSafeMessages.verificationFailed);
     } finally {
       if (mounted) {
         setState(() {

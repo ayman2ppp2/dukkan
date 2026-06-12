@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:restart_app/restart_app.dart';
 import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/core/lan_sync.dart';
+import 'package:dukkan/core/observability.dart';
 // import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/core/db.dart';
@@ -365,12 +366,13 @@ class Lists extends ChangeNotifier with LanSyncState {
       if (syncStatus != SyncStatus.cancelled) {
         setSyncState(SyncStatus.done, message: 'تم إيقاف الخادم', progress: 1);
       }
-    } catch (e) {
+    } catch (e, st) {
+      await AppLogger.captureException(e, stackTrace: st, area: 'sync.server');
       if (syncStatus != SyncStatus.cancelled) {
         setSyncState(
           SyncStatus.error,
           message: 'فشل تشغيل الخادم',
-          error: e.toString(),
+          error: UserSafeMessages.syncFailed,
         );
       }
     } finally {
@@ -463,23 +465,26 @@ class Lists extends ChangeNotifier with LanSyncState {
         message: 'اكتملت المزامنة بنجاح',
         progress: 1,
       );
-    } on DioException catch (e) {
+    } on DioException catch (e, st) {
       await LanSync.deleteIfExists(downloadPath);
       if (CancelToken.isCancel(e)) {
         setSyncState(SyncStatus.cancelled, message: 'تم إلغاء المزامنة');
       } else {
+        await AppLogger.captureException(e,
+            stackTrace: st, area: 'sync.client');
         setSyncState(
           SyncStatus.error,
           message: 'فشلت المزامنة',
-          error: e.message ?? e.toString(),
+          error: UserSafeMessages.syncFailed,
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       await LanSync.deleteIfExists(downloadPath);
+      await AppLogger.captureException(e, stackTrace: st, area: 'sync.client');
       setSyncState(
         SyncStatus.error,
         message: 'فشلت المزامنة',
-        error: e.toString(),
+        error: UserSafeMessages.syncFailed,
       );
     } finally {
       _syncCancelToken = null;
@@ -547,7 +552,9 @@ class Lists extends ChangeNotifier with LanSyncState {
         'attachment; filename="$fileName"',
       );
       await backupFile.openRead().pipe(request.response);
-    } catch (e) {
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'sync.server_send');
       try {
         await _respond(
             request, HttpStatus.internalServerError, 'Error sending file');

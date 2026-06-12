@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/addExpense.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/pages/spending.dart';
@@ -230,7 +231,8 @@ class _SpendingsState extends State<Spendings> {
                                   );
                                 }
                                 if (snapshot.hasError) {
-                                  return Text('${snapshot.error}');
+                                  return const Text(
+                                      UserSafeMessages.loadFailed);
                                 }
                                 return SpinKitChasingDots(
                                   color: Colors.brown[400],
@@ -247,7 +249,7 @@ class _SpendingsState extends State<Spendings> {
                     stream: ex.getIndvidualExpenses(fixed: true),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
-                        return Text('${snapshot.error.toString()}');
+                        return const Text(UserSafeMessages.loadFailed);
                       }
                       if (snapshot.hasData) {
                         return ListView.builder(

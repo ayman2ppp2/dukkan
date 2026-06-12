@@ -60,12 +60,18 @@ jobs:
           flutter build apk --release --split-per-abi \
             --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
             --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
-            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769
+            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769 \
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+            --dart-define=SENTRY_ENVIRONMENT=${{ github.ref_name }} \
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
       - run: |
           flutter build appbundle --release \
             --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
             --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
-            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769
+            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769 \
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+            --dart-define=SENTRY_ENVIRONMENT=${{ github.ref_name }} \
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
       - uses: actions/upload-artifact@v4
         with:
           name: android-release-${{ github.ref_name }}
@@ -90,7 +96,10 @@ jobs:
           flutter build windows --release `
             --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 `
             --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f `
-            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769
+            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769 `
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} `
+            --dart-define=SENTRY_ENVIRONMENT=${{ github.ref_name }} `
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
 
       - name: Extract version from pubspec.yaml
         run: |
@@ -138,7 +147,10 @@ jobs:
           flutter build linux --release \
             --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
             --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
-            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769
+            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769 \
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+            --dart-define=SENTRY_ENVIRONMENT=${{ github.ref_name }} \
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
 
       - name: Extract version from pubspec.yaml
         id: version

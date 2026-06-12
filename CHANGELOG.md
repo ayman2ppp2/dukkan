@@ -14,6 +14,7 @@ All notable production-readiness changes are tracked here.
 - Hardened LAN sync with pairing codes, file allowlisting, transfer timeouts, and hash verification.
 - Added real tests for checkout, inventory, loans, expenses, backup/restore, auth policy, widgets, and smoke integration.
 - Started Phase 11 documentation, Arabic-first copy, accessibility, and icon polish.
+- Added disabled-by-default Sentry observability hooks, redacted app logging, and safer user-facing error messages.
 
 ## Earlier Releases
 

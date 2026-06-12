@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -199,7 +200,7 @@ class GridItem extends StatelessWidget {
                 );
               }
               if (snapshot.hasError) {
-                return Text(snapshot.error.toString());
+                return const Text(UserSafeMessages.loadFailed);
               }
               return SpinKitChasingDots(
                 color: Colors.brown[200],

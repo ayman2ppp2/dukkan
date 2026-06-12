@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/loans.dart';
 import 'package:dukkan/pages/lowStockItemesPage.dart';
 import 'package:dukkan/pages/settingsPage.dart';
@@ -130,13 +131,16 @@ class drawerItems extends StatelessWidget {
         ListTile(
           onTap: () async {
             var li = Provider.of<AuthAPI>(context, listen: false);
-            await li.uploadBackup().then(
-                  (value) => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('تم رفع نسخة احتياطية'),
-                    ),
-                  ),
-                );
+            try {
+              await li.uploadBackup();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم رفع نسخة احتياطية')),
+              );
+            } catch (_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text(UserSafeMessages.backupFailed)),
+              );
+            }
             // Navigator.pop(context);
           },
           leading: Icon(Icons.upload_rounded),
@@ -146,13 +150,16 @@ class drawerItems extends StatelessWidget {
         ListTile(
           onTap: () async {
             var li = Provider.of<AuthAPI>(context, listen: false);
-            await li.downloadBackup().then(
-                  (value) => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('تم تنزيل النسخة الاحتياطية'),
-                    ),
-                  ),
-                );
+            try {
+              await li.downloadBackup();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم تنزيل النسخة الاحتياطية')),
+              );
+            } catch (_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text(UserSafeMessages.backupFailed)),
+              );
+            }
             // Navigator.pop(context);
           },
           leading: Icon(Icons.download_rounded),
@@ -162,13 +169,19 @@ class drawerItems extends StatelessWidget {
         ListTile(
           onTap: () async {
             var li = Provider.of<Lists>(context, listen: false);
-            await li.db.useLocalBacup().then(
-                  (value) => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('تم استخدام النسخة الاحتياطيةالمحلية'),
-                    ),
-                  ),
-                );
+            try {
+              await li.db.useLocalBacup();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('تم استخدام النسخة الاحتياطية المحلية')),
+              );
+            } catch (e, st) {
+              await AppLogger.captureException(e,
+                  stackTrace: st, area: 'backup.restore.local');
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text(UserSafeMessages.restoreFailed)),
+              );
+            }
             // var li = Provider.of<Lists>(context, listen: false);
             // await li.db.useBackup().then(
             //       (value) => ScaffoldMessenger.of(context).showSnackBar(

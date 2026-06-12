@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/InsertPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/addUser.dart';
@@ -74,11 +75,12 @@ class _InvPageState extends State<InvPage> {
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Text(
-                        style: TextStyle(
-                            color: Colors.brown[50],
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold),
-                        '${snapshot.error.toString()}');
+                      UserSafeMessages.loadFailed,
+                      style: TextStyle(
+                          color: Colors.brown[50],
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold),
+                    );
                   }
                   if (snapshot.hasData) {
                     return Text(
@@ -129,7 +131,7 @@ class _InvPageState extends State<InvPage> {
             // as.search(controller.text, false, false),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return Text('خطأ: ${snapshot.error}');
+                return const Text(UserSafeMessages.loadFailed);
               }
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());

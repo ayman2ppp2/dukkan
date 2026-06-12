@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
 import 'package:dukkan/util/models/LowStockProduct.dart';
 import 'package:flutter/material.dart';
@@ -41,9 +42,11 @@ class _LowStockItemsPageState extends State<LowStockItemsPage> {
         _allProducts = products;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'inventory.low_stock');
       setState(() {
-        _error = e.toString();
+        _error = UserSafeMessages.loadFailed;
         _isLoading = false;
       });
     }
@@ -143,7 +146,7 @@ class _LowStockItemsPageState extends State<LowStockItemsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('خطأ: $_error'),
+            Text(_error!),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _refresh,

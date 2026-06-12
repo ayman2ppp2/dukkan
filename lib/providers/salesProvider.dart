@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/Product.dart';
@@ -386,7 +387,8 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      print("ggs");
+      AppLogger.debug('Persisting cart on lifecycle change',
+          data: {'itemCount': sellList.length});
       saveProductsToSharedPreferences(sellList);
     }
   }
@@ -401,7 +403,8 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
           )
           .toList();
     }
-    print(sellListMap);
+    AppLogger.debug('Disposing sales provider',
+        data: {'itemCount': sellListMap?.length ?? 0});
     super.dispose();
   }
 }

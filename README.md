@@ -15,6 +15,7 @@ Dukkan is a Flutter retail shop management app for sales, inventory, loans, expe
 - Build-time configuration is passed with Dart defines.
 - Secrets, keystores, and local signing files must not be committed.
 - Offline login is supported from cached secure auth state after a successful online login.
+- Crash reporting is optional and disabled until `SENTRY_DSN` is provided.
 
 Required build defines:
 
@@ -23,6 +24,16 @@ Required build defines:
 --dart-define=APPWRITE_PROJECT_ID=<appwrite-project-id>
 --dart-define=APPWRITE_BUCKET_ID=<appwrite-bucket-id>
 ```
+
+Optional observability build defines:
+
+```bash
+--dart-define=SENTRY_DSN=<sentry-dsn>
+--dart-define=SENTRY_ENVIRONMENT=<environment>
+--dart-define=SENTRY_RELEASE=<release-or-commit>
+```
+
+If `SENTRY_DSN` is empty, the app still installs and runs normally. Local logging stays redacted and release builds suppress verbose debug logs.
 
 ## Local Setup
 

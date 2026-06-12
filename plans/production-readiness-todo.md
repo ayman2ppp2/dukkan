@@ -120,11 +120,11 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 10: Observability And Production Logging
 
-- [ ] Replace raw `print()` calls with a logging wrapper or structured logger.
-- [ ] Disable verbose debug logs in release builds.
-- [ ] Add crash reporting for Android, Windows, and Linux, likely Sentry for cross-platform coverage.
-- [ ] Capture errors around auth, checkout, backup, restore, and sync.
-- [ ] Add user-safe error messages without exposing stack traces or internal paths.
+- [x] Replace raw `print()` calls with a logging wrapper or structured logger.
+- [x] Disable verbose debug logs in release builds.
+- [x] Add crash reporting for Android, Windows, and Linux, likely Sentry for cross-platform coverage.
+- [x] Capture errors around auth, checkout, backup, restore, and sync.
+- [x] Add user-safe error messages without exposing stack traces or internal paths.
 
 ## Phase 11: Product Polish And Documentation
 

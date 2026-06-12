@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
@@ -149,7 +150,8 @@ class _LogsState extends State<Logs> {
                       return Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
+                      return const Center(
+                          child: Text(UserSafeMessages.loadFailed));
                     }
                     if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                       return DropdownButtonFormField<String>(
@@ -210,7 +212,8 @@ class _LogsState extends State<Logs> {
                         child: SpinKitChasingDots(color: Colors.brown));
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
+                    return const Center(
+                        child: Text(UserSafeMessages.loadFailed));
                   }
                   if (snapshot.hasData && snapshot.data!.isEmpty) {
                     return Center(child: Text('لا يوجد بيانات  لعرضها'));

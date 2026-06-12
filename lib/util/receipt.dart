@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loadingOverlay.dart';
 import 'package:dukkan/util/models/Log.dart';
@@ -99,8 +100,10 @@ class _ReceiptState extends State<Receipt> {
                                                 Navigator.pop(context);
                                               }
                                             } catch (e, s) {
-                                              // Log the error for debugging
-                                              debugPrint("Error: $e + $s");
+                                              await AppLogger.captureException(
+                                                  e,
+                                                  stackTrace: s,
+                                                  area: 'receipt.cancel');
                                             } finally {
                                               // Ensure the loading overlay is dismissed
                                               Navigator.of(context,
@@ -162,7 +165,8 @@ class _ReceiptState extends State<Receipt> {
                             builder: (context, sa, child) => IconButton(
                               // onPressed: null,
                               onPressed: () async {
-                                print('edit receipt pressed');
+                                AppLogger.debug('Edit receipt pressed',
+                                    data: {'area': 'receipt.edit'});
                                 // var temp = await li.editReceipt(
                                 //     widget.log.date, widget.log);
                                 // li.editing = true;
@@ -239,7 +243,7 @@ class _ReceiptState extends State<Receipt> {
                     future: sa.getLoanerName(id: widget.log.loanerID!),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
-                        return Text(snapshot.error.toString());
+                        return const Text(UserSafeMessages.loadFailed);
                       }
                       if (snapshot.hasData) {
                         return Banner(

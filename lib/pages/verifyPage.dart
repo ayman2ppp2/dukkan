@@ -1,4 +1,5 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/main.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:flutter/material.dart';
@@ -38,9 +39,13 @@ class _VerficationPageState extends State<VerficationPage> {
       final AuthAPI appwrite = context.read<AuthAPI>();
       await appwrite.sendVerification();
       setState(() => _emailSent = true);
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
       if (!mounted) return;
-      showAlert(title: 'فشل إرسال رمز التحقق', text: e.toString());
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.send_verification');
+      showAlert(
+          title: 'فشل إرسال رمز التحقق',
+          text: UserSafeMessages.verificationFailed);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -91,9 +96,11 @@ class _VerficationPageState extends State<VerficationPage> {
         MaterialPageRoute(builder: (context) => const MyApp()),
         (route) => false,
       );
-    } on AppwriteException catch (e) {
+    } on AppwriteException catch (e, st) {
       if (!mounted) return;
-      showAlert(title: 'فشل التحقق', text: e.message.toString());
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.verify_email');
+      showAlert(title: 'فشل التحقق', text: UserSafeMessages.verificationFailed);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

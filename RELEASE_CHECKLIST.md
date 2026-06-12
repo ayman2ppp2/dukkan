@@ -7,6 +7,7 @@ Use this checklist before promoting a beta build to a stable release.
 - Confirm `pubspec.yaml` version is the intended release version.
 - Confirm `.github/workflows/main.yml` uses the intended Flutter version.
 - Confirm Appwrite endpoint, project id, and bucket id are correct for production.
+- If crash reporting should be active, confirm GitHub secret `SENTRY_DSN` is configured.
 - Confirm no keystores, passwords, `android/key.properties`, or generated native test files are tracked.
 - Run `flutter pub get`.
 - Run `flutter analyze`.
@@ -25,6 +26,7 @@ Use this checklist before promoting a beta build to a stable release.
 
 - Launch the app and confirm the app name is Dukkan.
 - Confirm Arabic-first core UI copy appears on login, register, checkout, inventory, and sync screens.
+- Confirm user-facing errors are safe Arabic messages and do not expose stack traces or file paths.
 - Sign in online with a test account.
 - Confirm offline login works after a successful online login.
 - Add or search a product.

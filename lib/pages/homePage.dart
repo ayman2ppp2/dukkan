@@ -1,5 +1,6 @@
 // import 'dart:io';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/inventoryPage.dart';
 
@@ -68,8 +69,8 @@ class _HomePageState extends State<HomePage> {
                               final List<Barcode> barcodes = capture.barcodes;
                               for (final barcode in barcodes) {
                                 ip = barcode.rawValue;
-                                debugPrint(
-                                    'Barcode found! ${barcode.rawValue}');
+                                AppLogger.debug('Barcode scanned',
+                                    data: {'area': 'sale.barcode_scan'});
                                 li.sellList.addAll(await li.search(
                                     barcode.rawValue!, true, true));
                                 Future.delayed(

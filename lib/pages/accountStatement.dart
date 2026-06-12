@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/util/models/Loaner.dart';
 import 'package:flutter/material.dart';
@@ -182,10 +183,12 @@ class _BankStatementPageState extends State<BankStatementPage> {
         [XFile(pdfFile.path)],
         text: 'كشف الحساب',
       );
-    } catch (e) {
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'account_statement.pdf');
       // Show an error message if something goes wrong.
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر إنشاء ملف PDF: $e')),
+        const SnackBar(content: Text(UserSafeMessages.pdfFailed)),
       );
     }
   }

@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -33,7 +34,7 @@ class _SpendingState extends State<Spending> {
                   .watchExpense(id: widget.id),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Text(snapshot.error.toString());
+                  return const Text(UserSafeMessages.loadFailed);
                 }
                 if (snapshot.hasData) {
                   return Text(
@@ -51,7 +52,7 @@ class _SpendingState extends State<Spending> {
               Provider.of<ExpenseProvider>(context).watchExpense(id: widget.id),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return Text(snapshot.error.toString());
+              return const Text(UserSafeMessages.loadFailed);
             }
             if (snapshot.hasData) {
               return Flex(

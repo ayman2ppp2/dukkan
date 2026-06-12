@@ -1,6 +1,8 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
+import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/widgets.dart';
@@ -73,7 +75,10 @@ class AuthAPI extends ChangeNotifier {
           _isOffline = false;
           await _saveSession(_currentUser!);
           notifyListeners();
-        } catch (_) {}
+        } catch (e, st) {
+          await AppLogger.captureException(e,
+              stackTrace: st, area: 'auth.revalidate');
+        }
         _startRevalidationTimer();
       }
     });
@@ -129,7 +134,10 @@ class AuthAPI extends ChangeNotifier {
       await _secureStorage.write(key: KEY_USER_EMAIL, value: user.email);
       await _secureStorage.write(key: KEY_USER_ID, value: user.$id);
       await _secureStorage.write(key: KEY_USER_NAME, value: user.name);
-    } catch (_) {}
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.save_session');
+    }
   }
 
   Future<void> _clearSession() async {
@@ -149,6 +157,7 @@ class AuthAPI extends ChangeNotifier {
       await _saveSession(user);
     } catch (_) {
       if (await checkOfflineSession()) {
+        AppLogger.info('Using offline auth session', data: {'area': 'auth'});
         return;
       }
       _status = AuthStatus.unauthenticated;
@@ -182,7 +191,9 @@ class AuthAPI extends ChangeNotifier {
     try {
       await account.updateVerification(userId: userId, secret: secret);
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.verify_email');
       return false;
     }
   }
@@ -221,7 +232,8 @@ class AuthAPI extends ChangeNotifier {
       await _saveSession(_currentUser!);
       notifyListeners();
       return session;
-    } catch (_) {
+    } catch (e, st) {
+      await AppLogger.captureException(e, stackTrace: st, area: 'auth.oauth');
       notifyListeners();
     }
   }
@@ -248,7 +260,7 @@ class AuthAPI extends ChangeNotifier {
   Future<void> uploadBackup() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = IO.File('${dir.path}/isarinstance.isar');
+      final file = IO.File('${dir.path}/${DB.liveDatabaseFileName}');
       final fileId = 'backup_${_currentUser!.$id}.isar';
 
       if (!await file.exists()) return;
@@ -262,7 +274,10 @@ class AuthAPI extends ChangeNotifier {
           bucketId: AppwriteConfig.bucketId,
           fileId: fileId,
         );
-      } catch (_) {}
+      } catch (e, st) {
+        await AppLogger.captureException(e,
+            stackTrace: st, area: 'backup.upload.delete_existing');
+      }
 
       await storage!.createFile(
         bucketId: AppwriteConfig.bucketId,
@@ -272,13 +287,18 @@ class AuthAPI extends ChangeNotifier {
           filename: 'backup_${_currentUser!.$id}.isar',
         ),
       );
-    } catch (_) {}
+      AppLogger.info('Backup uploaded', data: {'area': 'backup.upload'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'backup.upload');
+      rethrow;
+    }
   }
 
   Future<void> downloadBackup() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final filePath = '${dir.path}/isarinstance.isar';
+      final filePath = '${dir.path}/${DB.liveDatabaseFileName}';
       final fileId = 'backup_${_currentUser!.$id}.isar';
 
       final response = await storage!.getFileDownload(
@@ -288,7 +308,12 @@ class AuthAPI extends ChangeNotifier {
 
       final file = IO.File(filePath);
       await file.writeAsBytes(response);
-    } catch (_) {}
+      AppLogger.info('Backup downloaded', data: {'area': 'backup.download'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'backup.download');
+      rethrow;
+    }
   }
 
   void uploadPaymentReceipt({required IO.File receipt}) {}

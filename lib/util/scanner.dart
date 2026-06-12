@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:flutter/material.dart';
@@ -96,7 +97,8 @@ class _Scanner2State extends State<Scanner2> {
 
                         for (final barcode in barcodes) {
                           ip = barcode.rawValue;
-                          debugPrint('Barcode found! ${barcode.rawValue}');
+                          AppLogger.debug('Sync QR scanned',
+                              data: {'area': 'sync.qr_scan'});
                         }
                         ScaffoldMessenger.of(context)
                             .showSnackBar(SnackBar(content: Text(ip)));

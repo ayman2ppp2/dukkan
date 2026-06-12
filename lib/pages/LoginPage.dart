@@ -1,6 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 // import 'package:appwrite_app/pages/messages_page.dart';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/register_page.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:flutter/material.dart';
@@ -43,9 +44,10 @@ class _LoginPageState extends State<LoginPage> {
           )
           .then((value) => Navigator.pop(context));
       // Navigator.pop(context);
-    } on AppwriteException catch (e) {
+    } on AppwriteException catch (e, st) {
       Navigator.pop(context);
-      showAlert(title: 'فشل تسجيل الدخول', text: e.message.toString());
+      await AppLogger.captureException(e, stackTrace: st, area: 'auth.login');
+      showAlert(title: 'فشل تسجيل الدخول', text: UserSafeMessages.loginFailed);
     }
   }
 
@@ -67,11 +69,12 @@ class _LoginPageState extends State<LoginPage> {
         });
   }
 
-  signInWithProvider(String provider) {
+  Future<void> signInWithProvider(String provider) async {
     try {
-      context.read<AuthAPI>().signInWithProvider(provider: provider);
-    } on AppwriteException catch (e) {
-      showAlert(title: 'فشل تسجيل الدخول', text: e.message.toString());
+      await context.read<AuthAPI>().signInWithProvider(provider: provider);
+    } on AppwriteException catch (e, st) {
+      await AppLogger.captureException(e, stackTrace: st, area: 'auth.oauth');
+      showAlert(title: 'فشل تسجيل الدخول', text: UserSafeMessages.loginFailed);
     }
   }
 

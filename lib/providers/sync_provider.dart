@@ -1,6 +1,8 @@
 import 'dart:io' as IO;
 import 'package:appwrite/appwrite.dart';
 import 'package:dukkan/core/appwrite_config.dart';
+import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/widgets.dart';
 
@@ -25,21 +27,24 @@ class SyncProvider extends ChangeNotifier {
   Future<void> uploadBackup(String userId) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = IO.File('${dir.path}/isarinstance.isar');
+      final file = IO.File('${dir.path}/${DB.liveDatabaseFileName}');
       final fileId = 'backup_$userId.isar';
 
       if (!await file.exists()) {
-        print('Backup file does not exist at ${file.path}');
+        AppLogger.warning('Backup file missing before upload',
+            data: {'area': 'backup.upload', 'filePath': file.path});
         return;
       }
 
       try {
-        await storage.getFile(bucketId: AppwriteConfig.bucketId, fileId: fileId);
-        await storage.deleteFile(bucketId: AppwriteConfig.bucketId, fileId: fileId);
-        print('Existing backup deleted.');
+        await storage.getFile(
+            bucketId: AppwriteConfig.bucketId, fileId: fileId);
+        await storage.deleteFile(
+            bucketId: AppwriteConfig.bucketId, fileId: fileId);
       } catch (e) {
         if (e.toString().contains('File not found')) {
-          print('No existing backup found. Proceeding with upload.');
+          AppLogger.debug('No existing remote backup before upload',
+              data: {'area': 'backup.upload'});
         }
       }
 
@@ -48,9 +53,11 @@ class SyncProvider extends ChangeNotifier {
         fileId: fileId,
         file: InputFile(path: file.path, filename: 'backup.isar'),
       );
-      print('Backup uploaded successfully');
-    } catch (e) {
-      print('Error uploading backup: $e');
+      AppLogger.info('Backup uploaded', data: {'area': 'backup.upload'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'backup.upload');
+      rethrow;
     }
     notifyListeners();
   }
@@ -60,12 +67,15 @@ class SyncProvider extends ChangeNotifier {
       final dir = await getApplicationDocumentsDirectory();
       final fileId = 'backup_$userId.isar';
 
-      final fileBytes = await storage.getFileDownload(bucketId: AppwriteConfig.bucketId, fileId: fileId);
+      final fileBytes = await storage.getFileDownload(
+          bucketId: AppwriteConfig.bucketId, fileId: fileId);
       final saveFile = IO.File('${dir.path}/downloaded_backup.isar');
       await saveFile.writeAsBytes(fileBytes);
-      print('Backup downloaded successfully');
-    } catch (e) {
-      print('Error downloading backup: $e');
+      AppLogger.info('Backup downloaded', data: {'area': 'backup.download'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'backup.download');
+      rethrow;
     }
     notifyListeners();
   }

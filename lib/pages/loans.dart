@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loan.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,7 @@ class _LoansState extends State<Loans> {
                     .getLoanersStream(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return Text(snapshot.error.toString());
+                    return const Text(UserSafeMessages.loadFailed);
                   }
                   if (snapshot.hasData) {
                     return Text(
@@ -55,7 +56,7 @@ class _LoansState extends State<Loans> {
                 .getLoanersStream(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return Text('Error : ${snapshot.error}');
+                return const Text(UserSafeMessages.loadFailed);
               }
               if (snapshot.hasData) {
                 return Expanded(

@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Emap.dart';
 import 'package:flutter/material.dart';
@@ -177,7 +178,7 @@ class _InPageState extends State<InPage> {
                             color: Colors.white, size: 50);
                       }
                       if (snapshot.hasError) {
-                        return Text(snapshot.error.toString());
+                        return const Text(UserSafeMessages.loadFailed);
                       }
                       if (snapshot.hasData) {
                         var temp = snapshot.data!
@@ -241,8 +242,10 @@ class _InPageState extends State<InPage> {
                                           for (final barcode in barcodes) {
                                             widget.BarcodeCon.text =
                                                 barcode.rawValue!;
-                                            debugPrint(
-                                                'Barcode found! ${barcode.rawValue}');
+                                            AppLogger.debug('Barcode scanned',
+                                                data: {
+                                                  'area': 'product.barcode_scan'
+                                                });
                                           }
 
                                           Navigator.pop(context);

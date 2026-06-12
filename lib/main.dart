@@ -15,14 +15,15 @@ import 'package:dukkan/providers/share_provider.dart';
 import 'package:dukkan/providers/stats_provider.dart';
 import 'package:dukkan/providers/sync_provider.dart';
 import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// just a test2
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await DB.initialize();
-  runApp(MyApp());
+Future<void> main() async {
+  await AppLogger.bootstrap(() async {
+    await DB.initialize();
+    runApp(const MyApp());
+  });
 }
 
 class MyApp extends StatelessWidget {
