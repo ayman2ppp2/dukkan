@@ -71,8 +71,10 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                     Expanded(
                       child: IconButton(
+                        tooltip: 'مسح باركود',
                         onPressed: () {
                           showGeneralDialog(
+                            barrierLabel: 'ماسح الباركود',
                             context: context,
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
@@ -82,7 +84,7 @@ class _SearchPageState extends State<SearchPage> {
                             ),
                           );
                         },
-                        icon: Icon(Icons.qr_code_scanner),
+                        icon: const Icon(Icons.qr_code_scanner),
                       ),
                     ),
                   ],
@@ -96,7 +98,7 @@ class _SearchPageState extends State<SearchPage> {
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Center(
-                      child: Text('Error: ${snapshot.error}',
+                      child: Text('خطأ: ${snapshot.error}',
                           style: TextStyle(color: Colors.red)),
                     );
                   }

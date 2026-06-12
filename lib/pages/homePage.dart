@@ -26,10 +26,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Widget> tabs = [
     const Tab(
-      icon: Icon(Icons.monetization_on_outlined),
+      icon: Icon(Icons.monetization_on_outlined, semanticLabel: 'البيع'),
     ),
     const Tab(
-      icon: Icon(Icons.stacked_line_chart_rounded),
+      icon: Icon(Icons.stacked_line_chart_rounded, semanticLabel: 'الإحصائيات'),
     )
   ];
   @override
@@ -49,12 +49,13 @@ class _HomePageState extends State<HomePage> {
             actions: [
               Consumer<SalesProvider>(
                 builder: (context, li, child) => IconButton(
+                  tooltip: 'مسح الباركود',
                   onPressed: () async {
                     MobileScannerController con = MobileScannerController();
                     var ip;
                     showGeneralDialog(
                       barrierDismissible: true,
-                      barrierLabel: 'gg',
+                      barrierLabel: 'ماسح الباركود',
                       context: context,
                       pageBuilder: (context, animation, secondaryAnimation) =>
                           Padding(
@@ -72,11 +73,11 @@ class _HomePageState extends State<HomePage> {
                                 li.sellList.addAll(await li.search(
                                     barcode.rawValue!, true, true));
                                 Future.delayed(
-                                  Duration(seconds: 1),
+                                  const Duration(seconds: 1),
                                 );
                               }
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(content: Text(ip)));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('تم المسح: $ip')));
                             },
                           ),
                         ),
@@ -92,6 +93,7 @@ class _HomePageState extends State<HomePage> {
               Consumer<SalesProvider>(
                 builder: (context, as, child) => Consumer<Lists>(
                   builder: (context, li, child) => IconButton(
+                    tooltip: 'السجلات',
                     onPressed: () async {
                       Navigator.push(
                         context,
@@ -116,6 +118,7 @@ class _HomePageState extends State<HomePage> {
               Consumer<SalesProvider>(
                 builder: (context, sa, child) => Consumer<Lists>(
                   builder: (context, li, child) => IconButton(
+                    tooltip: 'المخزن',
                     onPressed: () {
                       sa.refreshProductsList();
                       Navigator.push(
@@ -141,11 +144,12 @@ class _HomePageState extends State<HomePage> {
               Consumer<Lists>(
                 builder: (context, li, child) {
                   return IconButton(
+                    tooltip: 'مشاركة البيانات',
                     onPressed: () {
                       showGeneralDialog(
                         useRootNavigator: true,
                         barrierDismissible: true,
-                        barrierLabel: 'gg',
+                        barrierLabel: 'مشاركة البيانات',
                         context: context,
                         pageBuilder: (context, animation, secondaryAnimation) =>
                             ChangeNotifierProvider.value(

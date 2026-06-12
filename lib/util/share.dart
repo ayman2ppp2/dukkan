@@ -60,6 +60,7 @@ class _ShareState extends State<Share> {
                     Column(
                       children: [
                         IconButton(
+                          tooltip: 'إرسال البيانات',
                           onPressed: () async {
                             Provider.of<Lists>(context, listen: false)
                                 .runServer();
@@ -67,7 +68,7 @@ class _ShareState extends State<Share> {
                           icon: const Icon(Icons.send, color: Colors.white),
                         ),
                         const Text(
-                          'Send',
+                          'إرسال',
                           style: TextStyle(color: Colors.white),
                         ),
                       ],
@@ -76,6 +77,7 @@ class _ShareState extends State<Share> {
                       children: [
                         Consumer<Lists>(
                           builder: (context, li, child) => IconButton(
+                            tooltip: 'استقبال البيانات',
                             onPressed: () async {
                               if (Platform.isWindows || Platform.isLinux) {
                                 _showManualConnectDialog(context, li);
@@ -99,7 +101,7 @@ class _ShareState extends State<Share> {
                           ),
                         ),
                         const Text(
-                          'Receive',
+                          'استقبال',
                           style: TextStyle(color: Colors.white),
                         ),
                       ],
@@ -121,7 +123,9 @@ class _ShareState extends State<Share> {
       builder: (context) => AlertDialog(
         title: const Text('اكتب عنوان المشاركة والكود الظاهر على جهاز الإرسال'),
         content: TextField(
+          textDirection: TextDirection.ltr,
           decoration: const InputDecoration(
+            labelText: 'عنوان المشاركة وكود الاقتران',
             hintText: '192.168.1.10:30000:123456',
           ),
           onChanged: (value) {
@@ -134,13 +138,13 @@ class _ShareState extends State<Share> {
               li.client(address);
               Navigator.pop(context);
             },
-            child: const Text('Connect'),
+            child: const Text('اتصال'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
             },
-            child: const Text('cancel'),
+            child: const Text('إلغاء'),
           ),
         ],
       ),
@@ -187,7 +191,7 @@ class _ShareState extends State<Share> {
               OutlinedButton.icon(
                 onPressed: li.cancelSync,
                 icon: const Icon(Icons.cancel_outlined),
-                label: const Text('Cancel sync'),
+                label: const Text('إلغاء المزامنة'),
               ),
             ],
           ],
@@ -204,16 +208,21 @@ class _ShareState extends State<Share> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            QrImageView(data: li.pairingAddress!, size: 220),
+            Semantics(
+              label: 'رمز QR لمشاركة البيانات',
+              image: true,
+              child: QrImageView(data: li.pairingAddress!, size: 220),
+            ),
             const SizedBox(height: 12),
             SelectableText(
               li.pairingAddress!,
               textAlign: TextAlign.center,
+              textDirection: TextDirection.ltr,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             if (li.pairingCode != null) ...[
               const SizedBox(height: 8),
-              Text('Pairing code: ${li.pairingCode}'),
+              Text('كود الاقتران: ${li.pairingCode}'),
             ],
           ],
         ),

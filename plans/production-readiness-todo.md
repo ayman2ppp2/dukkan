@@ -128,13 +128,13 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 11: Product Polish And Documentation
 
-- [ ] Update `README.md` with setup, supported platforms, release process, and backup/sync notes.
-- [ ] Add `CHANGELOG.md` for release notes.
-- [ ] Add privacy policy text covering local database, Appwrite auth, backup upload, and LAN sync.
-- [ ] Finalize app icons and launcher assets for Android, Windows, and Linux.
-- [ ] Review Arabic/English text consistency.
-- [ ] Review accessibility basics: text scaling, contrast, tap target sizes, keyboard navigation for desktop.
-- [ ] Add a simple manual release checklist.
+- [x] Update `README.md` with setup, supported platforms, release process, and backup/sync notes.
+- [x] Add `CHANGELOG.md` for release notes.
+- [x] Add privacy policy text covering local database, Appwrite auth, backup upload, and LAN sync.
+- [x] Finalize app icons and launcher assets for Android, Windows, and Linux.
+- [x] Review Arabic/English text consistency.
+- [x] Review accessibility basics: text scaling, contrast, tap target sizes, keyboard navigation for desktop.
+- [x] Add a simple manual release checklist.
 
 ## Recommended Execution Order
 

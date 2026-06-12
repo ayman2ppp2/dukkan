@@ -222,7 +222,7 @@ class _ReceiptState extends State<Receipt> {
                                               .format(e.sellPrice)),
                                       trailing: Text('${e.count}'),
                                       subtitle: Text(
-                                          "total : ${intl.NumberFormat.simpleCurrency().format((e.count! * e.sellPrice!))}"),
+                                          "المجموع: ${intl.NumberFormat.simpleCurrency().format((e.count! * e.sellPrice!))}"),
                                     ),
                                   )
                                   .toList(),

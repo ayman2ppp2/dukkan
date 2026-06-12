@@ -310,7 +310,7 @@ class _SpendingsState extends State<Spendings> {
         onPressed: () {
           showGeneralDialog(
             barrierDismissible: true,
-            barrierLabel: 'gg',
+            barrierLabel: 'إضافة منصرف',
             context: context,
             pageBuilder: (context, animation, secondaryAnimation) {
               return ChangeNotifierProvider.value(
@@ -324,7 +324,8 @@ class _SpendingsState extends State<Spendings> {
           );
           // Navigator.push(context, );
         },
-        child: Icon(Icons.add),
+        tooltip: 'إضافة منصرف',
+        child: const Icon(Icons.add),
       ),
     );
   }

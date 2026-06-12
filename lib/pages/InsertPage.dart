@@ -222,10 +222,12 @@ class _InPageState extends State<InPage> {
                       ),
                       Expanded(
                           child: IconButton(
+                              tooltip: 'مسح الباركود',
                               onPressed: () {
                                 MobileScannerController con =
                                     MobileScannerController();
                                 showGeneralDialog(
+                                  barrierLabel: 'ماسح الباركود',
                                   context: context,
                                   pageBuilder:
                                       (context, animation, secondaryAnimation) {
@@ -250,7 +252,7 @@ class _InPageState extends State<InPage> {
                                   },
                                 );
                               },
-                              icon: Icon(Icons.qr_code_scanner))),
+                              icon: const Icon(Icons.qr_code_scanner))),
                     ],
                   ),
                 ),

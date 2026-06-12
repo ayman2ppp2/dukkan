@@ -230,15 +230,16 @@ class _LoanState extends State<Loan> {
                                         : warningPayingMoreOrNothing(context);
                                   }
                                 },
-                                icon: Icon(Icons.payments_rounded),
+                                tooltip: 'تسجيل سداد',
+                                icon: const Icon(Icons.payments_rounded),
                               ),
                             ],
                           ),
                         ),
-                        Item(child: Text('history')),
+                        Item(child: Text('السجل')),
                         Item(
                           child: SizedBox(
-                            height: 260 % MediaQuery.of(context).size.height,
+                            height: 260,
                             child: StreamBuilder(
                                 stream:
                                     Provider.of<Lists>(context, listen: false)
@@ -310,7 +311,7 @@ class _LoanState extends State<Loan> {
       BuildContext context, AsyncSnapshot<Loaner?> snapshot) {
     return showGeneralDialog(
       barrierDismissible: true,
-      barrierLabel: 'paymentDialog',
+      barrierLabel: 'تفاصيل المدفوعات',
       context: context,
       pageBuilder: (context, animation, secondaryAnimation) {
         return Padding(

@@ -20,21 +20,21 @@ extension SyncStatusLabel on SyncStatus {
   String get label {
     switch (this) {
       case SyncStatus.idle:
-        return 'Ready';
+        return 'جاهز';
       case SyncStatus.connecting:
-        return 'Connecting';
+        return 'جار الاتصال';
       case SyncStatus.downloading:
-        return 'Downloading';
+        return 'جار التنزيل';
       case SyncStatus.verifying:
-        return 'Verifying';
+        return 'جار التحقق';
       case SyncStatus.restoring:
-        return 'Restoring';
+        return 'جار الاستعادة';
       case SyncStatus.done:
-        return 'Done';
+        return 'اكتمل';
       case SyncStatus.error:
-        return 'Error';
+        return 'خطأ';
       case SyncStatus.cancelled:
-        return 'Cancelled';
+        return 'تم الإلغاء';
     }
   }
 }

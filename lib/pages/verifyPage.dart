@@ -40,7 +40,7 @@ class _VerficationPageState extends State<VerficationPage> {
       setState(() => _emailSent = true);
     } on Exception catch (e) {
       if (!mounted) return;
-      showAlert(title: 'Verification failed', text: e.toString());
+      showAlert(title: 'فشل إرسال رمز التحقق', text: e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -54,7 +54,7 @@ class _VerficationPageState extends State<VerficationPage> {
       final enteredCode = _codeController.text.trim();
 
       if (enteredCode.isEmpty) {
-        showAlert(title: 'Invalid Code', text: 'Please enter the verification code');
+        showAlert(title: 'رمز التحقق مطلوب', text: 'يرجى إدخال رمز التحقق');
         return;
       }
 
@@ -66,8 +66,8 @@ class _VerficationPageState extends State<VerficationPage> {
       if (!verified) {
         if (!mounted) return;
         showAlert(
-          title: 'Invalid Code',
-          text: 'Please enter the correct verification code from your email',
+          title: 'رمز التحقق غير صحيح',
+          text: 'يرجى إدخال الرمز الصحيح المرسل إلى بريدك الإلكتروني',
         );
         return;
       }
@@ -81,7 +81,7 @@ class _VerficationPageState extends State<VerficationPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created successfully!'),
+          content: Text('تم إنشاء الحساب بنجاح'),
           backgroundColor: Colors.green,
         ),
       );
@@ -93,7 +93,7 @@ class _VerficationPageState extends State<VerficationPage> {
       );
     } on AppwriteException catch (e) {
       if (!mounted) return;
-      showAlert(title: 'Verification failed', text: e.message.toString());
+      showAlert(title: 'فشل التحقق', text: e.message.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -110,7 +110,7 @@ class _VerficationPageState extends State<VerficationPage> {
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Ok'),
+              child: const Text('موافق'),
             ),
           ],
         );
@@ -122,7 +122,7 @@ class _VerficationPageState extends State<VerficationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verify Email'),
+        title: const Text('تأكيد البريد الإلكتروني'),
       ),
       body: _isLoading && !_emailSent
           ? const Center(child: CircularProgressIndicator())
@@ -138,12 +138,12 @@ class _VerficationPageState extends State<VerficationPage> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Verification Code Sent',
+                    'تم إرسال رمز التحقق',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Please check your email ${widget.email} for the verification code',
+                    'يرجى مراجعة بريدك الإلكتروني ${widget.email} للحصول على رمز التحقق',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
@@ -151,7 +151,7 @@ class _VerficationPageState extends State<VerficationPage> {
                   TextField(
                     controller: _codeController,
                     decoration: const InputDecoration(
-                      labelText: 'Enter Verification Code',
+                      labelText: 'أدخل رمز التحقق',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.security),
                     ),
@@ -161,7 +161,8 @@ class _VerficationPageState extends State<VerficationPage> {
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : verifyAndCreateAccount,
                     icon: const Icon(Icons.check_circle),
-                    label: Text(_isLoading ? 'Verifying...' : 'Verify and Create Account'),
+                    label: Text(
+                        _isLoading ? 'جار التحقق...' : 'تحقق وأنشئ الحساب'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,

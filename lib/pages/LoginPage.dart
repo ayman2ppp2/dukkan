@@ -45,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
       // Navigator.pop(context);
     } on AppwriteException catch (e) {
       Navigator.pop(context);
-      showAlert(title: 'Login failed', text: e.message.toString());
+      showAlert(title: 'فشل تسجيل الدخول', text: e.message.toString());
     }
   }
 
@@ -61,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: const Text('Ok'))
+                  child: const Text('موافق'))
             ],
           );
         });
@@ -71,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       context.read<AuthAPI>().signInWithProvider(provider: provider);
     } on AppwriteException catch (e) {
-      showAlert(title: 'Login failed', text: e.message.toString());
+      showAlert(title: 'فشل تسجيل الدخول', text: e.message.toString());
     }
   }
 
@@ -80,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       // backgroundColor: Colors.brown[100],
       appBar: AppBar(
-        title: Center(child: const Text('Dukkan')),
+        title: const Center(child: Text('دكان')),
       ),
       body: Center(
         child: Padding(
@@ -92,18 +92,21 @@ class _LoginPageState extends State<LoginPage> {
               TextField(
                 controller: emailTextController,
                 decoration: const InputDecoration(
-                  labelText: 'Email',
+                  labelText: 'البريد الإلكتروني',
                   border: OutlineInputBorder(),
                 ),
+                keyboardType: TextInputType.emailAddress,
+                textDirection: TextDirection.ltr,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: passwordTextController,
                 decoration: const InputDecoration(
-                  labelText: 'Password',
+                  labelText: 'كلمة المرور',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
+                textDirection: TextDirection.ltr,
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -111,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
                   signIn();
                 },
                 icon: const Icon(Icons.login),
-                label: const Text("Sign in"),
+                label: const Text('تسجيل الدخول'),
               ),
               Consumer<AuthAPI>(
                 builder: (context, AI, child) => TextButton(
@@ -124,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
                                   child: const RegisterPage(),
                                 )));
                   },
-                  child: const Text('Create Account'),
+                  child: const Text('إنشاء حساب'),
                 ),
               ),
               // TextButton(
@@ -145,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.black,
                         backgroundColor: Colors.white),
-                    child: Text('google'),
+                    child: const Text('الدخول عبر Google'),
                     // SvgPicture.asset('assets/google_icon.svg', width: 12),
                   ),
                   ElevatedButton(
@@ -153,7 +156,7 @@ class _LoginPageState extends State<LoginPage> {
                     style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.black,
                         backgroundColor: Colors.white),
-                    child: Text('github'),
+                    child: const Text('الدخول عبر GitHub'),
                     // SvgPicture.asset('assets/github_icon.svg', width: 12),
                   ),
                 ],

@@ -133,11 +133,12 @@ class _SellPageState extends State<SellPage> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
                     child: IconButton.filled(
+                      tooltip: 'إضافة منتج للفاتورة',
                       onPressed: () {
                         sa.refreshProductsList();
                         showGeneralDialog(
                           barrierDismissible: true,
-                          barrierLabel: 'tet',
+                          barrierLabel: 'بحث المنتجات',
                           context: context,
                           pageBuilder:
                               (context, animation, secondaryAnimation) =>
@@ -177,7 +178,7 @@ class _SellPageState extends State<SellPage> {
                       ),
                       child: Center(
                           child: Text(
-                              'total : ${NumberFormat.simpleCurrency().format((sa.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer! && element.count! % element.offerCount! == 0) ? (element.offerPrice! * element.count!) : (element.sellPrice! * element.count!)))))}')),
+                              'المجموع: ${NumberFormat.simpleCurrency().format((sa.sellList.fold(00.0, (previousValue, element) => previousValue + ((element.offer! && element.count! % element.offerCount! == 0) ? (element.offerPrice! * element.count!) : (element.sellPrice! * element.count!)))))}')),
                     ),
                   ),
                   // 2nd button
@@ -185,10 +186,12 @@ class _SellPageState extends State<SellPage> {
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
                     child: Consumer<Lists>(
                       builder: (context, li, child) => IconButton.filled(
+                        tooltip: 'فتح الفاتورة',
                         onPressed: () {
                           // sa.refreshLoanersList();
                           if (sa.sellList.isNotEmpty) {
                             showGeneralDialog(
+                              barrierLabel: 'الفاتورة',
                               context: context,
                               pageBuilder:
                                   (context, animation, secondaryAnimation) {
@@ -245,7 +248,7 @@ class _SellPageState extends State<SellPage> {
                             //    hot: false);
 
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text('يجب تحديد منتجات اولآ ')));
+                                content: Text('يجب تحديد منتجات أولاً')));
                           }
                         },
                         icon: const Icon(

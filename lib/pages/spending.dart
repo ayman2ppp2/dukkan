@@ -58,57 +58,55 @@ class _SpendingState extends State<Spending> {
                 direction: Axis.vertical,
                 children: [
                   SizedBox(
-                    height: 15 % MediaQuery.of(context).size.height,
+                    height: 15,
                   ),
                   Center(
                     child: MyContainer(
-                      child: Text('ID : ${snapshot.data?.ID}'),
+                      child: Text('المعرف: ${snapshot.data?.ID}'),
                     ),
                   ),
                   SizedBox(
-                    height: 50 % MediaQuery.of(context).size.height,
-                  ),
-                  Center(
-                    child: MyContainer(
-                      child: Text(
-                          'percentage from total :${snapshot.data!.amount}'),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20 % MediaQuery.of(context).size.height,
+                    height: 50,
                   ),
                   Center(
                     child: MyContainer(
                       child:
-                          Text('real cash amount : ${snapshot.data!.amount}'),
+                          Text('النسبة من الإجمالي: ${snapshot.data!.amount}'),
                     ),
                   ),
                   SizedBox(
-                    height: 20 % MediaQuery.of(context).size.height,
+                    height: 20,
+                  ),
+                  Center(
+                    child: MyContainer(
+                      child: Text('القيمة النقدية: ${snapshot.data!.amount}'),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 20,
                   ),
                   Center(
                     child: MyContainer(
                       child: Text(
-                          'last payment date : ${snapshot.data!.lastCalculationDate}'),
+                          'تاريخ آخر دفعة: ${snapshot.data!.lastCalculationDate}'),
                     ),
                   ),
                   SizedBox(
-                    height: 20 % MediaQuery.of(context).size.height,
+                    height: 20,
                   ),
                   Center(
                     child: MyContainer(
-                      child:
-                          Text('payment interval : ${snapshot.data!.period}'),
+                      child: Text('فترة الدفع: ${snapshot.data!.period}'),
                     ),
                   ),
                   SizedBox(
-                    height: 20 % MediaQuery.of(context).size.height,
+                    height: 20,
                   ),
                   Center(
                     child: MyContainer(
                       child: SizedBox(
-                        height: 200 % MediaQuery.of(context).size.height,
-                        width: 300 % MediaQuery.of(context).size.height,
+                        height: 200,
+                        width: 300,
                       ),
                     ),
                   ),

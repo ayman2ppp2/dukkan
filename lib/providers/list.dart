@@ -317,7 +317,7 @@ class Lists extends ChangeNotifier with LanSyncState {
     _syncServer = null;
     setSyncState(
       SyncStatus.connecting,
-      message: 'Preparing LAN sync server...',
+      message: 'جار تجهيز خادم المزامنة المحلية...',
       progress: 0,
     );
 
@@ -326,7 +326,7 @@ class Lists extends ChangeNotifier with LanSyncState {
       final networkInfo = NetworkInfo();
       final wifiIp = await networkInfo.getWifiIP();
       if (wifiIp == null) {
-        throw Exception('No Wi-Fi IP address found');
+        throw Exception('لم يتم العثور على عنوان Wi-Fi');
       }
 
       final code = LanSync.generatePairingCode();
@@ -346,7 +346,7 @@ class Lists extends ChangeNotifier with LanSyncState {
 
       setSyncState(
         SyncStatus.done,
-        message: 'Server listening. Pairing code: $code',
+        message: 'الخادم جاهز. كود الاقتران: $code',
         progress: 1,
       );
 
@@ -363,13 +363,13 @@ class Lists extends ChangeNotifier with LanSyncState {
         }
       }
       if (syncStatus != SyncStatus.cancelled) {
-        setSyncState(SyncStatus.done, message: 'Server is down', progress: 1);
+        setSyncState(SyncStatus.done, message: 'تم إيقاف الخادم', progress: 1);
       }
     } catch (e) {
       if (syncStatus != SyncStatus.cancelled) {
         setSyncState(
           SyncStatus.error,
-          message: 'Server failed',
+          message: 'فشل تشغيل الخادم',
           error: e.toString(),
         );
       }
@@ -384,8 +384,8 @@ class Lists extends ChangeNotifier with LanSyncState {
     if (endpoint == null) {
       setSyncState(
         SyncStatus.error,
-        message: 'Invalid pairing address',
-        error: 'Use ip:code or ip:port:code from the sender device.',
+        message: 'عنوان الاقتران غير صحيح',
+        error: 'استخدم ip:code أو ip:port:code من جهاز الإرسال.',
       );
       return;
     }
@@ -401,7 +401,7 @@ class Lists extends ChangeNotifier with LanSyncState {
     try {
       setSyncState(
         SyncStatus.connecting,
-        message: 'Connecting to sender...',
+        message: 'جار الاتصال بجهاز الإرسال...',
         progress: 0,
       );
       await db.createLocalBackup();
@@ -417,7 +417,7 @@ class Lists extends ChangeNotifier with LanSyncState {
       await LanSync.deleteIfExists(downloadPath);
       setSyncState(
         SyncStatus.downloading,
-        message: 'Downloading backup...',
+        message: 'جار تنزيل النسخة الاحتياطية...',
         progress: 0,
       );
       final response = await dio.downloadUri(
@@ -428,18 +428,18 @@ class Lists extends ChangeNotifier with LanSyncState {
           if (total <= 0) return;
           setSyncState(
             SyncStatus.downloading,
-            message: 'Downloading backup...',
+            message: 'جار تنزيل النسخة الاحتياطية...',
             progress: received / total,
           );
         },
       );
       if (response.statusCode != HttpStatus.ok) {
-        throw Exception('Download failed with status ${response.statusCode}');
+        throw Exception('فشل التنزيل بالحالة ${response.statusCode}');
       }
 
       setSyncState(
         SyncStatus.verifying,
-        message: 'Verifying backup...',
+        message: 'جار التحقق من النسخة الاحتياطية...',
         progress: 1,
       );
       final actualHash = await LanSync.sha256File(File(downloadPath));
@@ -448,29 +448,29 @@ class Lists extends ChangeNotifier with LanSyncState {
           .then((response) => response.data.toString().trim());
       if (actualHash != expectedHash) {
         await LanSync.deleteIfExists(downloadPath);
-        throw Exception('Backup hash mismatch');
+        throw Exception('فشل التحقق من تطابق النسخة الاحتياطية');
       }
 
       await _shutdownPeer(dio, endpoint, cancelToken);
       setSyncState(
         SyncStatus.restoring,
-        message: 'Restoring verified backup...',
+        message: 'جار استعادة النسخة التي تم التحقق منها...',
         progress: 1,
       );
       await _restoreDownloadedBackup();
       setSyncState(
         SyncStatus.done,
-        message: 'Sync completed successfully',
+        message: 'اكتملت المزامنة بنجاح',
         progress: 1,
       );
     } on DioException catch (e) {
       await LanSync.deleteIfExists(downloadPath);
       if (CancelToken.isCancel(e)) {
-        setSyncState(SyncStatus.cancelled, message: 'Sync cancelled');
+        setSyncState(SyncStatus.cancelled, message: 'تم إلغاء المزامنة');
       } else {
         setSyncState(
           SyncStatus.error,
-          message: 'Sync failed',
+          message: 'فشلت المزامنة',
           error: e.message ?? e.toString(),
         );
       }
@@ -478,7 +478,7 @@ class Lists extends ChangeNotifier with LanSyncState {
       await LanSync.deleteIfExists(downloadPath);
       setSyncState(
         SyncStatus.error,
-        message: 'Sync failed',
+        message: 'فشلت المزامنة',
         error: e.toString(),
       );
     } finally {
@@ -488,11 +488,12 @@ class Lists extends ChangeNotifier with LanSyncState {
   }
 
   void cancelSync() {
-    _syncCancelToken?.cancel('Sync cancelled');
+    _syncCancelToken?.cancel('تم إلغاء المزامنة');
     _syncCancelToken = null;
     _syncServer?.close(force: true);
     _syncServer = null;
-    setSyncState(SyncStatus.cancelled, message: 'Sync cancelled', progress: 0);
+    setSyncState(SyncStatus.cancelled,
+        message: 'تم إلغاء المزامنة', progress: 0);
   }
 
   Future<bool> _handleLanRequest(

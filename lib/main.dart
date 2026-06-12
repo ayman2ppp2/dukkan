@@ -17,6 +17,7 @@ import 'package:dukkan/providers/sync_provider.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 // just a test2
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -106,17 +107,18 @@ class MyApp extends StatelessWidget {
             ),
           ],
           builder: (context, child) {
-            WidgetsBinding.instance
-                .addObserver(context.read<SalesProvider>());
+            WidgetsBinding.instance.addObserver(context.read<SalesProvider>());
             return Consumer<AuthAPI>(
               builder: (context, auth, child) {
                 if (auth.status == AuthStatus.uninitialized) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (auth.status == AuthStatus.authenticated) {
-                  final content = context.read<SalesProvider>().getWeightPrececsion() == null
-                      ? const LandingPage()
-                      : const HomePage();
+                  final content =
+                      context.read<SalesProvider>().getWeightPrececsion() ==
+                              null
+                          ? const LandingPage()
+                          : const HomePage();
                   if (auth.isOffline) {
                     return Stack(
                       children: [
@@ -127,10 +129,12 @@ class MyApp extends StatelessWidget {
                           right: 0,
                           child: MaterialBanner(
                             backgroundColor: Colors.amber.shade100,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: Icon(Icons.cloud_off, color: Colors.amber.shade800),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            leading: Icon(Icons.cloud_off,
+                                color: Colors.amber.shade800),
                             content: Text(
-                              'You are offline — showing cached data',
+                              'أنت غير متصل بالإنترنت. يتم عرض البيانات المحفوظة.',
                               style: const TextStyle(fontSize: 13),
                             ),
                             actions: const [SizedBox.shrink()],

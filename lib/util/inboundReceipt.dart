@@ -139,12 +139,13 @@ class _inboundReceiptState extends State<inboundReceipt> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20, top: 10),
                       child: IconButton.filled(
+                        tooltip: 'إضافة منتج للإدخال',
                         onPressed: () {
                           // print(sa.db.hasna(id: 9533));
                           sa.refreshProductsList();
                           showGeneralDialog(
                             barrierDismissible: true,
-                            barrierLabel: 'tet',
+                            barrierLabel: 'بحث منتجات الإدخال',
                             context: context,
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
@@ -184,7 +185,7 @@ class _inboundReceiptState extends State<inboundReceipt> {
                         ),
                         child: Center(
                             child: Text(
-                                'total : ${NumberFormat.simpleCurrency().format((sa.inboundList.fold(00.0, (previousValue, element) => previousValue + (element.buyprice! * element.count!))))}')),
+                                'المجموع: ${NumberFormat.simpleCurrency().format((sa.inboundList.fold(00.0, (previousValue, element) => previousValue + (element.buyprice! * element.count!))))}')),
                       ),
                     ),
                     // 2nd button
@@ -192,6 +193,7 @@ class _inboundReceiptState extends State<inboundReceipt> {
                       padding: const EdgeInsets.only(bottom: 20, top: 10),
                       child: Consumer<Lists>(
                         builder: (context, li, child) => IconButton.filled(
+                          tooltip: 'فتح فاتورة الإدخال',
                           onPressed: () {
                             // sa.refreshLoanersList();
                             if (sa.inboundList.isNotEmpty) {
@@ -231,7 +233,7 @@ class _inboundReceiptState extends State<inboundReceipt> {
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                      content: Text('يجب تحديد منتجات اولآ ')));
+                                      content: Text('يجب تحديد منتجات أولاً')));
                             }
                           },
                           icon: const Icon(

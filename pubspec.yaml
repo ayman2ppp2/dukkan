@@ -92,11 +92,11 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true
-  ios: true
-  image_path: "lib/assets/dukkan_1.png"
+  ios: false
+  image_path: "lib/assets/icon.jpg"
   windows:
     generate: true
-    image_path: "lib/assets/dukkan_1.png"
+    image_path: "lib/assets/icon.jpg"
     icon_size: 256 # min:48, max:256, default: 48
 
 # For information on the generic Dart part of this file, see the

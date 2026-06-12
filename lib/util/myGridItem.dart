@@ -79,59 +79,55 @@ class GridItem extends StatelessWidget {
                               bottomLeft: Radius.circular(12),
                             ),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(5.0),
-                            child: GestureDetector(
-                              onTap: () {
-                                showGeneralDialog(
-                                  barrierDismissible: true,
-                                  barrierLabel: 'whatever',
-                                  context: context,
-                                  pageBuilder:
-                                      (context, animation, secondaryAnimation) {
-                                    return ChangeNotifierProvider.value(
-                                      value: sa,
-                                      child: ChangeNotifierProvider.value(
-                                        value: li,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            left: 20,
-                                            right: 20,
-                                            top: 100,
-                                            bottom: 250,
-                                          ),
-                                          child: InPage(
-                                            id: snapshot.data!.id,
-                                            buyPrice: snapshot.data!.buyprice!,
-                                            count: snapshot.data!.count!,
-                                            name: snapshot.data!.name!,
-                                            barcode: snapshot.data!.barcode!,
-                                            sellPrice:
-                                                snapshot.data!.sellPrice!,
-                                            index: snapshot.data!.id,
-                                            owner: snapshot.data!.ownerName!,
-                                            wholeUnit:
-                                                snapshot.data!.wholeUnit!,
-                                            weightable:
-                                                snapshot.data!.weightable!,
-                                            offer: snapshot.data!.offer!,
-                                            offerCount:
-                                                snapshot.data!.offerCount ?? 0,
-                                            offerPrice:
-                                                snapshot.data!.offerPrice ?? 0,
-                                            endDate: snapshot.data!.endDate!,
-                                            priceHistory: List.from(
-                                                snapshot.data!.priceHistory,
-                                                growable: true),
-                                          ),
+                          child: IconButton(
+                            tooltip: 'تعديل المنتج',
+                            onPressed: () {
+                              showGeneralDialog(
+                                barrierDismissible: true,
+                                barrierLabel: 'تعديل المنتج',
+                                context: context,
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) {
+                                  return ChangeNotifierProvider.value(
+                                    value: sa,
+                                    child: ChangeNotifierProvider.value(
+                                      value: li,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 20,
+                                          right: 20,
+                                          top: 100,
+                                          bottom: 250,
+                                        ),
+                                        child: InPage(
+                                          id: snapshot.data!.id,
+                                          buyPrice: snapshot.data!.buyprice!,
+                                          count: snapshot.data!.count!,
+                                          name: snapshot.data!.name!,
+                                          barcode: snapshot.data!.barcode!,
+                                          sellPrice: snapshot.data!.sellPrice!,
+                                          index: snapshot.data!.id,
+                                          owner: snapshot.data!.ownerName!,
+                                          wholeUnit: snapshot.data!.wholeUnit!,
+                                          weightable:
+                                              snapshot.data!.weightable!,
+                                          offer: snapshot.data!.offer!,
+                                          offerCount:
+                                              snapshot.data!.offerCount ?? 0,
+                                          offerPrice:
+                                              snapshot.data!.offerPrice ?? 0,
+                                          endDate: snapshot.data!.endDate!,
+                                          priceHistory: List.from(
+                                              snapshot.data!.priceHistory,
+                                              growable: true),
                                         ),
                                       ),
-                                    );
-                                  },
-                                );
-                              },
-                              child: const Icon(Icons.edit),
-                            ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                            icon: const Icon(Icons.edit),
                           ),
                         ),
                         Container(
@@ -153,48 +149,48 @@ class GridItem extends StatelessWidget {
                               bottomRight: Radius.circular(12),
                             ),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(5.0),
-                            child: GestureDetector(
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: const Text(
-                                        'هل انت متاكد',
-                                        style: TextStyle(fontSize: 20),
+                          child: IconButton(
+                            tooltip: 'حذف المنتج',
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: const Text(
+                                      'هل أنت متأكد؟',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                    content: const Text(
+                                        'سيتم حذف المنتج من المخزن.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () async {
+                                          Navigator.pop(context);
+                                          await li.removeProduct(
+                                              id: snapshot.data!.id);
+                                          refrsh();
+                                          // li.refreshProductsList();
+                                        },
+                                        child: const Text(
+                                          'نعم',
+                                          style: TextStyle(fontSize: 20),
+                                        ),
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () async {
-                                            Navigator.pop(context);
-                                            await li.removeProduct(
-                                                id: snapshot.data!.id);
-                                            refrsh();
-                                            // li.refreshProductsList();
-                                          },
-                                          child: const Text(
-                                            'نعم',
-                                            style: TextStyle(fontSize: 20),
-                                          ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text(
+                                          'لا',
+                                          style: TextStyle(fontSize: 20),
                                         ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: const Text(
-                                            'لا',
-                                            style: TextStyle(fontSize: 20),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                              child: const Icon(Icons.delete_outline_rounded),
-                            ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            icon: const Icon(Icons.delete_outline_rounded),
                           ),
                         ),
                       ],
