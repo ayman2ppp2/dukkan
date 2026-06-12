@@ -85,6 +85,8 @@ dev_dependencies:
 
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
   # analyzer: ^6.5.2
 

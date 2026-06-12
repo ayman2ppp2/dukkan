@@ -17,6 +17,13 @@ class ExpenseProvider extends ChangeNotifier {
   ExpenseProvider() {
     init();
   }
+
+  @visibleForTesting
+  ExpenseProvider.forTesting(this.db);
+
+  @visibleForTesting
+  ExpenseProvider.detachedForTesting();
+
   Future<void> init() async {
     db = await DB.getInstance();
     pool = await Pool.init();
@@ -57,7 +64,8 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<double> getProfitOfTheMonth() {
     Map map = Map();
-    map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+    map['1'] = _getRootIsolateToken() ??
+        (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
   }
 
@@ -67,13 +75,15 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<double> getLoansOfMonth() {
     Map map = Map();
-    map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+    map['1'] = _getRootIsolateToken() ??
+        (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(CgetMonthlyloans(map: map));
   }
 
   Future<double> getDailyLoans() {
     Map map = Map();
-    map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+    map['1'] = _getRootIsolateToken() ??
+        (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(CgetDailyloans(map: map));
   }
 
@@ -85,7 +95,8 @@ class ExpenseProvider extends ChangeNotifier {
 
   Future<double> getTotalExpenses() async {
     Map map = Map();
-    map['1'] = _getRootIsolateToken() ?? (throw StateError('RootIsolateToken not available'));
+    map['1'] = _getRootIsolateToken() ??
+        (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(getTotalExpenseNow(map: map));
     // return (await getIndvidualExpenses()).fold<double>(
     //     0.0,

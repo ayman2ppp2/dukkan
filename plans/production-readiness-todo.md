@@ -108,15 +108,15 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 
 ## Phase 9: Tests
 
-- [ ] Replace placeholder tests with tests that exercise real app logic.
-- [ ] Add checkout tests for normal sale, discount, offer, loan, expense, and insufficient stock.
-- [ ] Add product insert/update validation tests.
-- [ ] Add low-stock calculation tests.
-- [ ] Add loan payment and account statement tests.
-- [ ] Add backup create/restore tests with temporary files.
-- [ ] Add offline login policy tests.
-- [ ] Add widget tests for login, product insert, checkout, inventory search, and settings.
-- [ ] Add one smoke integration test for app startup and core sale flow.
+- [x] Replace placeholder tests with tests that exercise real app logic.
+- [x] Add checkout tests for normal sale, discount, offer, loan, expense, and insufficient stock.
+- [x] Add product insert/update validation tests.
+- [x] Add low-stock calculation tests.
+- [x] Add loan payment and account statement tests.
+- [x] Add backup create/restore tests with temporary files.
+- [x] Add offline login policy tests.
+- [x] Add widget tests for login, product insert, checkout, inventory search, and settings.
+- [x] Add one smoke integration test for app startup and core sale flow.
 
 ## Phase 10: Observability And Production Logging
 
@@ -161,4 +161,4 @@ This file tracks the work needed to make Dukkan production ready in small, safe 
 - [x] Checkout failures cannot be reported as success.
 - [x] Backup restore cannot destroy the current database without a verified replacement.
 - [x] LAN sync does not serve arbitrary local files.
-- [ ] Core sales, inventory, loan, expense, backup, and auth behavior has real tests.
+- [x] Core sales, inventory, loan, expense, backup, and auth behavior has real tests.

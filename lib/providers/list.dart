@@ -30,6 +30,7 @@ class Lists extends ChangeNotifier with LanSyncState {
   late DB db;
 
   late IsolatePool pool;
+  List<Owner>? _testOwners;
   bool keepAlive = false;
   bool editing = false;
   Stream<String> downloadProgress = Stream.empty();
@@ -41,6 +42,14 @@ class Lists extends ChangeNotifier with LanSyncState {
   // For self signed certificates, only use for development
   Lists() {
     init();
+  }
+
+  @visibleForTesting
+  Lists.forTesting(this.db);
+
+  @visibleForTesting
+  Lists.detachedForTesting({List<Owner> owners = const []}) {
+    _testOwners = owners;
   }
 
   void init() async {
@@ -106,6 +115,7 @@ class Lists extends ChangeNotifier with LanSyncState {
   }
 
   Future<List<Owner>> refreshListOfOwners() async {
+    if (_testOwners != null) return _testOwners!;
     return db.getOwnersList();
   }
 

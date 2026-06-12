@@ -28,9 +28,11 @@ RootIsolateToken? _getRootIsolateToken() {
 
 class DB {
   Isar? isar;
+  Directory? _documentsDirectoryOverride;
+  String _isarName = 'isarInstance';
   static DB? _instance;
   static bool _isInitializing = false;
-  static final _initCompleter = Completer<DB>();
+  static Completer<DB> _initCompleter = Completer<DB>();
 
   DB._internal();
 
@@ -50,6 +52,35 @@ class DB {
   static Future<void> initialize() async {
     if (_instance != null) return;
     await getInstance();
+  }
+
+  @visibleForTesting
+  static Future<DB> createForTesting({
+    required String directoryPath,
+    String name = 'isarInstance',
+  }) async {
+    final db = DB._internal()
+      .._documentsDirectoryOverride = Directory(directoryPath)
+      .._isarName = name;
+    db.isar = await Isar.open(
+      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+      directory: directoryPath,
+      name: name,
+    );
+    return db;
+  }
+
+  @visibleForTesting
+  static Future<void> resetForTesting() async {
+    await _instance?.isar?.close();
+    _instance = null;
+    _isInitializing = false;
+    _initCompleter = Completer<DB>();
+  }
+
+  Future<Directory> _documentsDirectory() async {
+    return _documentsDirectoryOverride ??
+        await getApplicationDocumentsDirectory();
   }
 
   static Future<Isar> _openIsar(String directoryPath) async {
@@ -78,8 +109,8 @@ class DB {
 
   Future<void> _init() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final existingIsar = await Isar.getInstance("isarInstance");
+      final dir = await _documentsDirectory();
+      final existingIsar = await Isar.getInstance(_isarName);
       if (existingIsar != null) {
         isar = existingIsar;
         return;
@@ -87,7 +118,7 @@ class DB {
       isar = await Isar.open(
         [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
         directory: dir.path,
-        name: 'isarInstance',
+        name: _isarName,
       );
     } catch (e) {
       debugPrint('Isar initialization failed: $e');
@@ -276,6 +307,13 @@ class DB {
     int? expenseId,
   }) async {
     try {
+      if (discount < 0) {
+        throw Exception('Discount must be non-negative');
+      }
+      if (discount > total) {
+        throw Exception('Discount cannot exceed checkout total');
+      }
+
       var productsIds = products.map((e) => e.id);
 
       productsIds = productsIds.toSet();
@@ -611,13 +649,13 @@ class DB {
     final jsonString = jsonEncode(jsonData);
 
     // Save jsonString to a file
-    var te = await getApplicationDocumentsDirectory();
+    var te = await _documentsDirectory();
     var file = File('${te.path}/backup.txt');
     await file.writeAsString(jsonString);
   }
 
   Future<void> importData() async {
-    var jsonFilePath = await getApplicationDocumentsDirectory();
+    var jsonFilePath = await _documentsDirectory();
     final jsonString =
         await File('${jsonFilePath.path}/backup.txt').readAsString();
     final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -720,8 +758,7 @@ class DB {
   }
 
   Future<void> createLocalBackup() async {
-    final backupFilePath =
-        '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
+    final backupFilePath = '${(await _documentsDirectory()).path}/backup.isar';
     final backupFile = File(backupFilePath);
 
     if (await backupFile.exists()) {
@@ -751,7 +788,7 @@ class DB {
   }
 
   Future<void> useLocalBacup() async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await _documentsDirectory();
     await _replaceLiveIsarWithFile('${dir.path}/backup.isar');
   }
 
@@ -789,19 +826,21 @@ class DB {
   }
 
   Future<void> windows() async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await _documentsDirectory();
     await _replaceLiveIsarWithFile('${dir.path}/backup.isar.received');
   }
 
   Future<void> _replaceLiveIsarWithFile(String sourcePath) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final livePath = '${dir.path}/isarInstance.isar';
+    final dir = await _documentsDirectory();
+    final livePath = '${dir.path}/$_isarName.isar';
     final sourceFile = File(sourcePath);
     final liveFile = File(livePath);
     final bakFile = File('$livePath.bak');
 
     await _verifyIsarFile(sourcePath);
-    await closeAllIsarInstances();
+    if (_documentsDirectoryOverride == null) {
+      await closeAllIsarInstances();
+    }
     await isar!.close();
 
     if (await bakFile.exists()) {
@@ -816,7 +855,7 @@ class DB {
       isar = await Isar.open(
         [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
         directory: dir.path,
-        name: 'isarInstance',
+        name: _isarName,
       );
       if (await bakFile.exists()) {
         await bakFile.delete();
@@ -830,7 +869,7 @@ class DB {
         isar = await Isar.open(
           [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
           directory: dir.path,
-          name: 'isarInstance',
+          name: _isarName,
         );
       }
       rethrow;
@@ -842,8 +881,11 @@ class DB {
     if (!await sourceFile.exists()) {
       throw Exception('Backup file not found at $sourcePath');
     }
+    if (await sourceFile.length() < 4096) {
+      throw Exception('Backup file is too small to be a valid database');
+    }
 
-    final tempDir = await getTemporaryDirectory();
+    final tempDir = await _documentsDirectory();
     final verifyName = 'isar_verify_${DateTime.now().microsecondsSinceEpoch}';
     final verifyPath = '${tempDir.path}/$verifyName.isar';
     Isar? verifyIsar;

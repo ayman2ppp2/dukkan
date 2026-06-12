@@ -11,6 +11,9 @@ class InventoryProvider extends ChangeNotifier {
     init();
   }
 
+  @visibleForTesting
+  InventoryProvider.forTesting(this.db);
+
   Future<void> init() async {
     db = await DB.getInstance();
   }
@@ -21,8 +24,10 @@ class InventoryProvider extends ChangeNotifier {
       return db.getAllProducts();
     }
     var query = db.isar!.products.filter();
-    QueryBuilder<Product, Product, QAfterFilterCondition> filterQuery = query.nameContains(searchTerm, caseSensitive: false);
-    filterQuery = filterQuery.or().barcodeContains(searchTerm, caseSensitive: false);
+    QueryBuilder<Product, Product, QAfterFilterCondition> filterQuery =
+        query.nameContains(searchTerm, caseSensitive: false);
+    filterQuery =
+        filterQuery.or().barcodeContains(searchTerm, caseSensitive: false);
     return filterQuery.findAll();
   }
 
@@ -52,13 +57,17 @@ class InventoryProvider extends ChangeNotifier {
     return db.isar!.products.watchLazy().asyncMap((_) => db.getAllProducts());
   }
 
-  Future<List<LowStockProduct>> getLowStockItems({double thresholdPercent = 0.25}) async {
-    final results = await db.getLowStockProductsWithPercent(thresholdPercent: thresholdPercent);
-    return results.map((r) => LowStockProduct(
-      product: r['product'] as Product,
-      percentRemaining: r['percentRemaining'] as double,
-      currentStock: r['currentStock'] as int,
-      soldLast30Days: r['soldLast30Days'] as int,
-    )).toList();
+  Future<List<LowStockProduct>> getLowStockItems(
+      {double thresholdPercent = 0.25}) async {
+    final results = await db.getLowStockProductsWithPercent(
+        thresholdPercent: thresholdPercent);
+    return results
+        .map((r) => LowStockProduct(
+              product: r['product'] as Product,
+              percentRemaining: r['percentRemaining'] as double,
+              currentStock: r['currentStock'] as int,
+              soldLast30Days: r['soldLast30Days'] as int,
+            ))
+        .toList();
   }
 }

@@ -14,7 +14,7 @@ enum AuthStatus {
 }
 
 class AuthAPI extends ChangeNotifier {
-  Client client = Client();
+  late final Client client;
   late final Account account;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
@@ -42,7 +42,14 @@ class AuthAPI extends ChangeNotifier {
     _initialize();
   }
 
+  @visibleForTesting
+  AuthAPI.forTesting();
+
+  @visibleForTesting
+  Future<void> clearSessionForTesting() => _clearSession();
+
   void init() {
+    client = Client();
     client
         .setEndpoint(AppwriteConfig.endpoint)
         .setProject(AppwriteConfig.projectId);
