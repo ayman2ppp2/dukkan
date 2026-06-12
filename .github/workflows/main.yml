@@ -190,8 +190,7 @@ jobs:
           cp packaging/linux/dukkan.desktop "$DEB_DIR/usr/share/applications/"
           cp packaging/linux/dukkan.png "$DEB_DIR/usr/share/icons/hicolor/256x256/apps/"
 
-          dpkg-deb --build "$DEB_DIR"
-          mv "${DEB_DIR}.deb" "Dukkan-${{ env.APP_VERSION }}.deb"
+          dpkg-deb --build "$DEB_DIR" "Dukkan-${{ env.APP_VERSION }}.deb"
 
       - name: Tar release bundle (fallback)
         run: tar -czf linux-${{ github.ref_name }}.tar.gz -C build/linux/x64/release/bundle .
