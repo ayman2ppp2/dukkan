@@ -131,6 +131,7 @@ jobs:
             liblzma-dev \
             libsecret-1-dev \
             libjsoncpp-dev \
+            libwebkit2gtk-4.1-dev \
             fuse
       - run: flutter pub get
       - run: |
