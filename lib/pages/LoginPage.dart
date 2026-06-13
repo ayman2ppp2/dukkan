@@ -72,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> signInWithProvider(String provider) async {
     try {
       await context.read<AuthAPI>().signInWithProvider(provider: provider);
-    } on AppwriteException catch (e, st) {
+    } catch (e, st) {
       await AppLogger.captureException(e, stackTrace: st, area: 'auth.oauth');
       showAlert(title: 'فشل تسجيل الدخول', text: UserSafeMessages.loginFailed);
     }

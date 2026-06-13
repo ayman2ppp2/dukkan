@@ -19,34 +19,32 @@ class AppLogger {
   static bool _sentryStarted = false;
 
   static Future<void> bootstrap(Future<void> Function() appRunner) async {
-    WidgetsFlutterBinding.ensureInitialized();
+    await _runGuarded(() async {
+      WidgetsFlutterBinding.ensureInitialized();
+      if (ObservabilityConfig.crashReportingEnabled) {
+        await SentryFlutter.init(_configureSentry);
+        _sentryStarted = true;
+      }
+      _installGlobalErrorHandlers();
+      await appRunner();
+    });
+  }
 
-    if (ObservabilityConfig.crashReportingEnabled) {
-      _sentryStarted = true;
-      await SentryFlutter.init(
-        (options) {
-          options.dsn = ObservabilityConfig.dsn;
-          options.environment = ObservabilityConfig.environment;
-          if (ObservabilityConfig.release.isNotEmpty) {
-            options.release = ObservabilityConfig.release;
-          }
-          options.debug = kDebugMode;
-          options.sendDefaultPii = false;
-          options.attachStacktrace = true;
-          options.tracesSampleRate = 0;
-        },
-        appRunner: () => _runGuarded(appRunner),
-      );
-      return;
+  static void _configureSentry(SentryFlutterOptions options) {
+    options.dsn = ObservabilityConfig.dsn;
+    options.environment = ObservabilityConfig.environment;
+    if (ObservabilityConfig.release.isNotEmpty) {
+      options.release = ObservabilityConfig.release;
     }
-
-    await _runGuarded(appRunner);
+    options.debug = kDebugMode;
+    options.sendDefaultPii = false;
+    options.attachStacktrace = true;
+    options.tracesSampleRate = 0;
   }
 
   static Future<void> _runGuarded(Future<void> Function() appRunner) async {
     final guarded = runZonedGuarded<Future<void>>(
       () async {
-        _installGlobalErrorHandlers();
         await appRunner();
       },
       (error, stackTrace) {

@@ -75,6 +75,7 @@ dependencies:
   isar_community: ^3.3.2
   isar_community_flutter_libs: ^3.3.2
   sentry_flutter: ^8.14.2
+  flutter_web_auth_2: 4.1.0
 dependency_overrides:
   flutter_web_auth_2: 4.1.0
 
@@ -138,5 +139,5 @@ flutter:
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/custom-fonts/#from-packages
+# For details regarding fonts from package dependencies,
+# see https://flutter.dev/custom-fonts/#from-packages
