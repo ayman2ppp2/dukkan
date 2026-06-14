@@ -1,4 +1,5 @@
 // import 'package:dukkan/util/models/BcLog.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/util/models/prodStats.dart';
 
 import 'package:flutter/material.dart';
@@ -54,7 +55,7 @@ class _CircularChartState extends State<CircularChart>
                       builder: (context, snapshot) {
                         // li.refreshLogsList();
                         if (snapshot.hasError) {
-                          return Text('${snapshot.error.toString()}');
+                          return const Text(UserSafeMessages.loadFailed);
                         }
                         if (snapshot.hasData) {
                           return SizedBox(
@@ -184,7 +185,7 @@ class _BarChartState extends State<BarChart>
                   future: future,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
-                      return Text('${snapshot.error.toString()}');
+                      return const Text(UserSafeMessages.loadFailed);
                     }
                     if (snapshot.hasData) {
                       if (_scrollController.position.pixels ==
@@ -299,7 +300,7 @@ class _LineChartState extends State<LineChart>
               ),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Text('${snapshot.error.toString()}');
+                  return const Text(UserSafeMessages.loadFailed);
                 }
                 if (snapshot.hasData) {
                   return Container(
@@ -426,7 +427,7 @@ class _MOYState extends State<MOY> with AutomaticKeepAliveClientMixin {
               ]),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Text('${snapshot.error.toString()}');
+                  return const Text(UserSafeMessages.loadFailed);
                 }
                 if (snapshot.hasData) {
                   return Container(
@@ -533,7 +534,7 @@ class _OwnertileState extends State<Ownertile>
       future: Provider.of<Lists>(context).refreshListOfOwners(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Text('${snapshot.error.toString()}');
+          return const Text(UserSafeMessages.loadFailed);
         }
         if (snapshot.hasData) {
           return PageView.builder(

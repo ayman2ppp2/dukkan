@@ -5,9 +5,11 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_webview_window
   file_selector_linux
+  flutter_secure_storage_linux
   isar_community_flutter_libs
   printing
   restart_app
+  sentry_flutter
   url_launcher_linux
   window_to_front
 )

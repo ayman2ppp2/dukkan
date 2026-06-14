@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/accountStatement.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
@@ -151,10 +152,9 @@ class _LoanState extends State<Loan> {
                     .watchLoaner(widget.loaner.ID),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return Text(snapshot.error.toString());
+                    return const Text(UserSafeMessages.loadFailed);
                   }
                   if (snapshot.hasData) {
-                    print(snapshot.data!.toMap());
                     return Column(
                       children: [
                         Item(
@@ -230,15 +230,16 @@ class _LoanState extends State<Loan> {
                                         : warningPayingMoreOrNothing(context);
                                   }
                                 },
-                                icon: Icon(Icons.payments_rounded),
+                                tooltip: 'تسجيل سداد',
+                                icon: const Icon(Icons.payments_rounded),
                               ),
                             ],
                           ),
                         ),
-                        Item(child: Text('history')),
+                        Item(child: Text('السجل')),
                         Item(
                           child: SizedBox(
-                            height: 260 % MediaQuery.of(context).size.height,
+                            height: 260,
                             child: StreamBuilder(
                                 stream:
                                     Provider.of<Lists>(context, listen: false)
@@ -254,7 +255,8 @@ class _LoanState extends State<Loan> {
                                   }
                                   if (snapshot.hasError) {
                                     return AlertDialog(
-                                      title: Text('Error: ${snapshot.error}'),
+                                      title: const Text(
+                                          UserSafeMessages.loadFailed),
                                     );
                                   }
                                   return SpinKitChasingDots(
@@ -286,10 +288,10 @@ class _LoanState extends State<Loan> {
                                                 ),
                                               )),
                                     );
-                                  } catch (e) {
-                                    // Handle error (e.g., loaner not found)
-                                    print(
-                                        'Error loading account statement: $e');
+                                  } catch (e, st) {
+                                    await AppLogger.captureException(e,
+                                        stackTrace: st,
+                                        area: 'loan.account_statement');
                                   }
                                 },
                                 child: Text('account statement')))
@@ -310,7 +312,7 @@ class _LoanState extends State<Loan> {
       BuildContext context, AsyncSnapshot<Loaner?> snapshot) {
     return showGeneralDialog(
       barrierDismissible: true,
-      barrierLabel: 'paymentDialog',
+      barrierLabel: 'تفاصيل المدفوعات',
       context: context,
       pageBuilder: (context, animation, secondaryAnimation) {
         return Padding(

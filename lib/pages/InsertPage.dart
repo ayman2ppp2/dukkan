@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Emap.dart';
 import 'package:flutter/material.dart';
@@ -105,11 +106,11 @@ class _InPageState extends State<InPage> {
   }
 
   bool _validateFields() {
-    return widget.nameCon.text.isNotEmpty &&
-        widget.ownerCon.text.isNotEmpty &&
-        widget.buyCon.text.isNotEmpty &&
-        widget.sellCon.text.isNotEmpty &&
-        widget.countCon.text.isNotEmpty;
+    return widget.nameCon.text.trim().isNotEmpty &&
+        widget.ownerCon.text.trim().isNotEmpty &&
+        widget.buyCon.text.trim().isNotEmpty &&
+        widget.sellCon.text.trim().isNotEmpty &&
+        widget.countCon.text.trim().isNotEmpty;
   }
 
   void _showErrorDialog(BuildContext context, String message) {
@@ -177,7 +178,7 @@ class _InPageState extends State<InPage> {
                             color: Colors.white, size: 50);
                       }
                       if (snapshot.hasError) {
-                        return Text(snapshot.error.toString());
+                        return const Text(UserSafeMessages.loadFailed);
                       }
                       if (snapshot.hasData) {
                         var temp = snapshot.data!
@@ -222,10 +223,12 @@ class _InPageState extends State<InPage> {
                       ),
                       Expanded(
                           child: IconButton(
+                              tooltip: 'مسح الباركود',
                               onPressed: () {
                                 MobileScannerController con =
                                     MobileScannerController();
                                 showGeneralDialog(
+                                  barrierLabel: 'ماسح الباركود',
                                   context: context,
                                   pageBuilder:
                                       (context, animation, secondaryAnimation) {
@@ -239,8 +242,10 @@ class _InPageState extends State<InPage> {
                                           for (final barcode in barcodes) {
                                             widget.BarcodeCon.text =
                                                 barcode.rawValue!;
-                                            debugPrint(
-                                                'Barcode found! ${barcode.rawValue}');
+                                            AppLogger.debug('Barcode scanned',
+                                                data: {
+                                                  'area': 'product.barcode_scan'
+                                                });
                                           }
 
                                           Navigator.pop(context);
@@ -250,7 +255,7 @@ class _InPageState extends State<InPage> {
                                   },
                                 );
                               },
-                              icon: Icon(Icons.qr_code_scanner))),
+                              icon: const Icon(Icons.qr_code_scanner))),
                     ],
                   ),
                 ),
@@ -444,6 +449,11 @@ class _InPageState extends State<InPage> {
                             hot: false,
                           );
                           temp.add(temp2);
+                          final validationError = temp2.validateForCreate();
+                          if (validationError != null) {
+                            _showErrorDialog(context, validationError);
+                            return;
+                          }
                           Navigator.pop(context);
                           li.db.insertProducts(products: temp);
                           // sa.refreshProductsList();
@@ -495,6 +505,11 @@ class _InPageState extends State<InPage> {
                             endDate: widget.endDate,
                             hot: false,
                           );
+                          final validationError = temp2.validateForCreate();
+                          if (validationError != null) {
+                            _showErrorDialog(context, validationError);
+                            return;
+                          }
                           sa.updateProduct(temp2);
                           // sa.refreshProductsList();
                           // li.refresh();

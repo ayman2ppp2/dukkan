@@ -14,12 +14,16 @@ import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/providers/share_provider.dart';
 import 'package:dukkan/providers/stats_provider.dart';
 import 'package:dukkan/providers/sync_provider.dart';
+import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// just a test2
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+
+Future<void> main() async {
+  await AppLogger.bootstrap(() async {
+    await DB.initialize();
+    runApp(const MyApp());
+  });
 }
 
 class MyApp extends StatelessWidget {
@@ -104,18 +108,43 @@ class MyApp extends StatelessWidget {
             ),
           ],
           builder: (context, child) {
-            WidgetsBinding.instance
-                .addObserver(context.read<SalesProvider>());
+            WidgetsBinding.instance.addObserver(context.read<SalesProvider>());
             return Consumer<AuthAPI>(
               builder: (context, auth, child) {
-                // print('Auth Status: ${auth.status}');
                 if (auth.status == AuthStatus.uninitialized) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (auth.status == AuthStatus.authenticated) {
-                  return context.read<SalesProvider>().getWeightPrececsion() == null
-                      ? LandingPage()
-                      : HomePage();
+                  final content =
+                      context.read<SalesProvider>().getWeightPrececsion() ==
+                              null
+                          ? const LandingPage()
+                          : const HomePage();
+                  if (auth.isOffline) {
+                    return Stack(
+                      children: [
+                        content,
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: MaterialBanner(
+                            backgroundColor: Colors.amber.shade100,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            leading: Icon(Icons.cloud_off,
+                                color: Colors.amber.shade800),
+                            content: Text(
+                              'أنت غير متصل بالإنترنت. يتم عرض البيانات المحفوظة.',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            actions: const [SizedBox.shrink()],
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  return content;
                 }
                 return LoginPage();
               },

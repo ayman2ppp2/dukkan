@@ -1,16 +1,21 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/lan_sync.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:restart_app/restart_app.dart';
 
-class ShareProvider extends ChangeNotifier {
+class ShareProvider extends ChangeNotifier with LanSyncState {
   late DB db;
   List<Widget> shareList = [];
+  CancelToken? _syncCancelToken;
+  HttpServer? _syncServer;
+  bool get canCancelSync => _syncCancelToken != null || _syncServer != null;
 
   ShareProvider() {
     init();
@@ -26,174 +31,289 @@ class ShareProvider extends ChangeNotifier {
   }
 
   Future<void> runServer() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    final NetworkInfo _networkInfo = NetworkInfo();
-
-    String? wifiIp = await _networkInfo.getWifiIP();
-
-    if (wifiIp == null) {
-      shareList.add(Text('No IP address found'));
-      notifyListeners();
-      return;
-    }
-
-    shareList.add(QrImageView(data: '$wifiIp:30000'));
-    notifyListeners();
-
-    var te = await getApplicationDocumentsDirectory();
-
-    void handleHttpRequest(HttpRequest request) async {
-      final fileName = request.uri.pathSegments.last;
-      if (fileName == 'version') {
-        String version = packageInfo.version;
-        request.response.write(version);
-        await request.response.close();
-        shareList.add(Text('vsersion sent'));
-        notifyListeners();
-      } else {
-        final file = File('${te.path}/$fileName');
-        if (await file.exists()) {
-          print('Sending file: $fileName');
-          shareList.add(Text('Sending file: $fileName'));
-          notifyListeners();
-
-          try {
-            var mimeType = lookupMimeType(fileName) ?? 'application/octet-stream';
-            var fileSize = await file.length();
-            request.response.headers.set(HttpHeaders.contentTypeHeader, mimeType);
-            request.response.headers.set(HttpHeaders.contentLengthHeader, fileSize);
-            request.response.headers.set(HttpHeaders.contentDisposition, 'attachment; filename="$fileName"');
-
-            final fileStream = file.openRead();
-            await for (final chunk in fileStream) {
-              request.response.add(chunk);
-            }
-            await request.response.flush();
-            await request.response.close();
-            shareList.add(Text('File sent: $fileName'));
-            notifyListeners();
-          } catch (error) {
-            print('Error sending file: $error');
-            try {
-              request.response.statusCode = HttpStatus.internalServerError;
-              request.response.write('Error sending file');
-              await request.response.close();
-            } catch (_) {}
-          }
-        } else {
-          print('File not found: $fileName');
-          request.response.statusCode = HttpStatus.notFound;
-          request.response.write('File not found: $fileName');
-          request.response.close();
-        }
-      }
-    }
+    await _syncServer?.close(force: true);
+    _syncServer = null;
+    setSyncState(
+      SyncStatus.connecting,
+      message: 'جار تجهيز خادم المزامنة المحلية...',
+      progress: 0,
+    );
 
     try {
-      final server = await HttpServer.bind(wifiIp, 30000);
-      print('Server listening on ${server.address.address}:${server.port}');
-      shareList.add(Text('Server listening on ${server.address.address}:${server.port}'));
-      notifyListeners();
+      final packageInfo = await PackageInfo.fromPlatform();
+      final networkInfo = NetworkInfo();
+      final wifiIp = await networkInfo.getWifiIP();
+      if (wifiIp == null) {
+        throw Exception('لم يتم العثور على عنوان Wi-Fi');
+      }
 
-      await for (HttpRequest request in server) {
-        if (request.uri.pathSegments.last == 'shutdown') {
-          request.response.write('server is down');
-          request.response.close();
-          print('Shutting down server...');
-          shareList.add(Text('Server shutting down...'));
-          notifyListeners();
+      final code = LanSync.generatePairingCode();
+      final endpoint = LanSyncEndpoint(
+        host: wifiIp,
+        port: LanSync.port,
+        code: code,
+      );
+      pairingCode = code;
+      pairingAddress = endpoint.qrPayload;
+
+      await db.createLocalBackup();
+      final dir = await getApplicationDocumentsDirectory();
+      final server = await HttpServer.bind(wifiIp, LanSync.port);
+      server.idleTimeout = LanSync.receiveTimeout;
+      _syncServer = server;
+
+      setSyncState(
+        SyncStatus.done,
+        message: 'الخادم جاهز. كود الاقتران: $code',
+        progress: 1,
+      );
+
+      await for (final request in server) {
+        final shouldShutdown = await _handleLanRequest(
+          request,
+          packageInfo.version,
+          dir,
+          code,
+        );
+        if (shouldShutdown) {
           await server.close();
-          shareList.add(Text('Server is down'));
-          notifyListeners();
           break;
-        } else {
-          handleHttpRequest(request);
         }
       }
-    } catch (e) {
-      print('Error starting server: $e');
-      shareList.add(Text('Error starting server: $e'));
+      if (syncStatus != SyncStatus.cancelled) {
+        setSyncState(SyncStatus.done, message: 'تم إيقاف الخادم', progress: 1);
+      }
+    } catch (e, st) {
+      await AppLogger.captureException(e, stackTrace: st, area: 'sync.server');
+      if (syncStatus != SyncStatus.cancelled) {
+        setSyncState(
+          SyncStatus.error,
+          message: 'فشل تشغيل الخادم',
+          error: UserSafeMessages.syncFailed,
+        );
+      }
+    } finally {
+      _syncServer = null;
       notifyListeners();
     }
   }
 
-  Future<void> syncFromServer(String ip) async {
-    String version = '';
-    var te = await getApplicationDocumentsDirectory();
-    Dio dio = Dio();
-
-    Future<void> createBackup() async {
-      await db.createLocalBackup();
-      shareList.add(Text('Backup created for : isarInstance.isar'));
-      notifyListeners();
+  Future<void> syncFromServer(String input) async {
+    final endpoint = LanSyncEndpoint.tryParse(input);
+    if (endpoint == null) {
+      setSyncState(
+        SyncStatus.error,
+        message: 'عنوان الاقتران غير صحيح',
+        error: 'استخدم ip:code أو ip:port:code من جهاز الإرسال.',
+      );
+      return;
     }
 
-    await createBackup();
+    final dir = await getApplicationDocumentsDirectory();
+    final downloadPath = _downloadedBackupPath(dir.path);
+    final dio = LanSync.createDio();
+    final cancelToken = CancelToken();
+    _syncCancelToken = cancelToken;
+    pairingCode = endpoint.code;
+    pairingAddress = endpoint.qrPayload;
 
     try {
-      try {
-        var versionResponse = await dio.get('http://$ip/version');
-        version = versionResponse.data.toString();
-        shareList.add(Text(version));
-        notifyListeners();
-      } catch (e) {
-        shareList.add(Text('Error fetching version: $e'));
-        notifyListeners();
-        return;
+      setSyncState(
+        SyncStatus.connecting,
+        message: 'جار الاتصال بجهاز الإرسال...',
+        progress: 0,
+      );
+      await db.createLocalBackup();
+
+      final versionResponse = await dio.getUri(
+        endpoint.uri('version'),
+        cancelToken: cancelToken,
+      );
+      final version = versionResponse.data.toString().trim();
+      final fileNames = LanSync.filesForVersion(version);
+      final fileName = fileNames.single;
+
+      await LanSync.deleteIfExists(downloadPath);
+      setSyncState(
+        SyncStatus.downloading,
+        message: 'جار تنزيل النسخة الاحتياطية...',
+        progress: 0,
+      );
+      final response = await dio.downloadUri(
+        endpoint.uri(fileName),
+        downloadPath,
+        cancelToken: cancelToken,
+        onReceiveProgress: (received, total) {
+          if (total <= 0) return;
+          setSyncState(
+            SyncStatus.downloading,
+            message: 'جار تنزيل النسخة الاحتياطية...',
+            progress: received / total,
+          );
+        },
+      );
+      if (response.statusCode != HttpStatus.ok) {
+        throw Exception('فشل التنزيل بالحالة ${response.statusCode}');
       }
 
-      List<String> fileNames;
-      if (version.startsWith('2.2.')) {
-        fileNames = ['inventoryv2.2.0.hive', 'logsv2.2.0.hive', 'ownersv2.2.0.hive', 'loanersv2.2.0.hive', 'shutdown'];
-      } else if (version.startsWith('2.3.') || version.startsWith('2.4.')) {
-        fileNames = ['isarInstance.isar', 'shutdown'];
+      setSyncState(
+        SyncStatus.verifying,
+        message: 'جار التحقق من النسخة الاحتياطية...',
+        progress: 1,
+      );
+      final actualHash = await LanSync.sha256File(File(downloadPath));
+      final expectedHash = await dio
+          .getUri(endpoint.uri('hash'), cancelToken: cancelToken)
+          .then((response) => response.data.toString().trim());
+      if (actualHash != expectedHash) {
+        await LanSync.deleteIfExists(downloadPath);
+        throw Exception('فشل التحقق من تطابق النسخة الاحتياطية');
+      }
+
+      await _shutdownPeer(dio, endpoint, cancelToken);
+      setSyncState(
+        SyncStatus.restoring,
+        message: 'جار استعادة النسخة التي تم التحقق منها...',
+        progress: 1,
+      );
+      await _restoreDownloadedBackup();
+      setSyncState(
+        SyncStatus.done,
+        message: 'اكتملت المزامنة بنجاح',
+        progress: 1,
+      );
+    } on DioException catch (e, st) {
+      await LanSync.deleteIfExists(downloadPath);
+      if (CancelToken.isCancel(e)) {
+        setSyncState(SyncStatus.cancelled, message: 'تم إلغاء المزامنة');
       } else {
-        shareList.add(Text('Unsupported version: $version'));
-        notifyListeners();
-        fileNames = ['inventoryv2.2.0.hive', 'logsv2.2.0.hive', 'ownersv2.2.0.hive', 'loanersv2.2.0.hive', 'shutdown'];
+        await AppLogger.captureException(e,
+            stackTrace: st, area: 'sync.client');
+        setSyncState(
+          SyncStatus.error,
+          message: 'فشلت المزامنة',
+          error: UserSafeMessages.syncFailed,
+        );
       }
-
-      for (var fileName in fileNames) {
-        var filePath = Platform.isWindows ? '${te.path}/$fileName+1' : '${te.path}/$fileName';
-
-        if (fileName == 'shutdown') {
-          try {
-            var response = await dio.get('http://$ip/shutdown');
-            shareList.add(Text(response.data));
-            notifyListeners();
-          } catch (e) {
-            shareList.add(Text('Error shutting down the server: $e'));
-            notifyListeners();
-          }
-          continue;
-        }
-
-        try {
-          shareList.add(Text('receiving : $fileName'));
-          notifyListeners();
-          var response = await dio.download('http://$ip/$fileName', filePath).then((value) {
-            if (Platform.isWindows) {
-              db.windows();
-              return value;
-            }
-            return value;
-          });
-
-          if (response.statusCode == 200) {
-            shareList.add(Text('File received: $fileName'));
-            notifyListeners();
-          } else {
-            shareList.add(Text('Error receiving $fileName: ${response.statusCode}'));
-            notifyListeners();
-          }
-        } catch (e) {
-          shareList.add(Text('Failed to download $fileName: $e'));
-          notifyListeners();
-        }
-      }
-    } catch (e) {
-      shareList.add(Text('Error: $e'));
+    } catch (e, st) {
+      await LanSync.deleteIfExists(downloadPath);
+      await AppLogger.captureException(e, stackTrace: st, area: 'sync.client');
+      setSyncState(
+        SyncStatus.error,
+        message: 'فشلت المزامنة',
+        error: UserSafeMessages.syncFailed,
+      );
+    } finally {
+      _syncCancelToken = null;
+      notifyListeners();
     }
+  }
+
+  void cancelSync() {
+    _syncCancelToken?.cancel('تم إلغاء المزامنة');
+    _syncCancelToken = null;
+    _syncServer?.close(force: true);
+    _syncServer = null;
+    setSyncState(SyncStatus.cancelled,
+        message: 'تم إلغاء المزامنة', progress: 0);
+  }
+
+  Future<bool> _handleLanRequest(
+    HttpRequest request,
+    String version,
+    Directory dir,
+    String code,
+  ) async {
+    final fileName =
+        request.uri.pathSegments.isEmpty ? '' : request.uri.pathSegments.last;
+    request.response.deadline = LanSync.receiveTimeout;
+
+    if (!LanSync.isAuthorizedRequest(request, code)) {
+      await _respond(request, HttpStatus.unauthorized, 'Unauthorized');
+      return false;
+    }
+    if (!LanSync.isAllowedSegment(fileName)) {
+      await _respond(request, HttpStatus.notFound, 'File not found');
+      return false;
+    }
+
+    if (fileName == 'shutdown') {
+      await _respond(request, HttpStatus.ok, 'server is down');
+      return true;
+    }
+    if (fileName == 'version') {
+      await _respond(request, HttpStatus.ok, version);
+      return false;
+    }
+
+    final backupFile = File('${dir.path}/${LanSync.backupFileName}');
+    if (!await backupFile.exists()) {
+      await _respond(request, HttpStatus.notFound, 'Backup file not found');
+      return false;
+    }
+    if (fileName == 'hash') {
+      await _respond(
+          request, HttpStatus.ok, await LanSync.sha256File(backupFile));
+      return false;
+    }
+
+    try {
+      final mimeType = lookupMimeType(fileName) ?? 'application/octet-stream';
+      request.response.headers.set(HttpHeaders.contentTypeHeader, mimeType);
+      request.response.headers.set(
+        HttpHeaders.contentLengthHeader,
+        await backupFile.length(),
+      );
+      request.response.headers.set(
+        HttpHeaders.contentDisposition,
+        'attachment; filename="$fileName"',
+      );
+      await backupFile.openRead().pipe(request.response);
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'sync.server_send');
+      try {
+        await _respond(
+            request, HttpStatus.internalServerError, 'Error sending file');
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  Future<void> _respond(
+      HttpRequest request, int statusCode, String message) async {
+    request.response.statusCode = statusCode;
+    request.response.write(message);
+    await request.response.close();
+  }
+
+  String _downloadedBackupPath(String directoryPath) {
+    if (Platform.isWindows || Platform.isLinux) {
+      return '$directoryPath/${LanSync.backupFileName}.received';
+    }
+    return '$directoryPath/${LanSync.backupFileName}';
+  }
+
+  Future<void> _shutdownPeer(
+    Dio dio,
+    LanSyncEndpoint endpoint,
+    CancelToken cancelToken,
+  ) async {
+    try {
+      await dio.getUri(endpoint.uri('shutdown'), cancelToken: cancelToken);
+    } catch (_) {
+      // Sync has already succeeded; a shutdown failure should not roll it back.
+    }
+  }
+
+  Future<void> _restoreDownloadedBackup() async {
+    if (Platform.isWindows || Platform.isLinux) {
+      await db.windows();
+      return;
+    }
+    await db.useLocalBacup();
+    // Keep restart after restore as a conservative safety measure.
+    Restart.restartApp();
   }
 
   Future<void> refresh() async {

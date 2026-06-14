@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:postgres/postgres.dart';
 
 class PostgresConnection {
@@ -13,9 +14,10 @@ class PostgresConnection {
 
     try {
       await conn.open();
-      print('Connected to PostgreSQL database.');
-    } catch (e) {
-      print('Failed to connect to PostgreSQL database: $e');
+      AppLogger.info('PostgreSQL connected', data: {'area': 'postgres'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'postgres.connect');
     }
   }
 
@@ -26,8 +28,9 @@ class PostgresConnection {
         sql,
         substitutionValues: substitutionValues,
       );
-    } catch (e) {
-      print('Error executing query: $e');
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'postgres.query');
       return [];
     }
   }
@@ -35,9 +38,11 @@ class PostgresConnection {
   Future<void> close() async {
     try {
       await conn.close();
-      print('PostgreSQL connection closed.');
-    } catch (e) {
-      print('Error closing PostgreSQL connection: $e');
+      AppLogger.info('PostgreSQL connection closed',
+          data: {'area': 'postgres'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'postgres.close');
     }
   }
 
@@ -60,10 +65,10 @@ class PostgresConnection {
       await conn.query(
         '''
         INSERT INTO products (
-          name, owner_name, buy_price, sell_price, barcode, count, weightable, 
+          name, owner_name, buy_price, sell_price, barcode, count, weightable,
           whole_unit, offer, offer_count, offer_price, end_date, hot
         ) VALUES (
-          @name, @ownerName, @buyPrice, @sellPrice, @barcode, @count, @weightable, 
+          @name, @ownerName, @buyPrice, @sellPrice, @barcode, @count, @weightable,
           @wholeUnit, @offer, @offerCount, @offerPrice, @endDate, @hot
         )
         ''',
@@ -83,9 +88,11 @@ class PostgresConnection {
           'hot': hot,
         },
       );
-      print('Product inserted successfully.');
-    } catch (e) {
-      print('Error inserting product: $e');
+      AppLogger.info('Product inserted in PostgreSQL',
+          data: {'area': 'postgres.insert_product'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'postgres.insert_product');
     }
   }
 }

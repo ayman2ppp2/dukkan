@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/Product.dart';
@@ -13,9 +14,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   late SharedPreferences _pref;
   late DB db;
+  List<Product>? _testProducts;
   SalesProvider() {
     init();
   }
+
+  @visibleForTesting
+  SalesProvider.forTesting(
+      {required this.db, required SharedPreferences pref}) {
+    _pref = pref;
+  }
+
+  @visibleForTesting
+  SalesProvider.detachedForTesting({
+    required SharedPreferences pref,
+    List<Product> products = const [],
+  }) {
+    _pref = pref;
+    _testProducts = products;
+  }
+
   Future<void> init() async {
     _pref = await SharedPreferences.getInstance();
     db = await DB.getInstance();
@@ -67,6 +85,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<List<Loaner>> refreshLoanersList() async {
+    if (_testProducts != null) return [];
     return db.getLoaners();
   }
 
@@ -206,6 +225,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<List<Product>> refreshProductsList() async {
+    if (_testProducts != null) return _testProducts!;
     return await db.getAllProducts();
   }
 
@@ -217,6 +237,16 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<List<Product>> search(String keyWord, bool sales, bool barcode) {
     final searchTerm = keyWord.trim().toLowerCase();
+
+    if (_testProducts != null) {
+      if (searchTerm.isEmpty) return Future.value(_testProducts!);
+      return Future.value(_testProducts!
+          .where((product) => barcode
+              ? (product.barcode ?? '').toLowerCase() == searchTerm
+              : (product.name ?? '').toLowerCase().contains(searchTerm) ||
+                  (product.barcode ?? '').toLowerCase().contains(searchTerm))
+          .toList());
+    }
 
     if (searchTerm.isEmpty) {
       return db.isar!.products.where().sortByName().findAll();
@@ -290,6 +320,12 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   int getProductCount(int id) {
+    if (_testProducts != null) {
+      for (final product in _testProducts!) {
+        if (product.id == id) return product.count ?? 999;
+      }
+      return 999;
+    }
     var temp = db.isar!.products.getSync(id);
 
     return temp == null ? 999 : temp.count!;
@@ -351,7 +387,8 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      print("ggs");
+      AppLogger.debug('Persisting cart on lifecycle change',
+          data: {'itemCount': sellList.length});
       saveProductsToSharedPreferences(sellList);
     }
   }
@@ -366,7 +403,8 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
           )
           .toList();
     }
-    print(sellListMap);
+    AppLogger.debug('Disposing sales provider',
+        data: {'itemCount': sellListMap?.length ?? 0});
     super.dispose();
   }
 }

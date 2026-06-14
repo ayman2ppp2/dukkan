@@ -258,23 +258,17 @@ void main() {
 
   group('Platform Tests', () {
     test('File path for Windows', () {
-      const isWindows = true;
       const fileName = 'backup.isar';
 
-      final path = isWindows
-          ? '/path/to/$fileName.received'
-          : '/path/to/$fileName';
+      final path = '/path/to/$fileName.received';
 
       expect(path, contains('.received'));
     });
 
     test('File path for Android', () {
-      const isWindows = false;
       const fileName = 'backup.isar';
 
-      final path = isWindows
-          ? '/path/to/$fileName.received'
-          : '/path/to/$fileName';
+      final path = '/path/to/$fileName';
 
       expect(path, isNot(contains('.received')));
     });

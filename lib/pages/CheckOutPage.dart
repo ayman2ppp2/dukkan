@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
@@ -35,6 +36,7 @@ class _CheckOutState extends State<CheckOut> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
+          tooltip: 'رجوع',
           onPressed: () {
             Navigator.pop(context);
           },
@@ -77,7 +79,8 @@ class _CheckOutState extends State<CheckOut> {
                                   .refreshLoanersList(),
                               builder: (context, snapshot) {
                                 if (snapshot.hasError) {
-                                  return Text(snapshot.error.toString());
+                                  return const Text(
+                                      UserSafeMessages.loadFailed);
                                 }
                                 if (snapshot.hasData) {
                                   var loanerOptions = snapshot.data!
@@ -118,7 +121,8 @@ class _CheckOutState extends State<CheckOut> {
                                   .getIndvidualExpenses(fixed: false),
                               builder: (context, snapshot) {
                                 if (snapshot.hasError) {
-                                  return Text(snapshot.error.toString());
+                                  return const Text(
+                                      UserSafeMessages.loadFailed);
                                 }
                                 if (snapshot.hasData) {
                                   var expenseOptions = snapshot.data!
@@ -270,22 +274,24 @@ class _CheckOutState extends State<CheckOut> {
                                 builder: (context) => AlertDialog(
                                   actions: [
                                     IconButton(
+                                      tooltip: 'إلغاء الخصم',
                                       onPressed: () {
                                         setState(() {
                                           discount = '';
                                         });
                                         Navigator.pop(context);
                                       },
-                                      icon: Icon(Icons.cancel_outlined),
+                                      icon: const Icon(Icons.cancel_outlined),
                                     ),
                                     IconButton(
+                                      tooltip: 'حفظ الخصم',
                                       onPressed: () {
                                         setState(() {
                                           discount = con.text;
                                         });
                                         Navigator.pop(context);
                                       },
-                                      icon: Icon(Icons.check_rounded),
+                                      icon: const Icon(Icons.check_rounded),
                                     ),
                                   ],
                                   title: Text(
@@ -313,16 +319,15 @@ class _CheckOutState extends State<CheckOut> {
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         setState(() {});
-                                        return 'please enter a number';
+                                        return 'يرجى إدخال رقم';
                                       }
                                       try {
                                         double.parse(value);
                                         setState(() {});
                                         return null;
                                       } catch (e) {
-                                        print('e');
                                         setState(() {});
-                                        return 'please enter a valid number';
+                                        return 'يرجى إدخال رقم صحيح';
                                       }
                                     },
                                   ),
@@ -338,8 +343,7 @@ class _CheckOutState extends State<CheckOut> {
                         Expanded(
                           flex: 3,
                           child: Container(
-                            // width: 180 % MediaQuery.of(context).size.width,
-                            height: 55 % MediaQuery.of(context).size.height,
+                            height: 55,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
                               color: Colors.green[400],
@@ -353,146 +357,160 @@ class _CheckOutState extends State<CheckOut> {
                         Expanded(
                           child: Consumer<SalesProvider>(
                             builder: (context, sa, child) => IconButton.filled(
+                              tooltip: 'تأكيد الفاتورة',
                               onPressed: () async {
-                                !(loanerID == null && radio == 1)
-                                    ? showDialog(
-                                        context: context,
-                                        builder: (context) {
-                                          return ChangeNotifierProvider.value(
-                                            value: sa,
-                                            child: AlertDialog(
-                                              title: const Text(
-                                                'هل انت متاكد',
-                                                style: TextStyle(fontSize: 20),
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () async {
-                                                    showGeneralDialog(
-                                                      context: context,
-                                                      pageBuilder: (context,
-                                                              animation,
-                                                              secondaryAnimation) =>
-                                                          LoadingOverlay(),
-                                                    );
+                                if (radio == 1 && loanerID == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('يرجى اختيار الدائن أولاً'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (radio == 2 && expenseID == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('يرجى اختيار المنصرف أولاً'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return ChangeNotifierProvider.value(
+                                      value: sa,
+                                      child: AlertDialog(
+                                        title: const Text(
+                                          'هل أنت متأكد؟',
+                                          style: TextStyle(fontSize: 20),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () async {
+                                              showGeneralDialog(
+                                                context: context,
+                                                pageBuilder: (context,
+                                                        animation,
+                                                        secondaryAnimation) =>
+                                                    LoadingOverlay(),
+                                              );
 
-                                                    //ScaffoldMessenger.of(
-                                                    //        context)
-                                                    //    .showSnackBar(
-                                                    //  const SnackBar(
-                                                    //      content: Text(
-                                                    //          'Processing checkout...')),
-                                                    //);
+                                              //ScaffoldMessenger.of(
+                                              //        context)
+                                              //    .showSnackBar(
+                                              //  const SnackBar(
+                                              //      content: Text(
+                                              //          'Processing checkout...')),
+                                              //);
 
-                                                    try {
-                                                      await li.checkOut(
-                                                        lst: widget.lst,
-                                                        total: widget.total,
-                                                        discount:
-                                                            double.tryParse(
-                                                                    discount) ??
-                                                                0,
-                                                        LoID: loanerID,
-                                                        loaned: radio == 1,
-                                                        edit: li.editing,
-                                                        logID: li.logID,
-                                                        expense: radio == 2,
-                                                        expenseId: expenseID,
-                                                      );
-                                                    } catch (e) {
-                                                      await showDialog(
-                                                        context: context,
-                                                        builder: (context) =>
-                                                            AlertDialog(
-                                                          title:
-                                                              const Text('فشل'),
-                                                          content: const Text(
-                                                              'فشل تسجيل الفاتورة.'),
-                                                          actions: [
-                                                            Center(
-                                                              child: TextButton(
-                                                                onPressed: () =>
-                                                                    Navigator.of(
-                                                                            context)
-                                                                        .pop(),
-                                                                child:
-                                                                    const Text(
-                                                                        'موافق'),
-                                                              ),
-                                                            ),
-                                                          ],
+                                              try {
+                                                await li.checkOut(
+                                                  lst: widget.lst,
+                                                  total: widget.total,
+                                                  discount: double.tryParse(
+                                                          discount) ??
+                                                      0,
+                                                  LoID: loanerID,
+                                                  loaned: radio == 1,
+                                                  edit: li.editing,
+                                                  logID: li.logID,
+                                                  expense: radio == 2,
+                                                  expenseId: expenseID,
+                                                );
+                                              } catch (e, st) {
+                                                await AppLogger
+                                                    .captureException(e,
+                                                        stackTrace: st,
+                                                        area: 'checkout.ui');
+                                                await showDialog(
+                                                  context: context,
+                                                  builder: (context) =>
+                                                      AlertDialog(
+                                                    title: const Text('فشل'),
+                                                    content: const Text(
+                                                        UserSafeMessages
+                                                            .checkoutFailed),
+                                                    actions: [
+                                                      Center(
+                                                        child: TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.of(
+                                                                      context)
+                                                                  .pop(),
+                                                          child: const Text(
+                                                              'موافق'),
                                                         ),
-                                                      );
-
-                                                      Navigator.pop(context);
-                                                      Navigator.pop(context);
-                                                      return; // stop further UI updates
-                                                    }
-
-// ✅ success: proceed
-                                                    li.editing = false;
-
-                                                    if (!widget.inbound) {
-                                                      await sa
-                                                          .refreshProductsList();
-                                                      await li.refresh();
-                                                      li.refreshListOfOwners();
-                                                      sa.defaultSellList();
-
-                                                      Navigator.pop(context);
-                                                      Navigator.pop(context);
-                                                      Navigator.pop(context);
-                                                    } else {
-                                                      Navigator.pop(context);
-                                                      Navigator.pop(context);
-                                                    }
-
-// ✅ success dialog
-                                                    await showDialog(
-                                                      context: context,
-                                                      builder: (context) =>
-                                                          AlertDialog(
-                                                        title:
-                                                            const Text('نجاح'),
-                                                        content: const Text(
-                                                            '✅ تم تسجيل الفاتورة بنجاح'),
-                                                        actions: [
-                                                          Center(
-                                                            child: TextButton(
-                                                              onPressed: () =>
-                                                                  Navigator.of(
-                                                                          context)
-                                                                      .pop(),
-                                                              child: const Text(
-                                                                  'موافق'),
-                                                            ),
-                                                          ),
-                                                        ],
                                                       ),
-                                                    );
-                                                  },
-                                                  child: const Text(
-                                                    'نعم',
-                                                    style:
-                                                        TextStyle(fontSize: 20),
+                                                    ],
                                                   ),
+                                                );
+
+                                                Navigator.pop(context);
+                                                Navigator.pop(context);
+                                                return; // stop further UI updates
+                                              }
+
+                                              // Sale saved successfully.
+                                              li.editing = false;
+
+                                              if (!widget.inbound) {
+                                                await sa.refreshProductsList();
+                                                await li.refresh();
+                                                li.refreshListOfOwners();
+                                                sa.defaultSellList();
+
+                                                Navigator.pop(context);
+                                                Navigator.pop(context);
+                                                Navigator.pop(context);
+                                              } else {
+                                                Navigator.pop(context);
+                                                Navigator.pop(context);
+                                              }
+
+                                              // Show success only after the database write completes.
+                                              await showDialog(
+                                                context: context,
+                                                builder: (context) =>
+                                                    AlertDialog(
+                                                  title: const Text('نجاح'),
+                                                  content: const Text(
+                                                      'تم تسجيل الفاتورة بنجاح'),
+                                                  actions: [
+                                                    Center(
+                                                      child: TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop(),
+                                                        child:
+                                                            const Text('موافق'),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                                TextButton(
-                                                  onPressed: () {
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: const Text(
-                                                    'لا',
-                                                    style:
-                                                        TextStyle(fontSize: 20),
-                                                  ),
-                                                ),
-                                              ],
+                                              );
+                                            },
+                                            child: const Text(
+                                              'نعم',
+                                              style: TextStyle(fontSize: 20),
                                             ),
-                                          );
-                                        },
-                                      )
-                                    : Null;
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: const Text(
+                                              'لا',
+                                              style: TextStyle(fontSize: 20),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
                               },
                               icon: const Icon(
                                 Icons.checklist_outlined,

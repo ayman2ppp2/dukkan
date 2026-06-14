@@ -46,17 +46,17 @@ void main() {
   group('File Operations Tests', () {
     test('Delete operation', () {
       bool fileExists = true;
-      
+
       // Delete file
       fileExists = false;
-      
+
       expect(fileExists, isFalse);
     });
 
     test('Copy operation', () {
       final source = 'backup.isar';
       final dest = 'isarInstance.isar';
-      
+
       expect(source != dest, isTrue);
     });
 
@@ -81,20 +81,14 @@ void main() {
     });
 
     test('Received path for Windows', () {
-      const isWindows = true;
       final docsDir = '/data/user/documents';
-      final path = isWindows
-          ? '$docsDir/backup.isar.received'
-          : '$docsDir/backup.isar';
+      final path = '$docsDir/backup.isar.received';
       expect(path, equals('/data/user/documents/backup.isar.received'));
     });
 
     test('Received path for Android', () {
-      const isWindows = false;
       final docsDir = '/data/user/documents';
-      final path = isWindows
-          ? '$docsDir/backup.isar.received'
-          : '$docsDir/backup.isar';
+      final path = '$docsDir/backup.isar';
       expect(path, equals('/data/user/documents/backup.isar'));
     });
   });

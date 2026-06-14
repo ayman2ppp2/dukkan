@@ -9,6 +9,9 @@ class LoanProvider extends ChangeNotifier {
     init();
   }
 
+  @visibleForTesting
+  LoanProvider.forTesting(this.db);
+
   Future<void> init() async {
     db = await DB.getInstance();
   }

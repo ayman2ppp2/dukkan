@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as formatter;
 import 'package:share_plus/share_plus.dart';
@@ -52,7 +53,8 @@ class ConfirmationPage extends StatelessWidget {
 
         return jpegScreenshot;
       } else {
-        debugPrint('Failed to decode the image.');
+        AppLogger.warning('Failed to decode confirmation image',
+            data: {'area': 'confirmation.share'});
         return null;
       }
     }
@@ -184,12 +186,14 @@ class ConfirmationPage extends StatelessWidget {
                                       );
                                     }
                                   } else {
-                                    debugPrint('Screenshot capture failed.');
+                                    AppLogger.warning(
+                                        'Screenshot capture failed',
+                                        data: {'area': 'confirmation.share'});
                                   }
                                 });
-                              } catch (e) {
-                                debugPrint(
-                                    'Error while capturing or sharing: $e');
+                              } catch (e, st) {
+                                await AppLogger.captureException(e,
+                                    stackTrace: st, area: 'confirmation.share');
                               }
                             },
                             icon: Icon(Icons.share, color: Colors.white),

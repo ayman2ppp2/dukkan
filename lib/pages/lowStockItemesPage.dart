@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
 import 'package:dukkan/util/models/LowStockProduct.dart';
 import 'package:flutter/material.dart';
@@ -41,9 +42,11 @@ class _LowStockItemsPageState extends State<LowStockItemsPage> {
         _allProducts = products;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'inventory.low_stock');
       setState(() {
-        _error = e.toString();
+        _error = UserSafeMessages.loadFailed;
         _isLoading = false;
       });
     }
@@ -74,7 +77,7 @@ class _LowStockItemsPageState extends State<LowStockItemsPage> {
   List<LowStockProduct> _filterProducts() {
     if (_allProducts == null) return [];
     if (_searchQuery.isEmpty) return _allProducts!;
-    
+
     final query = _searchQuery.toLowerCase();
     return _allProducts!.where((item) {
       final name = item.product.name?.toLowerCase() ?? '';
@@ -102,6 +105,7 @@ class _LowStockItemsPageState extends State<LowStockItemsPage> {
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
+                        tooltip: 'مسح البحث',
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
@@ -142,7 +146,7 @@ class _LowStockItemsPageState extends State<LowStockItemsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('خطأ: $_error'),
+            Text(_error!),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _refresh,
@@ -193,9 +197,10 @@ class _LowStockItemsPageState extends State<LowStockItemsPage> {
         itemBuilder: (context, i) {
           final item = products[i];
           final stockColor = _getStockColor(item.percentRemaining);
-          final percentText = '${(item.percentRemaining * 100).toStringAsFixed(0)}%';
+          final percentText =
+              '${(item.percentRemaining * 100).toStringAsFixed(0)}%';
           final unit = item.product.wholeUnit ?? '';
-          
+
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: ListTile(
@@ -218,11 +223,13 @@ class _LowStockItemsPageState extends State<LowStockItemsPage> {
                     children: [
                       Text(
                         'الكمية: ${item.currentStock}$unit',
-                        style: TextStyle(color: stockColor, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: stockColor, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: stockColor.withAlpha((0.2 * 255).round()),
                           borderRadius: BorderRadius.circular(4),

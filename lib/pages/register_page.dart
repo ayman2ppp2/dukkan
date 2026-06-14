@@ -1,6 +1,7 @@
+import 'package:appwrite/appwrite.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/verifyPage.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
-// import 'package:appwrite_app/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,24 +23,24 @@ class _RegisterPageState extends State<RegisterPage> {
     if (emailTextController.text.isEmpty ||
         !emailTextController.text.contains('@')) {
       showAlert(
-          title: 'Invalid Email', text: 'Please enter a valid email address');
+          title: 'البريد الإلكتروني غير صحيح',
+          text: 'يرجى إدخال بريد إلكتروني صحيح');
       return false;
     }
     if (passwordTextController.text.isEmpty ||
         passwordTextController.text.length < 8) {
       showAlert(
-          title: 'Invalid Password',
-          text: 'Password must be at least 8 characters long');
+          title: 'كلمة المرور غير صحيحة',
+          text: 'يجب أن تكون كلمة المرور 8 أحرف على الأقل');
       return false;
     }
     if (nameTextController.text.isEmpty) {
-      showAlert(title: 'Invalid Name', text: 'Please enter your name');
+      showAlert(title: 'الاسم مطلوب', text: 'يرجى إدخال الاسم');
       return false;
     }
     if (phoneTextController.text.isEmpty ||
         phoneTextController.text.length < 9) {
-      showAlert(
-          title: 'Invalid Phone', text: 'Please enter a valid phone number');
+      showAlert(title: 'رقم الهاتف غير صحيح', text: 'يرجى إدخال رقم هاتف صحيح');
       return false;
     }
     return true;
@@ -54,8 +55,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
-      final code =
-          await appwrite.verifyUser(email: emailTextController.text.trim());
+      final user = await appwrite.createUser(
+        email: emailTextController.text.trim(),
+        password: passwordTextController.text.trim(),
+        name: nameTextController.text.trim(),
+      );
 
       if (!mounted) return;
 
@@ -65,16 +69,25 @@ class _RegisterPageState extends State<RegisterPage> {
           builder: (context) => ChangeNotifierProvider.value(
             value: appwrite,
             child: VerficationPage(
-              code: code,
-              email: emailTextController.text,
-              password: passwordTextController.text,
-              name: nameTextController.text,
+              userId: user.$id,
+              email: emailTextController.text.trim(),
+              password: passwordTextController.text.trim(),
+              name: nameTextController.text.trim(),
             ),
           ),
         ),
       );
-    } on Exception catch (e) {
-      showAlert(title: 'Verification failed', text: e.toString());
+    } on AppwriteException catch (e, st) {
+      if (!mounted) return;
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.register');
+      showAlert(
+          title: 'فشل إنشاء الحساب', text: UserSafeMessages.registerFailed);
+    } on Exception catch (e, st) {
+      if (!mounted) return;
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.register');
+      showAlert(title: 'فشل التحقق', text: UserSafeMessages.verificationFailed);
     } finally {
       if (mounted) {
         setState(() {
@@ -97,7 +110,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: const Text('Ok'))
+                  child: const Text('موافق'))
             ],
           );
         });
@@ -107,7 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create your account'),
+        title: const Text('إنشاء حساب'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -120,17 +133,18 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextField(
                     controller: emailTextController,
                     decoration: const InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'البريد الإلكتروني',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.email),
                     ),
                     keyboardType: TextInputType.emailAddress,
+                    textDirection: TextDirection.ltr,
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameTextController,
                     decoration: const InputDecoration(
-                      labelText: 'Name',
+                      labelText: 'الاسم',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.person),
                     ),
@@ -141,27 +155,29 @@ class _RegisterPageState extends State<RegisterPage> {
                     controller: phoneTextController,
                     decoration: const InputDecoration(
                       prefix: Text('+249 '),
-                      labelText: 'Phone',
+                      labelText: 'رقم الهاتف',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.phone),
                     ),
                     keyboardType: TextInputType.phone,
+                    textDirection: TextDirection.ltr,
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: passwordTextController,
                     decoration: const InputDecoration(
-                      labelText: 'Password',
+                      labelText: 'كلمة المرور',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.lock),
                     ),
                     obscureText: true,
+                    textDirection: TextDirection.ltr,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: createAccount,
                     icon: const Icon(Icons.app_registration),
-                    label: const Text('Sign up'),
+                    label: const Text('إنشاء الحساب'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),

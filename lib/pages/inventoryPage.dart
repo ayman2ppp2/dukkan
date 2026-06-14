@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/InsertPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/addUser.dart';
@@ -74,11 +75,12 @@ class _InvPageState extends State<InvPage> {
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Text(
-                        style: TextStyle(
-                            color: Colors.brown[50],
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold),
-                        '${snapshot.error.toString()}');
+                      UserSafeMessages.loadFailed,
+                      style: TextStyle(
+                          color: Colors.brown[50],
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold),
+                    );
                   }
                   if (snapshot.hasData) {
                     return Text(
@@ -114,7 +116,7 @@ class _InvPageState extends State<InvPage> {
                 child: TextField(
                     controller: controller,
                     textDirection: TextDirection.rtl,
-                    decoration: const InputDecoration(hintText: 'إبحث'),
+                    decoration: const InputDecoration(hintText: 'بحث'),
                     onChanged: (value) {
                       setState(() {
                         searchFuture = as.search(value.trim(), false, false);
@@ -129,22 +131,23 @@ class _InvPageState extends State<InvPage> {
             // as.search(controller.text, false, false),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return Text('Error: ${snapshot.error}');
+                return const Text(UserSafeMessages.loadFailed);
               }
               if (!snapshot.hasData) {
-                return Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator());
               }
 
               List<Product> products = snapshot.data!;
 
               if (products.isEmpty) {
-                return Center(child: Text('No Products found'));
+                return const Center(child: Text('لا توجد منتجات'));
               }
 
               return GridView.builder(
                 itemCount: products.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.of(context).size.width ~/ 180,
+                  crossAxisCount:
+                      (MediaQuery.of(context).size.width ~/ 180).clamp(1, 6),
                 ),
                 itemBuilder: (context, index) {
                   return GridItem(
@@ -161,7 +164,7 @@ class _InvPageState extends State<InvPage> {
         onPressed: () async {
           showGeneralDialog(
             barrierDismissible: true,
-            barrierLabel: 'whatever',
+            barrierLabel: 'إضافة منتج',
             context: context,
             pageBuilder: (context, animation, secondaryAnimation) {
               return ChangeNotifierProvider.value(
@@ -198,7 +201,8 @@ class _InvPageState extends State<InvPage> {
             },
           );
         },
-        child: Icon(Icons.add),
+        tooltip: 'إضافة منتج',
+        child: const Icon(Icons.add),
       ),
     );
   }

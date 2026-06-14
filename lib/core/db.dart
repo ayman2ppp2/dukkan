@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dukkan/core/IsolatePool.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/core/postgres_connection.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
@@ -27,29 +28,63 @@ RootIsolateToken? _getRootIsolateToken() {
 }
 
 class DB {
+  static const isarName = 'isarInstance';
+  static const liveDatabaseFileName = '$isarName.isar';
+
   Isar? isar;
+  Directory? _documentsDirectoryOverride;
+  String _isarName = isarName;
   static DB? _instance;
   static bool _isInitializing = false;
-  static final _initCompleter = Completer<DB?>();
+  static Completer<DB> _initCompleter = Completer<DB>();
 
   DB._internal();
 
   static Future<DB> getInstance() async {
     if (_instance != null) return _instance!;
     if (_isInitializing) {
-      return await _initCompleter.future ?? _instance!;
+      return await _initCompleter.future;
     }
     _isInitializing = true;
     _instance = DB._internal();
+    await _instance!._init();
     _initCompleter.complete(_instance);
-    _instance!._init();
+    _isInitializing = false;
     return _instance!;
   }
 
   static Future<void> initialize() async {
-    if (_instance != null || (_isInitializing && _initCompleter.isCompleted))
-      return;
+    if (_instance != null) return;
     await getInstance();
+  }
+
+  @visibleForTesting
+  static Future<DB> createForTesting({
+    required String directoryPath,
+    String name = 'isarInstance',
+  }) async {
+    final db = DB._internal()
+      .._documentsDirectoryOverride = Directory(directoryPath)
+      .._isarName = name;
+    db.isar = await Isar.open(
+      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+      directory: directoryPath,
+      name: name,
+    );
+    return db;
+  }
+
+  @visibleForTesting
+  static Future<void> resetForTesting() async {
+    await _instance?.isar?.close();
+    _instance = null;
+    _isInitializing = false;
+    _initCompleter = Completer<DB>();
+  }
+
+  Future<Directory> _documentsDirectory() async {
+    return _documentsDirectoryOverride ??
+        await getApplicationDocumentsDirectory();
   }
 
   static Future<Isar> _openIsar(String directoryPath) async {
@@ -65,41 +100,42 @@ class DB {
   static Future<Isar> openIsarSafely(String directoryPath) async {
     try {
       return await _openIsar(directoryPath);
-    } catch (e) {
-      debugPrint('Failed to open Isar: $e');
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'database.open');
       final fallback = await Isar.getInstance("isarInstance");
       if (fallback != null) {
-        debugPrint('Using fallback Isar instance');
+        AppLogger.warning('Using fallback Isar instance',
+            data: {'area': 'database.open'});
         return fallback;
       }
       throw StateError('No Isar instance available: $e');
     }
   }
 
-  void _init() async {
+  Future<void> _init() async {
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final existingIsar = await Isar.getInstance("isarInstance");
+      final dir = await _documentsDirectory();
+      final existingIsar = await Isar.getInstance(_isarName);
       if (existingIsar != null) {
         isar = existingIsar;
-        _isInitializing = false;
         return;
       }
       isar = await Isar.open(
         [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
         directory: dir.path,
-        name: 'isarInstance',
+        name: _isarName,
       );
-    } catch (e) {
-      debugPrint('Isar initialization failed: $e');
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'database.initialize');
       final fallback = await Isar.getInstance("isarInstance");
       if (fallback != null) {
         isar = fallback;
       } else {
-        debugPrint('Isar getInstance also failed - database unavailable');
+        AppLogger.warning('Isar fallback unavailable',
+            data: {'area': 'database.initialize'});
       }
-    } finally {
-      _isInitializing = false;
     }
   }
 
@@ -279,6 +315,13 @@ class DB {
     int? expenseId,
   }) async {
     try {
+      if (discount < 0) {
+        throw Exception('Discount must be non-negative');
+      }
+      if (discount > total) {
+        throw Exception('Discount cannot exceed checkout total');
+      }
+
       var productsIds = products.map((e) => e.id);
 
       productsIds = productsIds.toSet();
@@ -313,7 +356,8 @@ class DB {
             hot: product.hot));
       });
 
-      debugPrint(clearedProducts.map((p) => p.toJson()).toString());
+      AppLogger.debug('Checkout products prepared',
+          data: {'productCount': clearedProducts.length});
       double totalPrice = 0;
       double totalProfit = 0;
 
@@ -427,7 +471,32 @@ class DB {
         expense: expense,
       );
 
-      // 🔹 Perform a single batched transaction with retry
+      // 🔹 Validate stock and entities before transaction
+      for (final product in clearedProducts) {
+        if (product.hot == true) continue;
+        final existing = await isar!.products.get(product.id);
+        if (existing == null) {
+          throw Exception('Product "${product.name}" not found in database');
+        }
+        final remaining = (existing.count ?? 0) - (product.count ?? 0);
+        if (remaining < 0) {
+          throw Exception('Insufficient stock for "${product.name}": '
+              'have ${existing.count}, need ${product.count}');
+        }
+      }
+
+      if (loanerId != null) {
+        final existingLoaner = await isar!.loaners.get(loanerId);
+        if (existingLoaner == null) {
+          throw Exception('Selected loaner not found (ID $loanerId)');
+        }
+      }
+      if (expenseId != null) {
+        final existingExpense = await isar!.expenses.get(expenseId);
+        if (existingExpense == null) {
+          throw Exception('Selected expense not found (ID $expenseId)');
+        }
+      }
       const maxRetries = 3;
       var success = false;
       for (var attempt = 0; attempt < maxRetries && !success; attempt++) {
@@ -448,11 +517,16 @@ class DB {
             await isar!.logs.put(log);
             return true;
           });
-        } catch (e) {
-          debugPrint(
-              '❌ checkOut transaction failed (attempt ${attempt + 1}/$maxRetries): $e');
+        } catch (e, st) {
+          AppLogger.warning('Checkout transaction retry failed', data: {
+            'attempt': attempt + 1,
+            'maxRetries': maxRetries,
+          });
           if (attempt == maxRetries - 1) {
-            debugPrint('❌ checkOut failed after $maxRetries attempts');
+            await AppLogger.captureException(e,
+                stackTrace: st,
+                area: 'checkout.transaction',
+                data: {'attempt': attempt + 1, 'maxRetries': maxRetries});
             rethrow;
           }
           await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
@@ -460,8 +534,8 @@ class DB {
       }
       return success;
     } catch (e, st) {
-      debugPrint('❌ Error in checkOut: $e\n$st');
-      return false;
+      await AppLogger.captureException(e, stackTrace: st, area: 'checkout');
+      rethrow;
     }
   }
 
@@ -589,13 +663,13 @@ class DB {
     final jsonString = jsonEncode(jsonData);
 
     // Save jsonString to a file
-    var te = await getApplicationDocumentsDirectory();
+    var te = await _documentsDirectory();
     var file = File('${te.path}/backup.txt');
     await file.writeAsString(jsonString);
   }
 
   Future<void> importData() async {
-    var jsonFilePath = await getApplicationDocumentsDirectory();
+    var jsonFilePath = await _documentsDirectory();
     final jsonString =
         await File('${jsonFilePath.path}/backup.txt').readAsString();
     final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -698,8 +772,7 @@ class DB {
   }
 
   Future<void> createLocalBackup() async {
-    final backupFilePath =
-        '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
+    final backupFilePath = '${(await _documentsDirectory()).path}/backup.isar';
     final backupFile = File(backupFilePath);
 
     if (await backupFile.exists()) {
@@ -707,14 +780,15 @@ class DB {
     }
 
     await isar!.copyToFile(backupFilePath);
-    print('Backup created successfully.');
+    AppLogger.info('Local backup created', data: {'area': 'backup.local'});
   }
 
   Future<void> closeAllIsarInstances() async {
     IsolatePool pool = await Pool.init();
     final token = _getRootIsolateToken();
     if (token == null) {
-      debugPrint('RootIsolateToken not available');
+      AppLogger.warning('RootIsolateToken not available',
+          data: {'area': 'database.isolate'});
       return;
     }
     List<Future> futures = [];
@@ -729,31 +803,8 @@ class DB {
   }
 
   Future<void> useLocalBacup() async {
-    final backupFilePath =
-        '${(await getApplicationDocumentsDirectory()).path}/backup.isar';
-    final dir = await getApplicationDocumentsDirectory();
-
-    // Close the current Isar instance
-    await closeAllIsarInstances();
-    await isar!.close();
-
-    // Delete the current Isar database files
-    await File('${dir.path}/isarInstance.isar').delete();
-
-    // Copy the backup file to the Isar directory
-    final backupFile = File(backupFilePath);
-    final newIsarFile = File('${dir.path}/isarInstance.isar');
-    await backupFile.copy(newIsarFile.path);
-
-    // Reopen the Isar instance
-    isar = await Isar.open(
-      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-      directory: dir.path,
-      name: 'isarInstance',
-    );
-    // await reOpenPool();
-
-    print('Backup restored successfully.');
+    final dir = await _documentsDirectory();
+    await _replaceLiveIsarWithFile('${dir.path}/backup.isar');
   }
 
   void insertInPostgres(
@@ -789,54 +840,165 @@ class DB {
     );
   }
 
-  void windows() async {
-    final receivedFilePath =
-        '${(await getApplicationDocumentsDirectory()).path}/backup.isar.received';
-    final dir = await getApplicationDocumentsDirectory();
-    await closeAllIsarInstances();
+  Future<void> windows() async {
+    final dir = await _documentsDirectory();
+    await _replaceLiveIsarWithFile('${dir.path}/backup.isar.received');
+  }
+
+  Future<void> _replaceLiveIsarWithFile(String sourcePath) async {
+    final dir = await _documentsDirectory();
+    final livePath = '${dir.path}/$_isarName.isar';
+    final sourceFile = File(sourcePath);
+    final liveFile = File(livePath);
+    final bakFile = File('$livePath.bak');
+
+    await _verifyIsarFile(sourcePath);
+    if (_documentsDirectoryOverride == null) {
+      await closeAllIsarInstances();
+    }
     await isar!.close();
 
-    // Delete the current Isar database files
+    if (await bakFile.exists()) {
+      await bakFile.delete();
+    }
+    if (await liveFile.exists()) {
+      await liveFile.rename(bakFile.path);
+    }
 
-    await File('${dir.path}/isarInstance.isar').delete();
+    try {
+      await sourceFile.copy(livePath);
+      isar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: dir.path,
+        name: _isarName,
+      );
+      if (await bakFile.exists()) {
+        await bakFile.delete();
+      }
+    } catch (e) {
+      if (await liveFile.exists()) {
+        await liveFile.delete();
+      }
+      if (await bakFile.exists()) {
+        await bakFile.rename(livePath);
+        isar = await Isar.open(
+          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+          directory: dir.path,
+          name: _isarName,
+        );
+      }
+      rethrow;
+    }
+  }
 
-    // Copy the backup file to the Isar directory
-    final backupFile = File(receivedFilePath);
-    final newIsarFile = File('${dir.path}/isarInstance.isar');
-    await backupFile.copy(newIsarFile.path);
+  Future<void> _verifyIsarFile(String sourcePath) async {
+    final sourceFile = File(sourcePath);
+    if (!await sourceFile.exists()) {
+      throw Exception('Backup file not found at $sourcePath');
+    }
+    if (await sourceFile.length() < 4096) {
+      throw Exception('Backup file is too small to be a valid database');
+    }
 
-    // Reopen the Isar instance
-    isar = await Isar.open(
-      [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-      directory: dir.path,
-      name: 'isarInstance',
-    );
+    final tempDir = await _documentsDirectory();
+    final verifyName = 'isar_verify_${DateTime.now().microsecondsSinceEpoch}';
+    final verifyPath = '${tempDir.path}/$verifyName.isar';
+    Isar? verifyIsar;
+
+    try {
+      await sourceFile.copy(verifyPath);
+      verifyIsar = await Isar.open(
+        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+        directory: tempDir.path,
+        name: verifyName,
+      );
+      await verifyIsar.close();
+      verifyIsar = null;
+    } catch (e) {
+      throw Exception('Backup file is corrupted or invalid: $e');
+    } finally {
+      if (verifyIsar != null) {
+        try {
+          await verifyIsar.close();
+        } catch (_) {}
+      }
+      final verifyFile = File(verifyPath);
+      if (await verifyFile.exists()) {
+        await verifyFile.delete();
+      }
+    }
   }
 
   inboundReceipt({required List<Product> lst, required double total}) async {
-    for (var element in lst) {
-      var num = await isar!.products.get(element.id);
-      await isar!.writeTxn(() async => await isar!.products.put(
-            // element.name,
-            Product.named2(
-              id: element.id,
-              name: element.name,
-              barcode: element.barcode,
-              buyprice: element.buyprice,
-              sellPrice: element.sellPrice,
-              count: (num!.count!) + element.count!,
-              ownerName: element.ownerName,
-              weightable: element.weightable,
-              wholeUnit: element.wholeUnit,
-              offer: element.offer,
-              offerCount: element.offerCount,
-              offerPrice: element.offerPrice,
-              priceHistory: element.priceHistory,
-              endDate: element.endDate,
-              hot: false,
-            ),
-          ));
-    }
+    await isar!.writeTxn(() async {
+      for (var element in lst) {
+        var num = await isar!.products.get(element.id);
+        if (num == null) continue;
+        await isar!.products.put(
+          Product.named2(
+            id: element.id,
+            name: element.name,
+            barcode: element.barcode,
+            buyprice: element.buyprice,
+            sellPrice: element.sellPrice,
+            count: (num.count!) + element.count!,
+            ownerName: element.ownerName,
+            weightable: element.weightable,
+            wholeUnit: element.wholeUnit,
+            offer: element.offer,
+            offerCount: element.offerCount,
+            offerPrice: element.offerPrice,
+            priceHistory: element.priceHistory,
+            endDate: element.endDate,
+            hot: false,
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> cancelReceiptAtomically({
+    required Log log,
+    required double hotSum,
+    required bool wasLoaned,
+    required List<EmbeddedProduct> productsToRestore,
+  }) async {
+    await isar!.writeTxn(() async {
+      if (wasLoaned && log.loanerID != null) {
+        Loaner? temp = await isar!.loaners.get(log.loanerID!);
+        if (temp != null) {
+          DateTime calculateDate() {
+            if (temp.loanedAmount! == 0) {
+              return DateTime.parse(temp.lastPayment!.last.key!);
+            }
+            if (temp.loanedAmount! - (log.price + hotSum) == 0) {
+              return DateTime.now();
+            } else {
+              try {
+                return DateTime.parse(temp.lastPayment!.last.key!);
+              } catch (e) {
+                return DateTime(1900);
+              }
+            }
+          }
+
+          temp
+            ..loanedAmount = (temp.loanedAmount ?? 0) > 0
+                ? temp.loanedAmount! - (log.price + hotSum)
+                : 0
+            ..zeroingDate = calculateDate();
+          await isar!.loaners.put(temp);
+        }
+      }
+      for (final ep in productsToRestore) {
+        final existing = await isar!.products.get(ep.productId!);
+        if (existing != null) {
+          existing.count = (existing.count ?? 0) + (ep.count ?? 0);
+          await isar!.products.put(existing);
+        }
+      }
+      await isar!.logs.delete(log.id);
+    });
   }
 }
 
@@ -856,7 +1018,6 @@ class StopIsar extends PooledJob<bool> {
         directory: dir.path,
         name: 'isarInstance',
       );
-      print(isar.name);
     } catch (e) {
       final fallbackDir = await getApplicationDocumentsDirectory();
       isar = await DB.openIsarSafely(fallbackDir.path);
@@ -880,7 +1041,6 @@ class CgetLowStockItemsPerMonth extends PooledJob<List<Product>> {
         directory: dir.path,
         name: 'isarInstance',
       );
-      print(isar.name);
     } catch (e) {
       final fallbackDir = await getApplicationDocumentsDirectory();
       isar = await DB.openIsarSafely(fallbackDir.path);
@@ -940,7 +1100,8 @@ class CgetLowStockItemsPerMonth extends PooledJob<List<Product>> {
 
       return lowStock;
     } catch (e) {
-      debugPrint('Error in CgetLowStockItemsPerMonth.job: $e');
+      AppLogger.warning('Low-stock calculation failed',
+          data: {'area': 'stats.low_stock'});
       return <Product>[];
     }
   }
@@ -962,7 +1123,6 @@ class CgetSalesOfTheMonth extends PooledJob<double> {
         directory: dir.path,
         name: 'isarInstance',
       );
-      print(isar.name);
     } catch (e) {
       final fallbackDir = await getApplicationDocumentsDirectory();
       isar = await DB.openIsarSafely(fallbackDir.path);
@@ -1026,8 +1186,9 @@ class CgetProfitOfTheMonth extends PooledJob<double> {
       }
 
       return profit;
-    } on Exception catch (e) {
-      print(e);
+    } on Exception {
+      AppLogger.warning('Monthly profit calculation failed',
+          data: {'area': 'stats.monthly_profit'});
       return -1;
     }
   }
@@ -1065,7 +1226,8 @@ class CgetDailyProfit extends PooledJob<double> {
 
       return profit;
     } catch (e) {
-      print(e);
+      AppLogger.warning('Daily profit calculation failed',
+          data: {'area': 'stats.daily_profit'});
       return -1;
     }
   }
@@ -1103,7 +1265,8 @@ class CgetDailySales extends PooledJob<double> {
 
       return sales;
     } catch (e) {
-      print(e);
+      AppLogger.warning('Daily sales calculation failed',
+          data: {'area': 'stats.daily_sales'});
       return -1;
     }
   }
@@ -1136,7 +1299,8 @@ class CgetAllSales extends PooledJob<double> {
 
       return sales;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('All-sales calculation failed',
+          data: {'area': 'stats.all_sales'});
       return -1;
     }
   }
@@ -1160,19 +1324,20 @@ class CgetSaledProductsByDate extends PooledJob<List<Product>> {
       } catch (e) {
         final existing = await Isar.getInstance("isarInstance");
         if (existing == null) {
-          debugPrint('No Isar instance available: $e');
+          AppLogger.warning('No Isar instance available',
+              data: {'area': 'stats.saled_products'});
           return [];
         }
         isar = existing;
       }
       Iterable<Log> temp = await isar.logs.where().anyId().findAll();
       DateTime time = map['2'];
-      print(time);
       temp = temp.where((element) =>
           element.date.day == time.day &&
           element.date.month == time.month &&
           element.date.year == time.year);
-      debugPrint(temp.length.toString());
+      AppLogger.debug('Daily sale-product query completed',
+          data: {'resultCount': temp.length});
       List<EmbeddedProduct> products = [];
       List<Product> result = [];
       for (var log in temp) {
@@ -1208,7 +1373,8 @@ class CgetSaledProductsByDate extends PooledJob<List<Product>> {
       }
       return result;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Saled-products query failed',
+          data: {'area': 'stats.saled_products'});
       return [];
     }
   }
@@ -1240,7 +1406,8 @@ class CgetTotalProfit extends PooledJob<double> {
 
       return profit;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Total profit calculation failed',
+          data: {'area': 'stats.total_profit'});
       return -1;
     }
   }
@@ -1279,7 +1446,8 @@ class CgetNumberOfSalesForAproduct extends PooledJob<int> {
 
       return count;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Product sales count calculation failed',
+          data: {'area': 'stats.product_sales_count'});
       return -1;
     }
   }
@@ -1331,7 +1499,8 @@ class CgetSalesPerProduct extends PooledJob<List<ProdStats>> {
       // Return the required chunk
       return _cachedStats!.take(chunkSize).toList();
     } catch (e) {
-      debugPrint('Error in job: $e');
+      AppLogger.warning('Product stats calculation failed',
+          data: {'area': 'stats.sales_per_product'});
       return [];
     }
   }
@@ -1391,8 +1560,6 @@ class CgetDailyProfitOfTheMont extends PooledJob<List<SalesStats>> {
           .dateBetween(startOfMonth, endOfMonth)
           .sortByDateDesc()
           .findAll();
-      print(month);
-
       List<SalesStats> result = [];
       // // List<BcLog> temp = map['1'];
       // // temp.sort(
@@ -1482,7 +1649,8 @@ class CgetDailySalesOfTheMonth extends PooledJob<List<SalesStats>> {
           .toList();
       return result;
     } catch (e) {
-      debugPrint(e.toString() + 'heree2');
+      AppLogger.warning('Daily sales of month calculation failed',
+          data: {'area': 'stats.daily_sales_month'});
       return [];
     }
   }
@@ -1556,7 +1724,8 @@ class CgetMonthlySalesOfTheyear extends PooledJob<List<SalesStats>> {
 
       // print(result);
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Monthly sales calculation failed',
+          data: {'area': 'stats.monthly_sales'});
       return [];
     }
   }
@@ -1620,7 +1789,8 @@ class CgetMonthlyProfitsOfTheyear extends PooledJob<List<SalesStats>> {
       result = result.reversed.toList();
       return result;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Monthly profit series calculation failed',
+          data: {'area': 'stats.monthly_profit_series'});
       return [];
     }
   }
@@ -1644,7 +1814,8 @@ class CgetMonthlyloans extends PooledJob<double> {
                 final paymentDate = DateTime.parse(value.key!);
                 return paymentDate.year == year && paymentDate.month == month;
               } catch (e) {
-                debugPrint('Error parsing payment date: $e');
+                AppLogger.warning('Payment date parse failed',
+                    data: {'area': 'stats.loan_payments'});
                 return false;
               }
             }).fold(
@@ -1653,7 +1824,8 @@ class CgetMonthlyloans extends PooledJob<double> {
                     double.parse(element.value ?? '0') + previousValue);
       });
     } catch (e) {
-      debugPrint('Error calculating total payments: $e');
+      AppLogger.warning('Total payments calculation failed',
+          data: {'area': 'stats.loan_payments'});
       return 0.0;
     }
   }
@@ -1701,7 +1873,8 @@ class CgetMonthlyloans extends PooledJob<double> {
 
       return totalUnpaidLoans - totalPayments;
     } catch (e) {
-      debugPrint('Error in CgetMonthlyloans.job: $e');
+      AppLogger.warning('Monthly loans calculation failed',
+          data: {'area': 'stats.monthly_loans'});
       return -1;
     }
   }
@@ -1748,7 +1921,8 @@ class getTotalExpenseNow extends PooledJob<double> {
       }
       return total;
     } catch (e) {
-      debugPrint(e.toString());
+      AppLogger.warning('Expense total calculation failed',
+          data: {'area': 'stats.expense_total'});
       return -1;
     }
   }
@@ -1801,7 +1975,8 @@ class CgetDailyloans extends PooledJob<double> {
 
       return totalUnpaidLoans;
     } catch (e) {
-      debugPrint('Error in CgetDailyloans.job: $e');
+      AppLogger.warning('Daily loans calculation failed',
+          data: {'area': 'stats.daily_loans'});
       return -1;
     }
   }

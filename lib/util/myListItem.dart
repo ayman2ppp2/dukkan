@@ -48,8 +48,7 @@ class _MyListTileState extends State<MyListTile> {
           trailing: !widget.product.hot!
               ? widget.product.weightable!
                   ? Container(
-                      constraints: BoxConstraints(
-                          maxWidth: 140 % MediaQuery.of(context).size.width),
+                      constraints: const BoxConstraints(maxWidth: 140),
                       child: Flex(
                         direction: Axis.horizontal,
                         children: [
@@ -286,11 +285,11 @@ class _MyListTileState extends State<MyListTile> {
                             ? Expanded(
                                 flex: 0,
                                 child: Text(
-                                    "total : ${NumberFormat.simpleCurrency().format((widget.product.count! * widget.product.offerPrice!))}"))
+                                    "المجموع: ${NumberFormat.simpleCurrency().format((widget.product.count! * widget.product.offerPrice!))}"))
                             : Expanded(
                                 flex: 0,
                                 child: Text(
-                                    "total : ${NumberFormat.simpleCurrency().format((widget.product.count! * widget.product.sellPrice!))}"),
+                                    "المجموع: ${NumberFormat.simpleCurrency().format((widget.product.count! * widget.product.sellPrice!))}"),
                               )
                       ],
                     )

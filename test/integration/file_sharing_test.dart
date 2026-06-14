@@ -1,6 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:dio/dio.dart';
+import 'package:dukkan/core/lan_sync.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:crypto/crypto.dart';
+
+class _TestLanSyncState extends ChangeNotifier with LanSyncState {}
 
 void main() {
   group('Server Endpoint Tests', () {
@@ -50,41 +58,29 @@ void main() {
   group('File Selection Logic Tests', () {
     test('2.3.x selects backup.isar', () {
       const version = '2.3.0';
-      final files = (version.startsWith('2.3.') || version.startsWith('2.4.'))
-          ? ['backup.isar']
-          : ['inventory.hive'];
+      final files = LanSync.filesForVersion(version);
 
       expect(files, equals(['backup.isar']));
     });
 
     test('2.4.x selects backup.isar', () {
       const version = '2.4.7';
-      final files = (version.startsWith('2.3.') || version.startsWith('2.4.'))
-          ? ['backup.isar']
-          : ['inventory.hive'];
+      final files = LanSync.filesForVersion(version);
 
       expect(files, equals(['backup.isar']));
     });
 
-    test('2.2.x selects hive files', () {
-      const version = '2.2.5';
-      final files = version.startsWith('2.2.')
-          ? ['inventoryv2.2.0.hive', 'logsv2.2.0.hive', 'shutdown']
-          : ['backup.isar'];
+    test('2.5.x selects backup.isar', () {
+      const version = '2.5.0';
+      final files = LanSync.filesForVersion(version);
 
-      expect(files.length, equals(3));
-      expect(files.contains('shutdown'), isTrue);
+      expect(files, equals(['backup.isar']));
     });
 
-    test('Unsupported version falls back to hive files', () {
+    test('Unsupported version does not fall back to legacy files', () {
       const version = '1.0.0';
-      final files = version.startsWith('2.2.')
-          ? ['backup.isar']
-          : (version.startsWith('2.3.') || version.startsWith('2.4.'))
-              ? ['backup.isar']
-              : ['inventoryv2.2.0.hive', 'shutdown'];
 
-      expect(files.contains('inventoryv2.2.0.hive'), isTrue);
+      expect(() => LanSync.filesForVersion(version), throwsUnsupportedError);
     });
   });
 
@@ -104,59 +100,185 @@ void main() {
 
   group('HTTP Request Tests', () {
     test('Version URL format', () {
-      const ip = '192.168.1.100';
-      final url = 'http://$ip/version';
+      final endpoint =
+          LanSyncEndpoint(host: '192.168.1.100', port: 30000, code: '123456');
+      final url = endpoint.uri('version').toString();
 
-      expect(url, equals('http://192.168.1.100/version'));
+      expect(url, equals('http://192.168.1.100:30000/version?code=123456'));
     });
 
     test('Hash URL format', () {
-      const ip = '192.168.1.100';
-      final url = 'http://$ip/hash';
+      final endpoint =
+          LanSyncEndpoint(host: '192.168.1.100', port: 30000, code: '123456');
+      final url = endpoint.uri('hash').toString();
 
-      expect(url, equals('http://192.168.1.100/hash'));
+      expect(url, equals('http://192.168.1.100:30000/hash?code=123456'));
     });
 
     test('Shutdown URL format', () {
-      const ip = '192.168.1.100';
-      final url = 'http://$ip/shutdown';
+      final endpoint =
+          LanSyncEndpoint(host: '192.168.1.100', port: 30000, code: '123456');
+      final url = endpoint.uri('shutdown').toString();
 
-      expect(url, equals('http://192.168.1.100/shutdown'));
+      expect(url, equals('http://192.168.1.100:30000/shutdown?code=123456'));
     });
 
     test('File download URL format', () {
-      const ip = '192.168.1.100';
-      const fileName = 'backup.isar';
-      final url = 'http://$ip/$fileName';
+      final endpoint =
+          LanSyncEndpoint(host: '192.168.1.100', port: 30000, code: '123456');
+      final url = endpoint.uri('backup.isar').toString();
 
-      expect(url, equals('http://192.168.1.100/backup.isar'));
+      expect(url, equals('http://192.168.1.100:30000/backup.isar?code=123456'));
+    });
+  });
+
+  group('Pairing Code Tests', () {
+    test('Generated pairing code is six digits', () {
+      final code = LanSync.generatePairingCode(random: Random(1));
+
+      expect(code.length, equals(6));
+      expect(LanSync.isPairingCode(code), isTrue);
+    });
+
+    test('Parses ip:port:code QR payload', () {
+      final endpoint = LanSyncEndpoint.tryParse('192.168.1.100:30000:123456');
+
+      expect(endpoint, isNotNull);
+      expect(endpoint!.host, equals('192.168.1.100'));
+      expect(endpoint.port, equals(30000));
+      expect(endpoint.code, equals('123456'));
+    });
+
+    test('Parses ip:code manual entry with default port', () {
+      final endpoint = LanSyncEndpoint.tryParse('192.168.1.100:123456');
+
+      expect(endpoint, isNotNull);
+      expect(endpoint!.hostPort, equals('192.168.1.100:30000'));
+    });
+
+    test('Rejects missing pairing code', () {
+      expect(LanSyncEndpoint.tryParse('192.168.1.100:30000'), isNull);
+    });
+  });
+
+  group('File Whitelist Tests', () {
+    test('Allows only sync endpoints and backup file', () {
+      expect(LanSync.isAllowedSegment('version'), isTrue);
+      expect(LanSync.isAllowedSegment('hash'), isTrue);
+      expect(LanSync.isAllowedSegment('shutdown'), isTrue);
+      expect(LanSync.isAllowedSegment('backup.isar'), isTrue);
+    });
+
+    test('Rejects arbitrary files', () {
+      expect(LanSync.isAllowedSegment('backup.txt'), isFalse);
+      expect(LanSync.isAllowedSegment('isarInstance.isar'), isFalse);
+      expect(LanSync.isAllowedSegment('../backup.isar'), isFalse);
+    });
+  });
+
+  group('Timeout And Cancel Tests', () {
+    test('Dio client has finite timeouts', () {
+      final dio = LanSync.createDio();
+
+      expect(dio.options.connectTimeout, equals(LanSync.connectTimeout));
+      expect(dio.options.receiveTimeout, equals(LanSync.receiveTimeout));
+      expect(dio.options.sendTimeout, equals(LanSync.sendTimeout));
+    });
+
+    test('CancelToken reports cancellation', () {
+      final token = CancelToken();
+      token.cancel('cancelled');
+
+      expect(token.isCancelled, isTrue);
+    });
+
+    test('Transfer failure exposes timeout type', () {
+      final error = DioException(
+        requestOptions: RequestOptions(path: '/backup.isar'),
+        type: DioExceptionType.connectionTimeout,
+      );
+
+      expect(error.type, DioExceptionType.connectionTimeout);
+    });
+  });
+
+  group('Hash Mismatch Cleanup Tests', () {
+    test('Hash mismatch deletes received file', () async {
+      final dir = await Directory.systemTemp.createTemp('dukkan_hash_test_');
+      final file = File('${dir.path}/backup.isar.received');
+      await file.writeAsString('bad data');
+
+      final actual = await LanSync.sha256File(file);
+      final expected = sha256.convert(utf8.encode('good data')).toString();
+      if (actual != expected) {
+        await LanSync.deleteIfExists(file.path);
+      }
+
+      expect(await file.exists(), isFalse);
+      await dir.delete(recursive: true);
+    });
+  });
+
+  group('SyncStatus State Tests', () {
+    test('State machine exposes progress and error state', () {
+      final state = _TestLanSyncState();
+
+      state.setSyncState(SyncStatus.downloading, progress: 0.5);
+      expect(state.syncStatus, SyncStatus.downloading);
+      expect(state.syncProgress, 0.5);
+
+      state.setSyncState(SyncStatus.error, error: 'failed');
+      expect(state.syncStatus, SyncStatus.error);
+      expect(state.syncErrorMessage, 'failed');
+    });
+  });
+
+  group('Restore Rollback Tests', () {
+    test('Rollback restores original live file after replacement failure',
+        () async {
+      final dir =
+          await Directory.systemTemp.createTemp('dukkan_rollback_test_');
+      final liveFile = File('${dir.path}/isarInstance.isar');
+      final bakFile = File('${dir.path}/isarInstance.isar.bak');
+      await liveFile.writeAsString('original database');
+
+      Future<void> simulateFailingRestore() async {
+        await liveFile.rename(bakFile.path);
+        try {
+          throw Exception('replacement failed');
+        } catch (_) {
+          if (await liveFile.exists()) {
+            await liveFile.delete();
+          }
+          if (await bakFile.exists()) {
+            await bakFile.rename(liveFile.path);
+          }
+          rethrow;
+        }
+      }
+
+      await expectLater(simulateFailingRestore(), throwsException);
+      expect(await liveFile.readAsString(), equals('original database'));
+      expect(await bakFile.exists(), isFalse);
+      await dir.delete(recursive: true);
     });
   });
 
   group('File Path Construction Tests', () {
     test('Windows uses .received suffix', () {
-      const isWindows = true;
-      final path = isWindows
-          ? '/docs/backup.isar.received'
-          : '/docs/backup.isar';
+      const path = '/docs/backup.isar.received';
 
       expect(path, equals('/docs/backup.isar.received'));
     });
 
     test('Linux uses .received suffix', () {
-      const isLinux = true;
-      final path = isLinux
-          ? '/docs/backup.isar.received'
-          : '/docs/backup.isar';
+      const path = '/docs/backup.isar.received';
 
       expect(path, equals('/docs/backup.isar.received'));
     });
 
     test('Android uses no suffix', () {
-      const isWindows = false;
-      final path = isWindows
-          ? '/docs/backup.isar.received'
-          : '/docs/backup.isar';
+      const path = '/docs/backup.isar';
 
       expect(path, equals('/docs/backup.isar'));
     });

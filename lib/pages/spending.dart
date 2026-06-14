@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -33,7 +34,7 @@ class _SpendingState extends State<Spending> {
                   .watchExpense(id: widget.id),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Text(snapshot.error.toString());
+                  return const Text(UserSafeMessages.loadFailed);
                 }
                 if (snapshot.hasData) {
                   return Text(
@@ -51,64 +52,62 @@ class _SpendingState extends State<Spending> {
               Provider.of<ExpenseProvider>(context).watchExpense(id: widget.id),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return Text(snapshot.error.toString());
+              return const Text(UserSafeMessages.loadFailed);
             }
             if (snapshot.hasData) {
               return Flex(
                 direction: Axis.vertical,
                 children: [
                   SizedBox(
-                    height: 15 % MediaQuery.of(context).size.height,
+                    height: 15,
                   ),
                   Center(
                     child: MyContainer(
-                      child: Text('ID : ${snapshot.data?.ID}'),
+                      child: Text('المعرف: ${snapshot.data?.ID}'),
                     ),
                   ),
                   SizedBox(
-                    height: 50 % MediaQuery.of(context).size.height,
-                  ),
-                  Center(
-                    child: MyContainer(
-                      child: Text(
-                          'percentage from total :${snapshot.data!.amount}'),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20 % MediaQuery.of(context).size.height,
+                    height: 50,
                   ),
                   Center(
                     child: MyContainer(
                       child:
-                          Text('real cash amount : ${snapshot.data!.amount}'),
+                          Text('النسبة من الإجمالي: ${snapshot.data!.amount}'),
                     ),
                   ),
                   SizedBox(
-                    height: 20 % MediaQuery.of(context).size.height,
+                    height: 20,
+                  ),
+                  Center(
+                    child: MyContainer(
+                      child: Text('القيمة النقدية: ${snapshot.data!.amount}'),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 20,
                   ),
                   Center(
                     child: MyContainer(
                       child: Text(
-                          'last payment date : ${snapshot.data!.lastCalculationDate}'),
+                          'تاريخ آخر دفعة: ${snapshot.data!.lastCalculationDate}'),
                     ),
                   ),
                   SizedBox(
-                    height: 20 % MediaQuery.of(context).size.height,
+                    height: 20,
                   ),
                   Center(
                     child: MyContainer(
-                      child:
-                          Text('payment interval : ${snapshot.data!.period}'),
+                      child: Text('فترة الدفع: ${snapshot.data!.period}'),
                     ),
                   ),
                   SizedBox(
-                    height: 20 % MediaQuery.of(context).size.height,
+                    height: 20,
                   ),
                   Center(
                     child: MyContainer(
                       child: SizedBox(
-                        height: 200 % MediaQuery.of(context).size.height,
-                        width: 300 % MediaQuery.of(context).size.height,
+                        height: 200,
+                        width: 300,
                       ),
                     ),
                   ),

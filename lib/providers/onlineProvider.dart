@@ -1,22 +1,16 @@
-import 'dart:math';
-
-import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/enums.dart';
-import 'package:appwrite/models.dart';
-// import 'package:dukkan/secrets.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/widgets.dart';
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server.dart';
 import 'dart:io' as IO;
 
-// import 'package:package_info_plus/package_info_plus.dart';
-
-const String APPWRITE_PROJECT_ID = "65e616d10bd9110e806f";
-const String APPWRITE_DATABASE_ID = "";
-const String APPWRITE_URL = "https://cloud.appwrite.io/v1";
-const String COLLECTION_MESSAGES = "";
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/client_io.dart' as appwrite_io;
+import 'package:appwrite/enums.dart';
+import 'package:appwrite/models.dart';
+import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/observability.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/widgets.dart';
+import 'package:dukkan/core/appwrite_config.dart';
 
 enum AuthStatus {
   uninitialized,
@@ -25,212 +19,202 @@ enum AuthStatus {
 }
 
 class AuthAPI extends ChangeNotifier {
-  Client client = Client();
+  late final Client client;
   late final Account account;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  SharedPreferences? _prefs;
   static const String KEY_SESSION_TIME = 'last_login_time';
   static const String KEY_USER_EMAIL = 'user_email';
   static const String KEY_USER_ID = 'user_id';
   static const String KEY_USER_NAME = 'user_name';
+  static const Duration offlineSessionDuration = Duration(days: 3);
+  static const Duration revalidationInterval = Duration(minutes: 5);
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
+  bool _isOffline = false;
   Storage? storage;
 
-  // Getter methods
   User? get currentUser => _currentUser;
   AuthStatus get status => _status;
   String? get username => _currentUser?.name;
   String? get email => _currentUser?.email;
   String? get userid => _currentUser?.$id;
+  bool get isOffline => _isOffline;
 
-  // Constructor
   AuthAPI() {
     init();
     _initialize();
   }
 
+  @visibleForTesting
+  AuthAPI.forTesting();
+
+  @visibleForTesting
+  Future<void> clearSessionForTesting() => _clearSession();
+
+  @visibleForTesting
+  static OAuthProvider oauthProviderForTesting(String provider) =>
+      _oauthProvider(provider);
+
   void init() {
-    print('Initializing Appwrite client...');
+    client = Client();
     client
-        .setEndpoint(APPWRITE_URL)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setSelfSigned();
+        .setEndpoint(AppwriteConfig.endpoint)
+        .setProject(AppwriteConfig.projectId);
+    if (!AppwriteConfig.isCloud) {
+      client.setSelfSigned();
+    }
     account = Account(client);
     storage = Storage(client);
-    print('Appwrite client initialized');
   }
 
   Future<void> _initialize() async {
-    print('Initializing AuthAPI...');
-    await _initPrefs();
     await loadUser();
-    print('AuthAPI initialization complete');
+    _startRevalidationTimer();
   }
 
-  Future<void> _initPrefs() async {
-    print('Initializing SharedPreferences...');
-    _prefs = await SharedPreferences.getInstance();
-    print('SharedPreferences initialized');
+  void _startRevalidationTimer() {
+    Future.delayed(revalidationInterval, () async {
+      if (_status == AuthStatus.authenticated && _isOffline) {
+        try {
+          await account.get();
+          _isOffline = false;
+          await _saveSession(_currentUser!);
+          notifyListeners();
+        } catch (e, st) {
+          await AppLogger.captureException(e,
+              stackTrace: st, area: 'auth.revalidate');
+        }
+        _startRevalidationTimer();
+      }
+    });
   }
 
   Future<bool> checkOfflineSession() async {
-    print('Checking offline session...');
-    if (_prefs == null) {
-      print('SharedPreferences is null');
-      return false;
-    }
+    try {
+      final lastLoginTime = await _secureStorage.read(key: KEY_SESSION_TIME);
+      if (lastLoginTime == null) return false;
 
-    final lastLoginTime = _prefs!.getInt(KEY_SESSION_TIME);
-    if (lastLoginTime == null) {
-      print('No last login time found');
-      return false;
-    }
+      final lastLoginMillis = int.tryParse(lastLoginTime);
+      if (lastLoginMillis == null) return false;
 
-    final lastLogin = DateTime.fromMillisecondsSinceEpoch(lastLoginTime);
-    final now = DateTime.now();
-    final difference = now.difference(lastLogin);
-    print('Last login was ${difference.inDays} days ago');
+      final lastLogin = DateTime.fromMillisecondsSinceEpoch(lastLoginMillis);
+      final difference = DateTime.now().difference(lastLogin);
 
-    // Check if less than 3 days have passed
-    if (difference.inDays < 3) {
-      // Load offline user data
-      final email = _prefs!.getString(KEY_USER_EMAIL);
-      final userId = _prefs!.getString(KEY_USER_ID);
-      final name = _prefs!.getString(KEY_USER_NAME);
+      if (difference.inDays < offlineSessionDuration.inDays) {
+        final email = await _secureStorage.read(key: KEY_USER_EMAIL);
+        final userId = await _secureStorage.read(key: KEY_USER_ID);
+        final name = await _secureStorage.read(key: KEY_USER_NAME);
 
-      print('Stored credentials - Email: $email, UserId: $userId, Name: $name');
-
-      if (email != null && userId != null && name != null) {
-        print('Creating offline user object');
-        _status = AuthStatus.authenticated;
-        // Create a basic User object for offline mode
-        _currentUser = User(
-          targets: [],
-          mfa: false,
-          $id: userId,
-          email: email,
-          name: name,
-          emailVerification: false,
-          phoneVerification: false,
-          status: true,
-          labels: const [],
-          prefs: Preferences(data: {}),
-          registration: DateTime.now().toIso8601String(),
-          passwordUpdate: DateTime.now().toIso8601String(),
-          $createdAt: DateTime.now().toIso8601String(),
-          $updatedAt: DateTime.now().toIso8601String(),
-          phone: '',
-          accessedAt: '',
-        );
-        notifyListeners();
-        return true;
+        if (email != null && userId != null && name != null) {
+          _status = AuthStatus.authenticated;
+          _isOffline = true;
+          _currentUser = User(
+            targets: [],
+            mfa: false,
+            $id: userId,
+            email: email,
+            name: name,
+            emailVerification: false,
+            phoneVerification: false,
+            status: true,
+            labels: const [],
+            prefs: Preferences(data: {}),
+            registration: DateTime.now().toIso8601String(),
+            passwordUpdate: DateTime.now().toIso8601String(),
+            $createdAt: DateTime.now().toIso8601String(),
+            $updatedAt: DateTime.now().toIso8601String(),
+            phone: '',
+            accessedAt: '',
+          );
+          notifyListeners();
+          return true;
+        }
       }
+      return false;
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.offline_session');
+      return false;
     }
-    return false;
   }
 
   Future<void> _saveSession(User user) async {
-    if (_prefs == null) {
-      print('Cannot save session: SharedPreferences is null');
-      return;
-    }
-
     try {
-      print('Saving session for user: ${user.email}');
-      await _prefs!
-          .setInt(KEY_SESSION_TIME, DateTime.now().millisecondsSinceEpoch);
-      await _prefs!.setString(KEY_USER_EMAIL, user.email);
-      await _prefs!.setString(KEY_USER_ID, user.$id);
-      await _prefs!.setString(KEY_USER_NAME, user.name);
-      print('Session saved successfully');
-    } catch (e) {
-      print('Error saving session: $e');
+      await _secureStorage.write(
+        key: KEY_SESSION_TIME,
+        value: DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+      await _secureStorage.write(key: KEY_USER_EMAIL, value: user.email);
+      await _secureStorage.write(key: KEY_USER_ID, value: user.$id);
+      await _secureStorage.write(key: KEY_USER_NAME, value: user.name);
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.save_session');
     }
   }
 
   Future<void> _clearSession() async {
-    if (_prefs == null) return;
-
-    await _prefs!.remove(KEY_SESSION_TIME);
-    await _prefs!.remove(KEY_USER_EMAIL);
-    await _prefs!.remove(KEY_USER_ID);
-    await _prefs!.remove(KEY_USER_NAME);
+    try {
+      await _secureStorage.delete(key: KEY_SESSION_TIME);
+      await _secureStorage.delete(key: KEY_USER_EMAIL);
+      await _secureStorage.delete(key: KEY_USER_ID);
+      await _secureStorage.delete(key: KEY_USER_NAME);
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.clear_session');
+    }
+    _isOffline = false;
   }
 
   Future<void> loadUser() async {
     try {
-      print('Loading user...');
-      // First try online login
       final user = await account.get();
       _status = AuthStatus.authenticated;
+      _isOffline = false;
       _currentUser = user;
       await _saveSession(user);
-      print('Online login successful');
-    } catch (e) {
-      print('Online login failed, trying offline session');
-      // If online login fails, check for offline session
+    } catch (_) {
       if (await checkOfflineSession()) {
-        print('Offline session valid, user loaded');
-        _status = AuthStatus.authenticated;
+        AppLogger.info('Using offline auth session', data: {'area': 'auth'});
         return;
       }
-      print('Both online and offline login failed');
       _status = AuthStatus.unauthenticated;
     } finally {
       notifyListeners();
     }
   }
 
-  Future<User> createUser(
-      {required String email,
-      required String password,
-      required String name}) async {
-    notifyListeners();
-
-    try {
-      final user = await account.create(
-          userId: ID.unique(), email: email, password: password, name: name);
-      return user;
-    } finally {
-      createEmailSession(email: email, password: password);
-      notifyListeners();
-    }
+  Future<User> createUser({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    final user = await account.create(
+      userId: ID.unique(),
+      email: email,
+      password: password,
+      name: name,
+    );
+    return user;
   }
 
-  Future<int> verifyUser({required String email}) async {
-    int temp = Random().nextInt(9999);
-    String username = "test";
-    String password = "089890808";
-    final smtpServer = gmail(username, password);
-    final message = Message()
-      ..from = Address(username, 'Dukkan')
-      ..recipients.add(email)
-      ..subject = 'Dukkan email verfication :: ${DateTime.now()}'
-      ..text = 'copy the below number and paste it in your app'
-      ..html = '''
-                              <head>
-                              <style>
-                              h1 {text-align: center;}
-                              </style>
-                              </head>
-                              <body>
-                              <h1>copy the below number</h1>
-                              <h1>$temp</h1>
-                              </body>
-                            ''';
+  Future<void> sendVerification() async {
+    await account.createVerification(url: 'dukkan://verify');
+  }
 
+  Future<bool> confirmVerification({
+    required String userId,
+    required String secret,
+  }) async {
     try {
-      final sendReport = await send(message, smtpServer);
-      print('Message sent: ' + sendReport.toString());
-      return temp;
-    } on MailerException catch (e) {
-      print('Message not sent.');
-      for (var p in e.problems) {
-        print('Problem: ${p.code}: ${p.msg}');
-      }
-      return 0;
+      await account.updateVerification(userId: userId, secret: secret);
+      return true;
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.verify_email');
+      return false;
     }
   }
 
@@ -238,56 +222,118 @@ class AuthAPI extends ChangeNotifier {
     return await account.createAnonymousSession();
   }
 
-  Future<Session> createEmailSession(
-      {required String email, required String password}) async {
-    notifyListeners();
-
+  Future<Session> createEmailSession({
+    required String email,
+    required String password,
+  }) async {
     try {
       final session = await account.createEmailPasswordSession(
-          email: email, password: password);
-      _currentUser = await account.get();
-      _status = AuthStatus.authenticated;
-      print('Saving session for user: ${_currentUser?.email}');
-      await _saveSession(_currentUser!);
-      return session;
-    } finally {
-      notifyListeners();
-    }
-  }
-
-// Future<void> test(params) async{
-//   final sessionToken = await account.createVerification(
-//     url: '/account/verification'
-// );
-// }
-
-  signInWithProvider({required String provider}) async {
-    try {
-      // PacincompatiblekageInfo packageInfo = await PackageInfo.fromPlatform();
-      // print(packageInfo!.packageName);
-      final session = await account.createOAuth2Session(
-        provider: OAuthProvider.google,
+        email: email,
+        password: password,
       );
-
-      print('successful login');
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
+      _isOffline = false;
       await _saveSession(_currentUser!);
-      notifyListeners();
       return session;
-    } catch (e) {
-      print('failed login $e');
     } finally {
       notifyListeners();
     }
   }
+
+  Future<void> signInWithProvider({required String provider}) async {
+    try {
+      final oauthProvider = _oauthProvider(provider);
+      if (_usesDesktopBrowserOAuth) {
+        await _createDesktopOAuthSession(oauthProvider);
+      } else {
+        await account.createOAuth2Session(provider: oauthProvider);
+      }
+      _currentUser = await account.get();
+      _status = AuthStatus.authenticated;
+      _isOffline = false;
+      await _saveSession(_currentUser!);
+      notifyListeners();
+    } catch (e, st) {
+      await AppLogger.captureException(e, stackTrace: st, area: 'auth.oauth');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  static OAuthProvider _oauthProvider(String provider) {
+    switch (provider.toLowerCase()) {
+      case 'google':
+        return OAuthProvider.google;
+      case 'github':
+        return OAuthProvider.github;
+      default:
+        throw ArgumentError.value(provider, 'provider', 'Unsupported provider');
+    }
+  }
+
+  bool get _usesDesktopBrowserOAuth =>
+      IO.Platform.isLinux || IO.Platform.isWindows;
+
+  Future<void> _createDesktopOAuthSession(OAuthProvider provider) async {
+    // Keep the callback stable so it can be allow-listed in Appwrite.
+    final callbackUri = Uri.parse('http://localhost:43871/oauth2');
+    final endpoint = Uri.parse(client.endPoint);
+    final endpointPath = endpoint.path.endsWith('/')
+        ? endpoint.path.substring(0, endpoint.path.length - 1)
+        : endpoint.path;
+    final oauthUri = endpoint.replace(
+      path: '$endpointPath/account/sessions/oauth2/${provider.value}',
+      queryParameters: {
+        'project': AppwriteConfig.projectId,
+        'success': callbackUri.toString(),
+        'failure': callbackUri.toString(),
+      },
+    );
+
+    final result = await FlutterWebAuth2.authenticate(
+      url: oauthUri.toString(),
+      callbackUrlScheme: callbackUri.toString(),
+      options: const FlutterWebAuth2Options(
+        useWebview: false,
+        timeout: 300,
+        landingPageHtml: _desktopOAuthLandingPageHtml,
+      ),
+    );
+    final redirectedUri = Uri.parse(result);
+    final key = redirectedUri.queryParameters['key'];
+    final secret = redirectedUri.queryParameters['secret'];
+    if (key == null || secret == null) {
+      throw AppwriteException('OAuth sign-in did not complete.', 500);
+    }
+
+    final cookie = IO.Cookie(key, secret)
+      ..domain = endpoint.host
+      ..httpOnly = true
+      ..path = '/';
+    final clientIo = client as appwrite_io.ClientIO;
+    await clientIo.init();
+    await clientIo.cookieJar.saveFromResponse(endpoint, [cookie]);
+  }
+
+  static const _desktopOAuthLandingPageHtml = '''
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Dukkan</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:3rem">
+  <h1>تم تسجيل الدخول</h1>
+  <p>يمكنك إغلاق هذه الصفحة والعودة إلى دكان.</p>
+</body>
+</html>
+''';
 
   signOut() async {
     try {
       await account.deleteSession(sessionId: 'current');
-      _status = AuthStatus.unauthenticated;
-      await _clearSession();
     } finally {
+      _status = AuthStatus.unauthenticated;
+      _isOffline = false;
+      await _clearSession();
       notifyListeners();
     }
   }
@@ -303,71 +349,59 @@ class AuthAPI extends ChangeNotifier {
   Future<void> uploadBackup() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = IO.File('${dir.path}/isarinstance.isar');
+      final file = IO.File('${dir.path}/${DB.liveDatabaseFileName}');
       final fileId = 'backup_${_currentUser!.$id}.isar';
 
-      if (!await file.exists()) {
-        print('Backup file does not exist at ${file.path}');
-        return;
-      }
+      if (!await file.exists()) return;
 
-      // Check if the file exists in storage
       try {
         await storage!.getFile(
-          bucketId: '6762672a0033f48ae769',
+          bucketId: AppwriteConfig.bucketId,
           fileId: fileId,
         );
-
-        // If the file exists, delete it
         await storage!.deleteFile(
-          bucketId: '6762672a0033f48ae769',
+          bucketId: AppwriteConfig.bucketId,
           fileId: fileId,
         );
-        print('Existing backup deleted.');
-      } catch (e) {
-        if (e.toString().contains('File not found')) {
-          print('No existing backup found. Proceeding with upload.');
-        } else {
-          print('Error checking for existing backup: $e');
-          return;
-        }
+      } catch (e, st) {
+        await AppLogger.captureException(e,
+            stackTrace: st, area: 'backup.upload.delete_existing');
       }
 
-      // Upload the new backup
-      final response = await storage!.createFile(
-        bucketId: '6762672a0033f48ae769',
+      await storage!.createFile(
+        bucketId: AppwriteConfig.bucketId,
         fileId: fileId,
         file: InputFile.fromPath(
           path: file.path,
           filename: 'backup_${_currentUser!.$id}.isar',
         ),
       );
-
-      print('Backup uploaded: ${response.$id}');
-    } catch (e, stackTrace) {
-      print('Error uploading backup: $e\n$stackTrace');
+      AppLogger.info('Backup uploaded', data: {'area': 'backup.upload'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'backup.upload');
+      rethrow;
     }
   }
 
   Future<void> downloadBackup() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final filePath = '${dir.path}/isarinstance.isar';
+      final filePath = '${dir.path}/${DB.liveDatabaseFileName}';
       final fileId = 'backup_${_currentUser!.$id}.isar';
 
-      // Download the backup file
       final response = await storage!.getFileDownload(
-        bucketId: '6762672a0033f48ae769',
+        bucketId: AppwriteConfig.bucketId,
         fileId: fileId,
       );
 
-      // Write the downloaded content to the local file
       final file = IO.File(filePath);
       await file.writeAsBytes(response);
-
-      print('Backup downloaded and saved to $filePath');
-    } catch (e, stackTrace) {
-      print('Error downloading backup: $e\n$stackTrace');
+      AppLogger.info('Backup downloaded', data: {'area': 'backup.download'});
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'backup.download');
+      rethrow;
     }
   }
 

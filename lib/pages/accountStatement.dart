@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/util/models/Loaner.dart';
 import 'package:flutter/material.dart';
@@ -54,7 +55,7 @@ class _BankStatementPageState extends State<BankStatementPage> {
     List<Transaction> temp = widget.loaner.lastPayment!.map((payment) {
       return Transaction(
         date: DateTime.parse(payment.key!),
-        description: 'Payment',
+        description: 'سداد',
         debit: double.tryParse(payment.value!) ?? 0,
         balance: payment.remaining!,
       );
@@ -86,7 +87,7 @@ class _BankStatementPageState extends State<BankStatementPage> {
 
   /// Formats a currency value.
   String _formatCurrency(double amount) =>
-      NumberFormat.currency(symbol: "\$", decimalDigits: 2).format(amount);
+      NumberFormat.currency(symbol: 'ج ', decimalDigits: 2).format(amount);
 
   /// Generates a PDF file with a bank-like statement and shares it.
   Future<void> _generateAndSharePdf(BuildContext context) async {
@@ -105,14 +106,14 @@ class _BankStatementPageState extends State<BankStatementPage> {
               children: [
                 // Header
                 pw.Text(
-                  "Bank Statement",
+                  "كشف الحساب",
                   style: pw.TextStyle(
                       fontSize: 24, fontWeight: pw.FontWeight.bold),
                 ),
                 pw.SizedBox(height: 10),
-                pw.Text("Customer: ${widget.customerName}"),
-                pw.Text("Account Number: ${widget.accountNumber}"),
-                pw.Text("Date: ${_formatDate(DateTime.now())}"),
+                pw.Text("العميل: ${widget.customerName}"),
+                pw.Text("رقم الحساب: ${widget.accountNumber}"),
+                pw.Text("التاريخ: ${_formatDate(DateTime.now())}"),
                 pw.Divider(),
 
                 pw.SizedBox(height: 20),
@@ -122,13 +123,7 @@ class _BankStatementPageState extends State<BankStatementPage> {
                   headerStyle: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold, fontSize: 12),
                   cellStyle: const pw.TextStyle(fontSize: 10),
-                  headers: [
-                    "Date",
-                    "Description",
-                    "Debit",
-                    "Credit",
-                    "Balance"
-                  ],
+                  headers: ["التاريخ", "الوصف", "سداد", "دين", "الرصيد"],
                   data: widget.transactions.map((t) {
                     return [
                       _formatDate(t.date),
@@ -160,7 +155,7 @@ class _BankStatementPageState extends State<BankStatementPage> {
                 // Footer
                 pw.Center(
                   child: pw.Text(
-                    "Thank you for banking with us!",
+                    "شكراً لاستخدامك دكان",
                     style: pw.TextStyle(
                       fontStyle: pw.FontStyle.italic,
                       fontSize: 12,
@@ -178,22 +173,22 @@ class _BankStatementPageState extends State<BankStatementPage> {
 
       // Get the temporary directory of the device.
       final tempDir = await getTemporaryDirectory();
-      final pdfFile = File('${tempDir.path}/bank_statement.pdf');
+      final pdfFile = File('${tempDir.path}/account_statement.pdf');
 
       // Write the PDF file to the temporary directory.
       await pdfFile.writeAsBytes(pdfBytes);
 
-      print(pdfFile.path);
-
       // Share the PDF file using share_plus.
       await Share.shareXFiles(
         [XFile(pdfFile.path)],
-        text: 'Your bank statement',
+        text: 'كشف الحساب',
       );
-    } catch (e) {
+    } catch (e, st) {
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'account_statement.pdf');
       // Show an error message if something goes wrong.
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error generating PDF: $e')),
+        const SnackBar(content: Text(UserSafeMessages.pdfFailed)),
       );
     }
   }
@@ -203,9 +198,10 @@ class _BankStatementPageState extends State<BankStatementPage> {
     fetchTransactions(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Bank Statement"),
+        title: const Text('كشف الحساب'),
         actions: [
           IconButton(
+            tooltip: 'مشاركة كشف الحساب',
             icon: const Icon(Icons.share),
             onPressed: () => _generateAndSharePdf(context),
           ),
@@ -216,14 +212,14 @@ class _BankStatementPageState extends State<BankStatementPage> {
         child: ListView(
           children: [
             Text(
-              "Bank Statement",
+              'كشف الحساب',
               style: Theme.of(context).textTheme.headlineLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
-            Text("Customer: ${widget.customerName}"),
-            Text("Account Number: ${widget.accountNumber}"),
-            Text("Date: ${_formatDate(DateTime.now())}"),
+            Text('العميل: ${widget.customerName}'),
+            Text('رقم الحساب: ${widget.accountNumber}'),
+            Text('التاريخ: ${_formatDate(DateTime.now())}'),
             const Divider(),
             // Show a preview of transactions (optional)
             ...widget.transactions.map((t) => ListTile(
@@ -234,15 +230,15 @@ class _BankStatementPageState extends State<BankStatementPage> {
                     children: [
                       if (t.debit > 0)
                         Text(
-                          "Debit: ${_formatCurrency(t.debit)}",
+                          'سداد: ${_formatCurrency(t.debit)}',
                           style: const TextStyle(color: Colors.red),
                         ),
                       if (t.credit > 0)
                         Text(
-                          "Credit: ${_formatCurrency(t.credit)}",
+                          'دين: ${_formatCurrency(t.credit)}',
                           style: const TextStyle(color: Colors.green),
                         ),
-                      Text("Balance: ${_formatCurrency(t.balance)}"),
+                      Text('الرصيد: ${_formatCurrency(t.balance)}'),
                     ],
                   ),
                 ))

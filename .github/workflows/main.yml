@@ -4,62 +4,216 @@ on:
   push:
     branches: [ hot ]
   pull_request:
-    types: [ closed ]
+    types: [ opened, synchronize, reopened, ready_for_review, closed ]
     branches: [ master ]
 
 permissions:
   contents: write          # needed to push tags and create releases
 
+env:
+  FLUTTER_VERSION: '3.41.9'
+
 jobs:
-  # ─────────── Builds ──────────────────────────────────
-  build-android:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'     # change to your Flutter version
+          flutter-version: ${{ env.FLUTTER_VERSION }}
       - run: flutter pub get
-      - run: flutter build apk --split-per-abi
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-apks-${{ github.ref_name }}
-          path: build/app/outputs/flutter-apk/*.apk
+      - run: flutter analyze
+      - run: flutter test
 
-  build-windows:
-    runs-on: windows-latest
+  # ─────────── Builds ──────────────────────────────────
+  build-android:
+    needs: quality
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
       - run: flutter pub get
-      - run: flutter build windows
-      - name: Zip release folder
+      - name: Configure Android signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for secret_name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!secret_name}" ]; then
+              echo "::error::$secret_name is not configured"
+              exit 1
+            fi
+          done
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            printf 'storePassword=%s\n' "$ANDROID_KEYSTORE_PASSWORD"
+            printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
+            printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
+            printf 'storeFile=upload-keystore.jks\n'
+          } > android/key.properties
+      - run: |
+          flutter build apk --release --split-per-abi \
+            --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
+            --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
+            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769 \
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+            --dart-define=SENTRY_ENVIRONMENT=${{ github.ref_name }} \
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
+      - run: |
+          flutter build appbundle --release \
+            --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
+            --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
+            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769 \
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+            --dart-define=SENTRY_ENVIRONMENT=${{ github.ref_name }} \
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release-${{ github.ref_name }}
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
+
+  build-windows:
+    needs: quality
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - run: flutter pub get
+      - run: |
+          flutter build windows --release `
+            --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 `
+            --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f `
+            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769 `
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} `
+            --dart-define=SENTRY_ENVIRONMENT=${{ github.ref_name }} `
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
+
+      - name: Extract version from pubspec.yaml
+        run: |
+          $version = Select-String -Path "pubspec.yaml" -Pattern "^version:\s*(.+?)[\+]" | %{ $_.Matches.Groups[1].Value }
+          echo "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress
+
+      - name: Build installer
+        run: ISCC.exe packaging\windows\setup.iss
+
+      - name: Zip release folder (fallback)
         run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath windows-${{ github.ref_name }}.zip
+
       - uses: actions/upload-artifact@v4
         with:
           name: windows-${{ github.ref_name }}
-          path: windows-${{ github.ref_name }}.zip
+          path: |
+            packaging\windows\installer\Dukkan-Setup-*.exe
+            windows-${{ github.ref_name }}.zip
 
   build-linux:
+    needs: quality
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
-      - run: |
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - name: Install Linux build dependencies
+        run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build libgtk-3-dev libwebkit2gtk-4.1-dev
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build \
+            libgtk-3-dev \
+            liblzma-dev \
+            libsecret-1-dev \
+            libjsoncpp-dev \
+            libcurl4-openssl-dev \
+            libwebkit2gtk-4.1-dev \
+            fuse
       - run: flutter pub get
-      - run: flutter build linux
-      - name: Tar release bundle
+      - run: |
+          flutter build linux --release \
+            --dart-define=APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1 \
+            --dart-define=APPWRITE_PROJECT_ID=65e616d10bd9110e806f \
+            --dart-define=APPWRITE_BUCKET_ID=6762672a0033f48ae769 \
+            --dart-define=SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+            --dart-define=SENTRY_ENVIRONMENT=${{ github.ref_name }} \
+            --dart-define=SENTRY_RELEASE=${{ github.sha }}
+
+      - name: Extract version from pubspec.yaml
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build AppImage
+        run: |
+          APPDIR="AppDir"
+          mkdir -p "$APPDIR/usr/bin"
+          mkdir -p "$APPDIR/usr/lib"
+          mkdir -p "$APPDIR/usr/share/applications"
+          mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+
+          cp -r build/linux/x64/release/bundle/* "$APPDIR/usr/"
+          chmod +x "$APPDIR/usr/dukkan"
+
+          cp packaging/linux/dukkan.desktop "$APPDIR/usr/share/applications/"
+          cp packaging/linux/dukkan.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/"
+
+          ln -s usr/share/applications/dukkan.desktop "$APPDIR/dukkan.desktop"
+          ln -s usr/share/icons/hicolor/256x256/apps/dukkan.png "$APPDIR/dukkan.png"
+          ln -s usr/dukkan "$APPDIR/AppRun"
+
+          wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool
+          chmod +x appimagetool
+          ./appimagetool --no-appstream "$APPDIR" "Dukkan-${{ env.APP_VERSION }}-x86_64.AppImage"
+
+      - name: Build .deb package
+        run: |
+          DEB_DIR="Dukkan-${{ env.APP_VERSION }}"
+          mkdir -p "$DEB_DIR/DEBIAN"
+          mkdir -p "$DEB_DIR/opt/dukkan"
+          mkdir -p "$DEB_DIR/usr/bin"
+          mkdir -p "$DEB_DIR/usr/share/applications"
+          mkdir -p "$DEB_DIR/usr/share/icons/hicolor/256x256/apps"
+
+          cp -r build/linux/x64/release/bundle/* "$DEB_DIR/opt/dukkan/"
+          chmod +x "$DEB_DIR/opt/dukkan/dukkan"
+
+          cp packaging/linux/deb/DEBIAN/control "$DEB_DIR/DEBIAN/"
+          sed -i "s/^Version:.*/Version: ${{ env.APP_VERSION }}/" "$DEB_DIR/DEBIAN/control"
+
+          cp packaging/linux/deb/usr/bin/dukkan "$DEB_DIR/usr/bin/"
+          chmod +x "$DEB_DIR/usr/bin/dukkan"
+
+          cp packaging/linux/dukkan.desktop "$DEB_DIR/usr/share/applications/"
+          cp packaging/linux/dukkan.png "$DEB_DIR/usr/share/icons/hicolor/256x256/apps/"
+
+          dpkg-deb --build "$DEB_DIR" "Dukkan-${{ env.APP_VERSION }}.deb"
+
+      - name: Tar release bundle (fallback)
         run: tar -czf linux-${{ github.ref_name }}.tar.gz -C build/linux/x64/release/bundle .
       - uses: actions/upload-artifact@v4
         with:
           name: linux-${{ github.ref_name }}
-          path: linux-${{ github.ref_name }}.tar.gz
+          path: |
+            Dukkan-*.AppImage
+            Dukkan-*.deb
+            linux-${{ github.ref_name }}.tar.gz
 
   # ─────────── Beta pre‑release (push to hot) ──────────
   release-beta:
@@ -85,8 +239,12 @@ jobs:
           body: "Automated pre‑release from the `hot` branch."
           files: |
             artifacts/**/*.apk
+            artifacts/**/*.aab
+            artifacts/**/*.exe
             artifacts/**/*.zip
             artifacts/**/*.tar.gz
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
 
   # ─────────── Stable release (PR merged to master) ────
   release-stable:
@@ -137,5 +295,9 @@ jobs:
           tag_name: ${{ steps.parse.outputs.version }}
           files: |
             artifacts/**/*.apk
+            artifacts/**/*.aab
+            artifacts/**/*.exe
             artifacts/**/*.zip
             artifacts/**/*.tar.gz
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb

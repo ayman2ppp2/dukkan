@@ -74,6 +74,31 @@ class Product {
       required this.hot,
       required this.id});
 
+  String? validateForCreate() {
+    if (name == null || name!.trim().isEmpty) return 'Product name is required';
+    if (ownerName == null || ownerName!.trim().isEmpty)
+      return 'Owner is required';
+    if (barcode == null || barcode!.trim().isEmpty)
+      return 'Barcode is required';
+    if (buyprice == null || buyprice! < 0)
+      return 'Buy price must be non-negative';
+    if (sellPrice == null || sellPrice! < 0)
+      return 'Sell price must be non-negative';
+    if (count == null || count! < 0) return 'Count must be non-negative';
+    if (offer == true && (offerCount == null || offerCount! <= 0)) {
+      return 'Offer count must be greater than 0 when offer is enabled';
+    }
+    if (offer == true &&
+        offerPrice != null &&
+        buyprice != null &&
+        sellPrice != null) {
+      if (offerPrice! >= sellPrice! * offerCount!) {
+        return 'Offer price must be less than regular price for the bundle';
+      }
+    }
+    return null;
+  }
+
   // Product.fromBcProduct(BcProduct product) {
   //   name = product.name;
   //   ownerName = product.ownerName;

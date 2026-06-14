@@ -1,3 +1,4 @@
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loan.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,7 @@ class _LoansState extends State<Loans> {
                     .getLoanersStream(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return Text(snapshot.error.toString());
+                    return const Text(UserSafeMessages.loadFailed);
                   }
                   if (snapshot.hasData) {
                     return Text(
@@ -55,7 +56,7 @@ class _LoansState extends State<Loans> {
                 .getLoanersStream(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return Text('Error : ${snapshot.error}');
+                return const Text(UserSafeMessages.loadFailed);
               }
               if (snapshot.hasData) {
                 return Expanded(
@@ -114,7 +115,7 @@ class _LoansState extends State<Loans> {
           onPressed: () {
             var sa = Provider.of<SalesProvider>(context, listen: false);
             showGeneralDialog(
-              barrierLabel: 'gg',
+              barrierLabel: 'إضافة دائن',
               barrierDismissible: true,
               context: context,
               pageBuilder: (context, animation, secondaryAnimation) {
@@ -179,7 +180,8 @@ class _LoansState extends State<Loans> {
                               sa.addLoaner(na.text, ph.text, lo.text);
                               Navigator.pop(context);
                             },
-                            icon: Icon(Icons.check))
+                            tooltip: 'حفظ الدائن',
+                            icon: const Icon(Icons.check))
                       ],
                     ),
                   ),
@@ -187,7 +189,7 @@ class _LoansState extends State<Loans> {
               },
             );
           },
-          child: Icon(Icons.person_add),
+          child: const Icon(Icons.person_add),
           tooltip: 'إضافة دائن '),
     );
   }

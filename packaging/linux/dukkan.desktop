@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Dukkan
+Comment=A retail shop management app
+Exec=dukkan
+Icon=dukkan
+Type=Application
+Categories=Office;Finance;
+Terminal=false
+StartupNotify=true

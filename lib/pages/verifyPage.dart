@@ -1,17 +1,18 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/main.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class VerficationPage extends StatefulWidget {
-  final int code;
+  final String userId;
   final String email;
   final String password;
   final String name;
   const VerficationPage({
     super.key,
-    required this.code,
+    required this.userId,
     required this.email,
     required this.password,
     required this.name,
@@ -24,51 +25,84 @@ class VerficationPage extends StatefulWidget {
 class _VerficationPageState extends State<VerficationPage> {
   final TextEditingController _codeController = TextEditingController();
   bool _isLoading = false;
+  bool _emailSent = false;
 
   @override
   void initState() {
     super.initState();
-    // Show the verification code in debug mode
-    print('Verification code: ${widget.code}');
+    _sendVerification();
   }
 
-  createAccount() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _sendVerification() async {
+    setState(() => _isLoading = true);
+    try {
+      final AuthAPI appwrite = context.read<AuthAPI>();
+      await appwrite.sendVerification();
+      setState(() => _emailSent = true);
+    } on Exception catch (e, st) {
+      if (!mounted) return;
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.send_verification');
+      showAlert(
+          title: 'فشل إرسال رمز التحقق',
+          text: UserSafeMessages.verificationFailed);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  verifyAndCreateAccount() async {
+    setState(() => _isLoading = true);
 
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
-      await appwrite.createUser(
+      final enteredCode = _codeController.text.trim();
+
+      if (enteredCode.isEmpty) {
+        showAlert(title: 'رمز التحقق مطلوب', text: 'يرجى إدخال رمز التحقق');
+        return;
+      }
+
+      final verified = await appwrite.confirmVerification(
+        userId: widget.userId,
+        secret: enteredCode,
+      );
+
+      if (!verified) {
+        if (!mounted) return;
+        showAlert(
+          title: 'رمز التحقق غير صحيح',
+          text: 'يرجى إدخال الرمز الصحيح المرسل إلى بريدك الإلكتروني',
+        );
+        return;
+      }
+
+      await appwrite.createEmailSession(
         email: widget.email,
         password: widget.password,
-        name: widget.name,
       );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created successfully!'),
+          content: Text('تم إنشاء الحساب بنجاح'),
           backgroundColor: Colors.green,
         ),
       );
 
-      // Navigate to the app's main screen
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const MyApp()),
         (route) => false,
       );
-    } on AppwriteException catch (e) {
+    } on AppwriteException catch (e, st) {
       if (!mounted) return;
-      showAlert(title: 'Account creation failed', text: e.message.toString());
+      await AppLogger.captureException(e,
+          stackTrace: st, area: 'auth.verify_email');
+      showAlert(title: 'فشل التحقق', text: UserSafeMessages.verificationFailed);
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -83,7 +117,7 @@ class _VerficationPageState extends State<VerficationPage> {
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Ok'),
+              child: const Text('موافق'),
             ),
           ],
         );
@@ -95,9 +129,9 @@ class _VerficationPageState extends State<VerficationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verify Email'),
+        title: const Text('تأكيد البريد الإلكتروني'),
       ),
-      body: _isLoading
+      body: _isLoading && !_emailSent
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(20.0),
@@ -111,12 +145,12 @@ class _VerficationPageState extends State<VerficationPage> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Verification Code Sent',
+                    'تم إرسال رمز التحقق',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Please check your email ${widget.email} for the verification code',
+                    'يرجى مراجعة بريدك الإلكتروني ${widget.email} للحصول على رمز التحقق',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
@@ -124,7 +158,7 @@ class _VerficationPageState extends State<VerficationPage> {
                   TextField(
                     controller: _codeController,
                     decoration: const InputDecoration(
-                      labelText: 'Enter Verification Code',
+                      labelText: 'أدخل رمز التحقق',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.security),
                     ),
@@ -132,19 +166,10 @@ class _VerficationPageState extends State<VerficationPage> {
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      final enteredCode = int.tryParse(_codeController.text) ?? 0;
-                      if (enteredCode == widget.code) {
-                        createAccount();
-                      } else {
-                        showAlert(
-                          title: 'Invalid Code',
-                          text: 'Please enter the correct verification code',
-                        );
-                      }
-                    },
+                    onPressed: _isLoading ? null : verifyAndCreateAccount,
                     icon: const Icon(Icons.check_circle),
-                    label: const Text('Verify and Create Account'),
+                    label: Text(
+                        _isLoading ? 'جار التحقق...' : 'تحقق وأنشئ الحساب'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 32,

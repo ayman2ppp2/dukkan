@@ -37,7 +37,7 @@ class _AccountPageState extends State<AccountPage> {
   savePreferences() {
     final AuthAPI appwrite = context.read<AuthAPI>();
     appwrite.updatePreferences(bio: bioTextController.text);
-    const snackbar = SnackBar(content: Text('Preferences updated!'));
+    const snackbar = SnackBar(content: Text('تم تحديث الإعدادات'));
     ScaffoldMessenger.of(context).showSnackBar(snackbar);
   }
 
@@ -45,9 +45,10 @@ class _AccountPageState extends State<AccountPage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('My Account'),
+          title: const Text('حسابي'),
           actions: [
             IconButton(
+              tooltip: 'تسجيل الخروج',
               icon: const Icon(Icons.logout),
               onPressed: () {
                 signOut();
@@ -62,7 +63,7 @@ class _AccountPageState extends State<AccountPage> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text('Welcome back $username!',
+                  Text('مرحباً بعودتك $username',
                       style: Theme.of(context).textTheme.headlineSmall),
                   Text('$email'),
                   const SizedBox(height: 40),
@@ -73,14 +74,14 @@ class _AccountPageState extends State<AccountPage> {
                         TextField(
                           controller: bioTextController,
                           decoration: const InputDecoration(
-                            labelText: 'Your Bio',
+                            labelText: 'نبذة عنك',
                             border: OutlineInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 16),
                         TextButton(
                           onPressed: () => savePreferences(),
-                          child: const Text('Save Preferences'),
+                          child: const Text('حفظ الإعدادات'),
                         ),
                       ]),
                     ),
