@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:dukkan/core/lan_sync.dart';
@@ -100,64 +99,59 @@ void main() {
 
   group('HTTP Request Tests', () {
     test('Version URL format', () {
-      final endpoint =
-          LanSyncEndpoint(host: '192.168.1.100', port: 30000, code: '123456');
+      final endpoint = LanSyncEndpoint(host: '192.168.1.100', port: 30000);
       final url = endpoint.uri('version').toString();
 
-      expect(url, equals('http://192.168.1.100:30000/version?code=123456'));
+      expect(url, equals('http://192.168.1.100:30000/version'));
     });
 
     test('Hash URL format', () {
-      final endpoint =
-          LanSyncEndpoint(host: '192.168.1.100', port: 30000, code: '123456');
+      final endpoint = LanSyncEndpoint(host: '192.168.1.100', port: 30000);
       final url = endpoint.uri('hash').toString();
 
-      expect(url, equals('http://192.168.1.100:30000/hash?code=123456'));
+      expect(url, equals('http://192.168.1.100:30000/hash'));
     });
 
     test('Shutdown URL format', () {
-      final endpoint =
-          LanSyncEndpoint(host: '192.168.1.100', port: 30000, code: '123456');
+      final endpoint = LanSyncEndpoint(host: '192.168.1.100', port: 30000);
       final url = endpoint.uri('shutdown').toString();
 
-      expect(url, equals('http://192.168.1.100:30000/shutdown?code=123456'));
+      expect(url, equals('http://192.168.1.100:30000/shutdown'));
     });
 
     test('File download URL format', () {
-      final endpoint =
-          LanSyncEndpoint(host: '192.168.1.100', port: 30000, code: '123456');
+      final endpoint = LanSyncEndpoint(host: '192.168.1.100', port: 30000);
       final url = endpoint.uri('backup.isar').toString();
 
-      expect(url, equals('http://192.168.1.100:30000/backup.isar?code=123456'));
+      expect(url, equals('http://192.168.1.100:30000/backup.isar'));
     });
   });
 
-  group('Pairing Code Tests', () {
-    test('Generated pairing code is six digits', () {
-      final code = LanSync.generatePairingCode(random: Random(1));
-
-      expect(code.length, equals(6));
-      expect(LanSync.isPairingCode(code), isTrue);
-    });
-
-    test('Parses ip:port:code QR payload', () {
-      final endpoint = LanSyncEndpoint.tryParse('192.168.1.100:30000:123456');
+  group('Share Address Tests', () {
+    test('Parses ip:port QR payload', () {
+      final endpoint = LanSyncEndpoint.tryParse('192.168.1.100:30000');
 
       expect(endpoint, isNotNull);
       expect(endpoint!.host, equals('192.168.1.100'));
       expect(endpoint.port, equals(30000));
-      expect(endpoint.code, equals('123456'));
     });
 
-    test('Parses ip:code manual entry with default port', () {
-      final endpoint = LanSyncEndpoint.tryParse('192.168.1.100:123456');
+    test('Parses ip manual entry with default port', () {
+      final endpoint = LanSyncEndpoint.tryParse('192.168.1.100');
 
       expect(endpoint, isNotNull);
       expect(endpoint!.hostPort, equals('192.168.1.100:30000'));
     });
 
-    test('Rejects missing pairing code', () {
-      expect(LanSyncEndpoint.tryParse('192.168.1.100:30000'), isNull);
+    test('Parses http address by stripping scheme and path', () {
+      final endpoint = LanSyncEndpoint.tryParse('http://192.168.1.100:30000/');
+
+      expect(endpoint, isNotNull);
+      expect(endpoint!.hostPort, equals('192.168.1.100:30000'));
+    });
+
+    test('Rejects address with obsolete pairing code payload', () {
+      expect(LanSyncEndpoint.tryParse('192.168.1.100:30000:123456'), isNull);
     });
   });
 

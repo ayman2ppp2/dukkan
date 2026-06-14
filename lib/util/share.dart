@@ -42,7 +42,7 @@ class _ShareState extends State<Share> {
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                     children: [
                       _statusCard(li),
-                      if (li.pairingAddress != null) _pairingCard(li),
+                      if (li.shareAddress != null) _shareAddressCard(li),
                     ],
                   ),
                 ),
@@ -121,12 +121,12 @@ class _ShareState extends State<Share> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('اكتب عنوان المشاركة والكود الظاهر على جهاز الإرسال'),
+        title: const Text('اكتب عنوان المشاركة الظاهر على جهاز الإرسال'),
         content: TextField(
           textDirection: TextDirection.ltr,
           decoration: const InputDecoration(
-            labelText: 'عنوان المشاركة وكود الاقتران',
-            hintText: '192.168.1.10:30000:123456',
+            labelText: 'عنوان المشاركة',
+            hintText: '192.168.1.10:30000',
           ),
           onChanged: (value) {
             address = value;
@@ -200,7 +200,7 @@ class _ShareState extends State<Share> {
     );
   }
 
-  Widget _pairingCard(Lists li) {
+  Widget _shareAddressCard(Lists li) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -211,19 +211,15 @@ class _ShareState extends State<Share> {
             Semantics(
               label: 'رمز QR لمشاركة البيانات',
               image: true,
-              child: QrImageView(data: li.pairingAddress!, size: 220),
+              child: QrImageView(data: li.shareAddress!, size: 220),
             ),
             const SizedBox(height: 12),
             SelectableText(
-              li.pairingAddress!,
+              li.shareAddress!,
               textAlign: TextAlign.center,
               textDirection: TextDirection.ltr,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            if (li.pairingCode != null) ...[
-              const SizedBox(height: 8),
-              Text('كود الاقتران: ${li.pairingCode}'),
-            ],
           ],
         ),
       ),
