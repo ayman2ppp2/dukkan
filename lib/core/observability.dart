@@ -226,6 +226,6 @@ class UserSafeMessages {
   static const backupFailed = 'تعذر إكمال النسخ الاحتياطي. حاول مرة أخرى.';
   static const restoreFailed = 'تعذر استعادة النسخة الاحتياطية. حاول مرة أخرى.';
   static const syncFailed =
-      'فشلت المزامنة. تحقق من الشبكة وكود الاقتران ثم حاول مرة أخرى.';
+      'فشلت المزامنة. تحقق من الشبكة وعنوان المشاركة ثم حاول مرة أخرى.';
   static const pdfFailed = 'تعذر إنشاء ملف PDF. حاول مرة أخرى.';
 }

@@ -47,14 +47,11 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
         throw Exception('لم يتم العثور على عنوان Wi-Fi');
       }
 
-      final code = LanSync.generatePairingCode();
       final endpoint = LanSyncEndpoint(
         host: wifiIp,
         port: LanSync.port,
-        code: code,
       );
-      pairingCode = code;
-      pairingAddress = endpoint.qrPayload;
+      shareAddress = endpoint.qrPayload;
 
       await db.createLocalBackup();
       final dir = await getApplicationDocumentsDirectory();
@@ -64,7 +61,7 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
 
       setSyncState(
         SyncStatus.done,
-        message: 'الخادم جاهز. كود الاقتران: $code',
+        message: 'الخادم جاهز. استخدم عنوان المشاركة الظاهر.',
         progress: 1,
       );
 
@@ -73,7 +70,6 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
           request,
           packageInfo.version,
           dir,
-          code,
         );
         if (shouldShutdown) {
           await server.close();
@@ -103,8 +99,8 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
     if (endpoint == null) {
       setSyncState(
         SyncStatus.error,
-        message: 'عنوان الاقتران غير صحيح',
-        error: 'استخدم ip:code أو ip:port:code من جهاز الإرسال.',
+        message: 'عنوان المشاركة غير صحيح',
+        error: 'استخدم IP أو IP:PORT من جهاز الإرسال.',
       );
       return;
     }
@@ -114,8 +110,7 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
     final dio = LanSync.createDio();
     final cancelToken = CancelToken();
     _syncCancelToken = cancelToken;
-    pairingCode = endpoint.code;
-    pairingAddress = endpoint.qrPayload;
+    shareAddress = endpoint.qrPayload;
 
     try {
       setSyncState(
@@ -222,16 +217,11 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
     HttpRequest request,
     String version,
     Directory dir,
-    String code,
   ) async {
     final fileName =
         request.uri.pathSegments.isEmpty ? '' : request.uri.pathSegments.last;
     request.response.deadline = LanSync.receiveTimeout;
 
-    if (!LanSync.isAuthorizedRequest(request, code)) {
-      await _respond(request, HttpStatus.unauthorized, 'Unauthorized');
-      return false;
-    }
     if (!LanSync.isAllowedSegment(fileName)) {
       await _respond(request, HttpStatus.notFound, 'File not found');
       return false;

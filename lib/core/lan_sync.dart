@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
@@ -44,8 +43,7 @@ mixin LanSyncState on ChangeNotifier {
   String syncMessage = SyncStatus.idle.label;
   String? syncErrorMessage;
   double syncProgress = 0;
-  String? pairingAddress;
-  String? pairingCode;
+  String? shareAddress;
 
   void setSyncState(
     SyncStatus status, {
@@ -67,35 +65,31 @@ class LanSyncEndpoint {
   LanSyncEndpoint({
     required this.host,
     required this.port,
-    required this.code,
   });
 
   final String host;
   final int port;
-  final String code;
 
   String get hostPort => '$host:$port';
-  String get qrPayload => '$host:$port:$code';
+  String get qrPayload => hostPort;
 
   Uri uri(String path) {
-    return Uri.parse('http://$hostPort/$path').replace(
-      queryParameters: {'code': code},
-    );
+    return Uri.parse('http://$hostPort/$path');
   }
 
   static LanSyncEndpoint? tryParse(String raw) {
-    final input = raw.trim().replaceFirst(RegExp(r'^https?://'), '');
+    final input =
+        raw.trim().replaceFirst(RegExp(r'^https?://'), '').split('/').first;
     if (input.isEmpty) return null;
 
     final parts = input.split(':').where((part) => part.isNotEmpty).toList();
-    if (parts.length == 2 && LanSync.isPairingCode(parts[1])) {
-      return LanSyncEndpoint(
-          host: parts[0], port: LanSync.port, code: parts[1]);
+    if (parts.length == 1) {
+      return LanSyncEndpoint(host: parts[0], port: LanSync.port);
     }
-    if (parts.length == 3 && LanSync.isPairingCode(parts[2])) {
+    if (parts.length == 2) {
       final port = int.tryParse(parts[1]);
       if (port == null || port <= 0 || port > 65535) return null;
-      return LanSyncEndpoint(host: parts[0], port: port, code: parts[2]);
+      return LanSyncEndpoint(host: parts[0], port: port);
     }
     return null;
   }
@@ -114,21 +108,8 @@ class LanSync {
     backupFileName,
   };
 
-  static String generatePairingCode({Random? random}) {
-    final generator = random ?? Random.secure();
-    return (generator.nextInt(900000) + 100000).toString();
-  }
-
-  static bool isPairingCode(String value) {
-    return RegExp(r'^\d{6}$').hasMatch(value);
-  }
-
   static bool isAllowedSegment(String value) {
     return allowedSegments.contains(value);
-  }
-
-  static bool isAuthorizedRequest(HttpRequest request, String code) {
-    return request.uri.queryParameters['code'] == code;
   }
 
   static Dio createDio() {
