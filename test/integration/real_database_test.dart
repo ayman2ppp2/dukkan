@@ -122,7 +122,7 @@ void main() {
 
       final loaner = await handle.db.isar!.loaners.get(loanerId);
       final log = await handle.db.isar!.logs.where().findFirst();
-      expect(loaner!.loanedAmount, 20);
+      expect(loaner!.balance, 20);
       expect(log!.loaned, isTrue);
       expect(log.loanerID, loanerId);
     });
@@ -211,7 +211,7 @@ void main() {
       await provider.payLoaner(25, loanerId);
 
       final loaner = await handle.db.isar!.loaners.get(loanerId);
-      expect(loaner!.loanedAmount, 75);
+      expect(loaner!.balance, 75);
       expect(loaner.lastPayment!.last.value, '25.0');
       expect(loaner.lastPayment!.last.remaining, 75);
     });
@@ -224,7 +224,7 @@ void main() {
       await provider.resetLoanerAcount(loanerId);
 
       final loaner = await handle.db.isar!.loaners.get(loanerId);
-      expect(loaner!.loanedAmount, 0);
+      expect(loaner!.balance, 0);
       expect(loaner.lastPayment!.last.value, 'تصفير حساب');
     });
 
