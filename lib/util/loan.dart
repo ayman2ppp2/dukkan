@@ -24,7 +24,9 @@ class Loan extends StatefulWidget {
 class _LoanState extends State<Loan> {
   List<Log> receipts = [];
   double payment = 0;
-  TextEditingController con = TextEditingController();
+  TextEditingController payCon = TextEditingController();
+  TextEditingController withdrawCon = TextEditingController();
+
   String formatTextField(oldValue, newValue) {
     try {
       return intl.NumberFormat.currency(decimalDigits: 0, name: '').format(
@@ -62,7 +64,7 @@ class _LoanState extends State<Loan> {
                         .isar!
                         .loaners
                         .get(widget.loaner.ID);
-                if (temp!.loanedAmount == 0) {
+                if (temp!.balance == 0) {
                   showDialog(
                     context: context,
                     builder: (context) {
@@ -74,7 +76,6 @@ class _LoanState extends State<Loan> {
                         actions: [
                           TextButton(
                             onPressed: () async {
-                              // LoadingOverlay();
                               showGeneralDialog(
                                 context: context,
                                 pageBuilder:
@@ -85,7 +86,6 @@ class _LoanState extends State<Loan> {
                               Navigator.pop(context);
                               Navigator.pop(context);
                               Navigator.pop(context);
-                              // sa.refreshProductsList();
                             },
                             child: const Text(
                               'نعم',
@@ -126,71 +126,305 @@ class _LoanState extends State<Loan> {
         iconTheme: IconThemeData(color: Colors.brown[50]),
         backgroundColor: Colors.brown,
         elevation: 0,
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text(
-                widget.loaner.name!,
-                style: TextStyle(color: Colors.brown[50], fontSize: 14),
+            Text(
+              widget.loaner.name!,
+              style: TextStyle(
+                color: Colors.brown[50],
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            Expanded(
-              child: Text(
-                widget.loaner.ID.toString(),
-                style: TextStyle(color: Colors.brown[50], fontSize: 12),
+            Text(
+              '#${widget.loaner.ID}',
+              style: TextStyle(
+                color: Colors.brown[300],
+                fontSize: 11,
               ),
             ),
           ],
         ),
       ),
       body: SingleChildScrollView(
-        child: Container(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: StreamBuilder(
-                stream: Provider.of<SalesProvider>(context, listen: false)
-                    .watchLoaner(widget.loaner.ID),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return const Text(UserSafeMessages.loadFailed);
-                  }
-                  if (snapshot.hasData) {
-                    return Column(
-                      children: [
-                        Item(
-                          child: Text(
-                              textDirection: TextDirection.rtl,
-                              'رقم الهاتف+  : ${snapshot.data!.phoneNumber} '),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: StreamBuilder(
+              stream: Provider.of<SalesProvider>(context, listen: false)
+                  .watchLoaner(widget.loaner.ID),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text(UserSafeMessages.loadFailed));
+                }
+                if (snapshot.hasData) {
+                  final bal = snapshot.data!.balance ?? 0;
+                  final isPositive = bal >= 0;
+                  final canWithdraw = bal < 0;
+                  return Column(
+                    children: [
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 0),
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        Item(
-                          child: Text('المكان : ${snapshot.data!.location}'),
-                        ),
-                        Item(
-                          child: Text(
-                              'المطلوب : ${intl.NumberFormat.simpleCurrency(decimalDigits: 0, name: '').format(snapshot.data!.loanedAmount)}'),
-                        ),
-                        Item(
-                          child: Text(
-                              textDirection: TextDirection.rtl,
-                              'تاريخ اخر دفعة : ${intl.DateFormat.yMEd().add_jmz().format(DateTime.parse(snapshot.data!.lastPayment!.isEmpty ? DateTime.now().toString() : snapshot.data!.lastPayment!.last.key!.toString()))}'),
-                        ),
-                        Item(
-                          child: GestureDetector(
-                            onLongPress: () {
-                              showPaymentHistory(context, snapshot);
-                            },
-                            child: Text(
-                                'اخر دفعة :${snapshot.data!.lastPayment!.isEmpty ? 0.toString() : intl.NumberFormat.simpleCurrency(decimalDigits: 0, name: '').format(double.parse(snapshot.data!.lastPayment!.last.value!))}'),
+                        child: Container(
+                          height: 180,
+                          padding: EdgeInsets.only(left: 20, right: 20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isPositive
+                                  ? [Colors.red.shade700, Colors.red.shade500]
+                                  : [
+                                      Colors.green.shade700,
+                                      Colors.green.shade500
+                                    ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                        ),
-                        Item(
-                          child: Row(
-                            textDirection: TextDirection.rtl,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                  textDirection: TextDirection.rtl, 'تسديد : '),
-                              Expanded(
-                                child: TextFormField(
+                                'الرصيد',
+                                style: TextStyle(
+                                  color: Colors.white.withAlpha(178),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                intl.NumberFormat.simpleCurrency(
+                                        decimalDigits: 0, name: '')
+                                    .format(bal.abs()),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withAlpha(51),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  isPositive ? 'مطلوب' : 'طالب',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Card(
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'معلومات العميل',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: Colors.brown[800],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _infoRow(Icons.phone_android, 'رقم الهاتف',
+                                  snapshot.data!.phoneNumber ?? ''),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(height: 1),
+                              ),
+                              _infoRow(Icons.location_on, 'المكان',
+                                  snapshot.data!.location ?? ''),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(height: 1),
+                              ),
+                              _infoRow(
+                                  Icons.date_range,
+                                  'تاريخ اخر دفعة',
+                                  intl.DateFormat.yMd().format(
+                                    DateTime.parse(snapshot
+                                            .data!.lastPayment!.isEmpty
+                                        ? DateTime.now().toString()
+                                        : snapshot.data!.lastPayment!.last.key!
+                                            .toString()),
+                                  )),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Divider(height: 1),
+                              ),
+                              GestureDetector(
+                                onLongPress: () =>
+                                    showPaymentHistory(context, snapshot),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _infoRow(
+                                        Icons.payments,
+                                        'اخر عملية',
+                                        snapshot.data!.lastPayment!.isEmpty
+                                            ? '0'
+                                            : intl.NumberFormat.simpleCurrency(
+                                                    decimalDigits: 0, name: '')
+                                                .format(double.parse(snapshot
+                                                    .data!
+                                                    .lastPayment!
+                                                    .last
+                                                    .value!))),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'اضغط مطولاً لعرض كامل السجل',
+                                      style: TextStyle(
+                                        color: Colors.brown[300],
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Card(
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.payments_rounded,
+                                      color: Colors.green[700], size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'إيداع',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: Colors.green[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: payCon,
+                                keyboardType: TextInputType.number,
+                                textDirection: TextDirection.rtl,
+                                inputFormatters: [
+                                  TextInputFormatter.withFunction(
+                                    (oldValue, newValue) => TextEditingValue(
+                                      selection: TextSelection.collapsed(
+                                          offset:
+                                              getEOLOffset(oldValue, newValue)),
+                                      text: formatTextField(oldValue, newValue),
+                                    ),
+                                  ),
+                                ],
+                                decoration: InputDecoration(
+                                  hintText: 'المبلغ',
+                                  prefixIcon: Icon(
+                                      Icons.monetization_on_outlined,
+                                      color: Colors.green[600]),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.green[50],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    var sa = Provider.of<SalesProvider>(context,
+                                        listen: false);
+                                    if (payCon.text == 'Reset') {
+                                      resetAccount(context, sa, snapshot);
+                                    } else {
+                                      var amount =
+                                          intl.NumberFormat.currency(name: '')
+                                              .parse(payCon.text)
+                                              .toDouble();
+                                      if (amount > 0) {
+                                        payLoanerWithConfirmation(
+                                            context, sa, snapshot);
+                                      }
+                                    }
+                                  },
+                                  icon:
+                                      const Icon(Icons.check_circle, size: 18),
+                                  label: const Text('تأكيد الإيداع'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green[700],
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (canWithdraw) ...[
+                        const SizedBox(height: 8),
+                        Card(
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.currency_exchange,
+                                        color: Colors.red[700], size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'سحب',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: Colors.red[800],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: withdrawCon,
+                                  keyboardType: TextInputType.number,
+                                  textDirection: TextDirection.rtl,
                                   inputFormatters: [
                                     TextInputFormatter.withFunction(
                                       (oldValue, newValue) => TextEditingValue(
@@ -202,71 +436,131 @@ class _LoanState extends State<Loan> {
                                       ),
                                     ),
                                   ],
-                                  controller: con,
-                                  autocorrect: true,
-                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    hintText: 'المبلغ',
+                                    prefixIcon: Icon(
+                                        Icons.monetization_on_outlined,
+                                        color: Colors.red[600]),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.red[50],
+                                  ),
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  var sa = Provider.of<SalesProvider>(context,
-                                      listen: false);
-                                  if (con.text == 'Reset') {
-                                    resetAccount(context, sa, snapshot);
-                                  } else {
-                                    var sa = Provider.of<SalesProvider>(context,
-                                        listen: false);
-                                    (intl.NumberFormat.currency(name: '')
-                                                        .parse(con.text))
-                                                    .toDouble() <=
-                                                snapshot.data!.loanedAmount! &&
-                                            (intl.NumberFormat.currency(
-                                                            name: '')
-                                                        .parse(con.text))
-                                                    .toDouble() !=
-                                                0
-                                        ? payLoanerWithConfirmation(
-                                            context, sa, snapshot)
-                                        : warningPayingMoreOrNothing(context);
-                                  }
-                                },
-                                tooltip: 'تسجيل سداد',
-                                icon: const Icon(Icons.payments_rounded),
-                              ),
-                            ],
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      if (withdrawCon.text.isEmpty) {
+                                        return;
+                                      }
+                                      var sa = Provider.of<SalesProvider>(
+                                          context,
+                                          listen: false);
+                                      var amount =
+                                          intl.NumberFormat.currency(name: '')
+                                              .parse(withdrawCon.text)
+                                              .toDouble();
+                                      if (amount > 0 && amount <= bal.abs()) {
+                                        withdrawConfirmation(
+                                            context, sa, snapshot);
+                                      } else {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('خطأ'),
+                                            content: Text(
+                                                'المبلغ يجب ان يكون بين 1 و ${intl.NumberFormat.simpleCurrency(decimalDigits: 0, name: '').format(bal.abs())}'),
+                                            actions: [
+                                              TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: const Text('موافق'))
+                                            ],
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.check_circle,
+                                        size: 18),
+                                    label: const Text('تأكيد السحب'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red[700],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        Item(child: Text('السجل')),
-                        Item(
-                          child: SizedBox(
-                            height: 260,
-                            child: StreamBuilder(
-                                stream:
-                                    Provider.of<Lists>(context, listen: false)
-                                        .getPersonsLogs(snapshot.data!.ID),
-                                builder: (context, snapshot) {
-                                  if (snapshot.hasData) {
-                                    return ListView.builder(
-                                      itemCount: snapshot.data!.length,
-                                      itemBuilder: (context, index) => Receipt(
-                                        log: snapshot.data![index],
+                      ],
+                      Card(
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.receipt_long,
+                                      color: Colors.brown[600], size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'الفواتير',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: Colors.brown[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: 300,
+                              child: StreamBuilder(
+                                  stream:
+                                      Provider.of<Lists>(context, listen: false)
+                                          .getPersonsLogs(snapshot.data!.ID),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      return ListView.builder(
+                                        padding: const EdgeInsets.all(8),
+                                        itemCount: snapshot.data!.length,
+                                        itemBuilder: (context, index) =>
+                                            Receipt(
+                                          log: snapshot.data![index],
+                                        ),
+                                      );
+                                    }
+                                    if (snapshot.hasError) {
+                                      return const Center(
+                                        child:
+                                            Text(UserSafeMessages.loadFailed),
+                                      );
+                                    }
+                                    return Center(
+                                      child: SpinKitChasingDots(
+                                        color: Colors.brown[500],
                                       ),
                                     );
-                                  }
-                                  if (snapshot.hasError) {
-                                    return AlertDialog(
-                                      title: const Text(
-                                          UserSafeMessages.loadFailed),
-                                    );
-                                  }
-                                  return SpinKitChasingDots(
-                                    color: Colors.brown[500],
-                                  );
-                                }),
-                          ),
-                        ),
-                        Item(
-                            child: TextButton(
+                                  }),
+                            ),
+                            const Divider(height: 1),
+                            SizedBox(
+                              width: double.infinity,
+                              child: TextButton.icon(
                                 onPressed: () async {
                                   var li = Provider.of<Lists>(context,
                                       listen: false);
@@ -294,17 +588,57 @@ class _LoanState extends State<Loan> {
                                         area: 'loan.account_statement');
                                   }
                                 },
-                                child: Text('account statement')))
-                      ],
-                    );
-                  }
-                  return SpinKitChasingDots(
-                    color: Colors.brown[500],
+                                icon: const Icon(Icons.receipt, size: 18),
+                                label: const Text('كشف حساب'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   );
-                }),
-          ),
+                }
+                return Center(
+                  child: SpinKitChasingDots(
+                    color: Colors.brown[500],
+                  ),
+                );
+              }),
         ),
       ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Row(
+      textDirection: TextDirection.rtl,
+      children: [
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: Colors.brown[100],
+          child: Icon(icon, size: 16, color: Colors.brown[600]),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.brown[500],
+                fontSize: 11,
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -324,14 +658,13 @@ class _LoanState extends State<Loan> {
           ),
           child: Material(
             borderRadius: BorderRadius.circular(12),
-            color: Colors.white, // Background color
+            color: Colors.white,
             child: Column(
               children: [
-                // Header
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.brown, // Brown header
+                    color: Colors.brown,
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(12),
                     ),
@@ -347,7 +680,6 @@ class _LoanState extends State<Loan> {
                     ),
                   ),
                 ),
-                // Payment List
                 Expanded(
                   child: snapshot.data?.lastPayment?.isNotEmpty ?? false
                       ? ListView.separated(
@@ -362,15 +694,38 @@ class _LoanState extends State<Loan> {
                             final paymentDate = payment.key != null
                                 ? DateTime.parse(payment.key!)
                                 : DateTime.now();
+                            final type = payment.type ?? 'payment';
+                            final remaining = payment.remaining;
+                            final value =
+                                double.tryParse(payment.value ?? '0') ?? 0;
+                            final double? balanceBefore;
+                            if (type == 'reset') {
+                              balanceBefore = null;
+                            } else if (type == 'withdraw') {
+                              balanceBefore = remaining! - value;
+                            } else {
+                              balanceBefore = remaining! + value;
+                            }
 
-                            // Calculate balance before payment
-                            double? remaining = payment.remaining;
-                            double? value = double.tryParse(
-                                payment.value ?? 'تم تصفير الحساب');
-                            double? balanceBefore =
-                                (remaining != null && value != null)
-                                    ? remaining + value
-                                    : null;
+                            Color typeColor;
+                            String typeLabel;
+                            switch (type) {
+                              case 'sale':
+                                typeColor = Colors.blue;
+                                typeLabel = 'مشتريات';
+                                break;
+                              case 'withdraw':
+                                typeColor = Colors.red;
+                                typeLabel = 'سحب';
+                                break;
+                              case 'reset':
+                                typeColor = Colors.orange;
+                                typeLabel = 'تصفير';
+                                break;
+                              default:
+                                typeColor = Colors.green;
+                                typeLabel = 'إيداع';
+                            }
 
                             return GestureDetector(
                               onTap: () {
@@ -380,11 +735,12 @@ class _LoanState extends State<Loan> {
                                       builder: (context) => ConfirmationPage(
                                           paied:
                                               intl.NumberFormat.simpleCurrency()
-                                                  .format(value ?? 0),
+                                                  .format(value),
                                           date: paymentDate,
                                           name: name!,
                                           remaining: remaining!,
-                                          clearField: () {}),
+                                          clearField: () {},
+                                          type: type),
                                     ));
                               },
                               child: Container(
@@ -392,8 +748,7 @@ class _LoanState extends State<Loan> {
                                     vertical: 4, horizontal: 8),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors
-                                      .brown.shade50, // Light brown background
+                                  color: Colors.brown.shade50,
                                   borderRadius: BorderRadius.circular(8),
                                   boxShadow: [
                                     BoxShadow(
@@ -406,24 +761,20 @@ class _LoanState extends State<Loan> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Balance Before Payment (Top)
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          'الرصيد قبل الدفع:',
+                                          typeLabel,
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.brown.shade800,
+                                            color: typeColor,
                                           ),
                                         ),
                                         Text(
-                                          balanceBefore != null
-                                              ? intl.NumberFormat
-                                                      .simpleCurrency()
-                                                  .format(balanceBefore)
-                                              : 'N/A',
+                                          intl.NumberFormat.simpleCurrency()
+                                              .format(value),
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             color: Colors.brown.shade900,
@@ -431,29 +782,33 @@ class _LoanState extends State<Loan> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    // Amount Paid
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'المبلغ المدفوع:',
-                                          style: TextStyle(
-                                            color: Colors.brown.shade700,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${intl.NumberFormat.simpleCurrency().format(double.tryParse(payment.value ?? '0') ?? 0)}',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.brown.shade700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                     const SizedBox(height: 4),
-                                    // Remaining Balance
+                                    if (balanceBefore != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 2),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'الرصيد قبل:',
+                                              style: TextStyle(
+                                                color: Colors.brown.shade600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            Text(
+                                              intl.NumberFormat
+                                                      .simpleCurrency()
+                                                  .format(balanceBefore),
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.brown.shade600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
@@ -465,20 +820,22 @@ class _LoanState extends State<Loan> {
                                           ),
                                         ),
                                         Text(
-                                          payment.remaining != null
+                                          remaining != null
                                               ? intl.NumberFormat
                                                       .simpleCurrency()
-                                                  .format(payment.remaining!)
+                                                  .format(remaining)
                                               : 'N/A',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.brown.shade900,
+                                            color: remaining != null &&
+                                                    remaining < 0
+                                                ? Colors.green
+                                                : Colors.brown.shade900,
                                           ),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    // Payment Date
                                     Align(
                                       alignment: Alignment.centerRight,
                                       child: Text(
@@ -539,7 +896,7 @@ class _LoanState extends State<Loan> {
             TextButton(
               onPressed: () {
                 sa.resetLoanerAcount(snapshot.data!.ID).then((_) {
-                  con.text = '';
+                  payCon.text = '';
                   Navigator.pop(context);
                 });
               },
@@ -561,7 +918,7 @@ class _LoanState extends State<Loan> {
       builder: (context) {
         return AlertDialog(
           title: Text(
-            'هل انت متاكد من تسديد ${con.text}',
+            'هل انت متاكد من إيداع ${payCon.text}',
             style: TextStyle(fontSize: 20),
           ),
           actions: [
@@ -575,7 +932,7 @@ class _LoanState extends State<Loan> {
                 await sa
                     .payLoaner(
                         intl.NumberFormat.currency(name: '')
-                            .parse(con.text)
+                            .parse(payCon.text)
                             .toDouble(),
                         snapshot.data!.ID)
                     .then((value) => Navigator.push(
@@ -584,15 +941,16 @@ class _LoanState extends State<Loan> {
                           builder: (context) => ConfirmationPage(
                             clearField: () {
                               setState(() {
-                                con.text = '';
+                                payCon.text = '';
                               });
                             },
-                            paied: con.text,
+                            paied: payCon.text,
                             date: DateTime.now(),
                             name: snapshot.data!.name!,
-                            remaining: snapshot.data!.loanedAmount! -
+                            remaining: snapshot.data!.balance! -
                                 (intl.NumberFormat.currency(name: '')
-                                    .parse(con.text)),
+                                    .parse(payCon.text)),
+                            type: 'payment',
                           ),
                         )));
 
@@ -619,57 +977,69 @@ class _LoanState extends State<Loan> {
     );
   }
 
-  Future<dynamic> warningPayingMoreOrNothing(BuildContext context) {
+  Future<dynamic> withdrawConfirmation(
+      BuildContext context, SalesProvider sa, AsyncSnapshot<Loaner?> snapshot) {
     return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text(
-            (intl.NumberFormat.currency(name: '').parse(con.text)) != 0
-                ? 'لا يمكنك ان تسدد اكثر من المطلوب'
-                : 'لا يمكنك تسديد لاشيء',
+            'هل انت متاكد من سحب ${withdrawCon.text}',
             style: TextStyle(fontSize: 20),
           ),
           actions: [
+            TextButton(
+              onPressed: () async {
+                showGeneralDialog(
+                  context: context,
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      LoadingOverlay(),
+                );
+                await sa
+                    .withdrawFromBalance(
+                        intl.NumberFormat.currency(name: '')
+                            .parse(withdrawCon.text)
+                            .toDouble(),
+                        snapshot.data!.ID)
+                    .then((value) => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ConfirmationPage(
+                            clearField: () {
+                              setState(() {
+                                withdrawCon.text = '';
+                              });
+                            },
+                            paied: withdrawCon.text,
+                            date: DateTime.now(),
+                            name: snapshot.data!.name!,
+                            remaining: snapshot.data!.balance! +
+                                (intl.NumberFormat.currency(name: '')
+                                    .parse(withdrawCon.text)),
+                            type: 'withdraw',
+                          ),
+                        )));
+
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'نعم',
+                style: TextStyle(fontSize: 20),
+              ),
+            ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
               child: const Text(
-                'موافق',
+                'لا',
                 style: TextStyle(fontSize: 20),
               ),
             ),
           ],
         );
       },
-    );
-  }
-}
-
-class Item extends StatefulWidget {
-  final child;
-  const Item({super.key, required this.child});
-
-  @override
-  State<Item> createState() => _ItemState();
-}
-
-class _ItemState extends State<Item> {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(5, 0, 5, 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.brown[100],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(8),
-          child: widget.child,
-        ),
-      ),
     );
   }
 }

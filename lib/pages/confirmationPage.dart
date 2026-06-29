@@ -13,6 +13,7 @@ class ConfirmationPage extends StatelessWidget {
   final double remaining;
   final Function clearField;
   final DateTime date;
+  final String type;
 
   final ScreenshotController screenshotController = ScreenshotController();
 
@@ -23,6 +24,7 @@ class ConfirmationPage extends StatelessWidget {
     required this.name,
     required this.remaining,
     required this.clearField,
+    this.type = 'payment',
   });
 
   @override
@@ -90,11 +92,12 @@ class ConfirmationPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'تم تسديد $paied',
+                        _headerMessage(),
                         style: TextStyle(
                           color: Colors.brown[800],
                           fontSize: 22,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -124,9 +127,9 @@ class ConfirmationPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'المتبقي: ${formatter.NumberFormat.currency(name: '').format(remaining)}',
+                        _balanceLabel(),
                         style: TextStyle(
-                          color: Colors.brown[900],
+                          color: _balanceColor(),
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -224,5 +227,34 @@ class ConfirmationPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _headerMessage() {
+    switch (type) {
+      case 'payment':
+        return 'تم التسديد بمبلغ $paied';
+      case 'withdraw':
+        return 'تم السحب بمبلغ $paied';
+      case 'reset':
+        return 'تم تصفير الحساب';
+      default:
+        return 'تم إيداع $paied';
+    }
+  }
+
+  String _balanceLabel() {
+    if (type == 'reset') return 'الرصيد : 0';
+    if (remaining > 0) {
+      return 'مطلوب : ${formatter.NumberFormat.currency(name: '').format(remaining)}';
+    } else if (remaining < 0) {
+      return 'طالب : ${formatter.NumberFormat.currency(name: '').format(remaining.abs())}';
+    }
+    return 'الرصيد : 0';
+  }
+
+  Color _balanceColor() {
+    if (remaining > 0) return Colors.red.shade800;
+    if (remaining < 0) return Colors.green.shade800;
+    return Colors.brown.shade900;
   }
 }

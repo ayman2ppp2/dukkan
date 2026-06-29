@@ -82,11 +82,9 @@ class _inboundReceiptState extends State<inboundReceipt> {
                                   ),
                                   child: Padding(
                                     padding: const EdgeInsets.all(10),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.brown[200],
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
+                                    child: Material(
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.brown[200],
                                       child: MyListTile(
                                         product: sa.sellList[index],
                                         index: index,
