@@ -78,6 +78,7 @@ dependencies:
   flutter_web_auth_2: 4.1.0
 dependency_overrides:
   flutter_web_auth_2: 4.1.0
+  page_transition: ^2.2.2
 
 dev_dependencies:
   build_runner: ^2.4.9
@@ -95,10 +96,10 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "lib/assets/icon.jpg"
+  image_path: "lib/assets/dukkan_1.png"
   windows:
     generate: true
-    image_path: "lib/assets/icon.jpg"
+    image_path: "lib/assets/dukkan_1.png"
     icon_size: 256 # min:48, max:256, default: 48
 
 # For information on the generic Dart part of this file, see the

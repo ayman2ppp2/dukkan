@@ -133,11 +133,10 @@ class _SearchPageState extends State<SearchPage> {
                   return ListView.builder(
                     itemCount: products.length,
                     itemBuilder: (context, index) {
-                      return Container(
-                        color: li.isProductOutOfDate(products[index].endDate!)
-                            ? Colors.red[100]
-                            : Colors.transparent,
-                        child: ListTile(
+                      return ListTile(
+                          tileColor: li.isProductOutOfDate(products[index].endDate!)
+                              ? Colors.red[100]
+                              : Colors.transparent,
                           enabled: li.isProductOutOFStock(products[index].id),
                           title: Text(products[index].name!),
                           trailing: Text(
@@ -207,7 +206,6 @@ class _SearchPageState extends State<SearchPage> {
 
                             Navigator.pop(context);
                           },
-                        ),
                       );
                     },
                   );

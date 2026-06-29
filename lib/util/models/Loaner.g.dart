@@ -7,7 +7,7 @@ part of 'Loaner.dart';
 // **************************************************************************
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types, experimental_member_use
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
 extension GetLoanerCollection on Isar {
   IsarCollection<Loaner> get loaners => this.collection();
@@ -130,7 +130,7 @@ void _loanerSerialize(
     EmbeddedMapSchema.serialize,
     object.lastPayment,
   );
-  writer.writeDouble(offsets[1], object.loanedAmount);
+  writer.writeDouble(offsets[1], object.balance);
   writer.writeString(offsets[2], object.location);
   writer.writeString(offsets[3], object.name);
   writer.writeString(offsets[4], object.phoneNumber);
@@ -150,7 +150,7 @@ Loaner _loanerDeserialize(
       allOffsets,
       EmbeddedMap(),
     ),
-    loanedAmount: reader.readDoubleOrNull(offsets[1]),
+    balance: reader.readDoubleOrNull(offsets[1]),
     location: reader.readStringOrNull(offsets[2]),
     name: reader.readStringOrNull(offsets[3]),
     phoneNumber: reader.readStringOrNull(offsets[4]),
@@ -592,7 +592,7 @@ extension LoanerQueryFilter on QueryBuilder<Loaner, Loaner, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> loanedAmountIsNull() {
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> balanceIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'loanedAmount',
@@ -600,7 +600,7 @@ extension LoanerQueryFilter on QueryBuilder<Loaner, Loaner, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> loanedAmountIsNotNull() {
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> balanceIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'loanedAmount',
@@ -608,7 +608,7 @@ extension LoanerQueryFilter on QueryBuilder<Loaner, Loaner, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> loanedAmountEqualTo(
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> balanceEqualTo(
     double? value, {
     double epsilon = Query.epsilon,
   }) {
@@ -621,7 +621,7 @@ extension LoanerQueryFilter on QueryBuilder<Loaner, Loaner, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> loanedAmountGreaterThan(
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> balanceGreaterThan(
     double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
@@ -636,7 +636,7 @@ extension LoanerQueryFilter on QueryBuilder<Loaner, Loaner, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> loanedAmountLessThan(
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> balanceLessThan(
     double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
@@ -651,7 +651,7 @@ extension LoanerQueryFilter on QueryBuilder<Loaner, Loaner, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> loanedAmountBetween(
+  QueryBuilder<Loaner, Loaner, QAfterFilterCondition> balanceBetween(
     double? lower,
     double? upper, {
     bool includeLower = true,
@@ -1189,13 +1189,13 @@ extension LoanerQueryObject on QueryBuilder<Loaner, Loaner, QFilterCondition> {
 extension LoanerQueryLinks on QueryBuilder<Loaner, Loaner, QFilterCondition> {}
 
 extension LoanerQuerySortBy on QueryBuilder<Loaner, Loaner, QSortBy> {
-  QueryBuilder<Loaner, Loaner, QAfterSortBy> sortByLoanedAmount() {
+  QueryBuilder<Loaner, Loaner, QAfterSortBy> sortByBalance() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'loanedAmount', Sort.asc);
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterSortBy> sortByLoanedAmountDesc() {
+  QueryBuilder<Loaner, Loaner, QAfterSortBy> sortByBalanceDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'loanedAmount', Sort.desc);
     });
@@ -1263,13 +1263,13 @@ extension LoanerQuerySortThenBy on QueryBuilder<Loaner, Loaner, QSortThenBy> {
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterSortBy> thenByLoanedAmount() {
+  QueryBuilder<Loaner, Loaner, QAfterSortBy> thenByBalance() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'loanedAmount', Sort.asc);
     });
   }
 
-  QueryBuilder<Loaner, Loaner, QAfterSortBy> thenByLoanedAmountDesc() {
+  QueryBuilder<Loaner, Loaner, QAfterSortBy> thenByBalanceDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'loanedAmount', Sort.desc);
     });
@@ -1325,7 +1325,7 @@ extension LoanerQuerySortThenBy on QueryBuilder<Loaner, Loaner, QSortThenBy> {
 }
 
 extension LoanerQueryWhereDistinct on QueryBuilder<Loaner, Loaner, QDistinct> {
-  QueryBuilder<Loaner, Loaner, QDistinct> distinctByLoanedAmount() {
+  QueryBuilder<Loaner, Loaner, QDistinct> distinctByBalance() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'loanedAmount');
     });
@@ -1373,7 +1373,7 @@ extension LoanerQueryProperty on QueryBuilder<Loaner, Loaner, QQueryProperty> {
     });
   }
 
-  QueryBuilder<Loaner, double?, QQueryOperations> loanedAmountProperty() {
+  QueryBuilder<Loaner, double?, QQueryOperations> balanceProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'loanedAmount');
     });
@@ -1420,13 +1420,23 @@ const EmbeddedMapSchema = Schema(
       name: r'key',
       type: IsarType.string,
     ),
-    r'remaining': PropertySchema(
+    r'notes': PropertySchema(
       id: 1,
+      name: r'notes',
+      type: IsarType.string,
+    ),
+    r'remaining': PropertySchema(
+      id: 2,
       name: r'remaining',
       type: IsarType.double,
     ),
+    r'type': PropertySchema(
+      id: 3,
+      name: r'type',
+      type: IsarType.string,
+    ),
     r'value': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'value',
       type: IsarType.string,
     )
@@ -1450,6 +1460,18 @@ int _embeddedMapEstimateSize(
     }
   }
   {
+    final value = object.notes;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.type;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.value;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -1465,8 +1487,10 @@ void _embeddedMapSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.key);
-  writer.writeDouble(offsets[1], object.remaining);
-  writer.writeString(offsets[2], object.value);
+  writer.writeString(offsets[1], object.notes);
+  writer.writeDouble(offsets[2], object.remaining);
+  writer.writeString(offsets[3], object.type);
+  writer.writeString(offsets[4], object.value);
 }
 
 EmbeddedMap _embeddedMapDeserialize(
@@ -1477,8 +1501,10 @@ EmbeddedMap _embeddedMapDeserialize(
 ) {
   final object = EmbeddedMap();
   object.key = reader.readStringOrNull(offsets[0]);
-  object.remaining = reader.readDoubleOrNull(offsets[1]);
-  object.value = reader.readStringOrNull(offsets[2]);
+  object.notes = reader.readStringOrNull(offsets[1]);
+  object.remaining = reader.readDoubleOrNull(offsets[2]);
+  object.type = reader.readStringOrNull(offsets[3]);
+  object.value = reader.readStringOrNull(offsets[4]);
   return object;
 }
 
@@ -1492,8 +1518,12 @@ P _embeddedMapDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    case 4:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1649,6 +1679,155 @@ extension EmbeddedMapQueryFilter
     });
   }
 
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      notesIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      notesGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notes',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'notes',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> notesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      notesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
       remainingIsNull() {
     return QueryBuilder.apply(this, (query) {
@@ -1729,6 +1908,154 @@ extension EmbeddedMapQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'type',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      typeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'type',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'type',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'type',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition> typeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'type',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<EmbeddedMap, EmbeddedMap, QAfterFilterCondition>
+      typeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'type',
+        value: '',
       ));
     });
   }

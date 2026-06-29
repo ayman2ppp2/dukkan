@@ -255,15 +255,13 @@ class _SpendingsState extends State<Spendings> {
                         return ListView.builder(
                           itemCount: snapshot.data!
                               .length, // Replace with the actual item count
-                          itemBuilder: (context, index) => Container(
+                          itemBuilder: (context, index) => Material(
                             color: Colors.brown[200],
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                  color: Colors.orange[50],
-                                ),
+                              child: Material(
+                                borderRadius: BorderRadius.circular(15),
+                                color: Colors.orange[50],
                                 child: ListTile(
                                   onTap: () async {
                                     Navigator.push(
