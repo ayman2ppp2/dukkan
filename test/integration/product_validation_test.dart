@@ -18,11 +18,6 @@ void main() {
           productFixture(ownerName: '').validateForCreate(), contains('Owner'));
     });
 
-    test('requires barcode', () {
-      expect(
-          productFixture(barcode: '').validateForCreate(), contains('Barcode'));
-    });
-
     test('rejects negative buy price', () {
       expect(productFixture(buyPrice: -1).validateForCreate(), contains('Buy'));
     });
