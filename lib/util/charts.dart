@@ -23,9 +23,7 @@ class _CircularChartState extends State<CircularChart>
   DateTime time = DateTime.now();
   @override
   Widget build(BuildContext context) {
-    // print('here');
     super.build(context);
-    // print('daily sales');
     return SingleChildScrollView(
       // physics: NeverScrollableScrollPhysics(),
       primary: false,
@@ -132,12 +130,16 @@ class _BarChartState extends State<BarChart>
     with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
   Future<List<ProdStats>>? future;
-  int _chunkSize = 20; // Initial chunk size
+  int _chunkSize = 20;
   bool _isLoadingMore = false;
+  bool _tooltipReady = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _tooltipReady = true);
+    });
     future = Provider.of<Lists>(context, listen: false)
         .getSalesPerProduct(_chunkSize);
 
@@ -205,7 +207,7 @@ class _BarChartState extends State<BarChart>
                             numberFormat: NumberFormat.compact(),
                             isVisible: true,
                           ),
-                          tooltipBehavior: TooltipBehavior(enable: true),
+                          tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
                           series: <CartesianSeries>[
                             StackedBarSeries<ProdStats, String>(
                               animationDuration: 0,
@@ -265,10 +267,17 @@ class LineChart extends StatefulWidget {
 class _LineChartState extends State<LineChart>
     with AutomaticKeepAliveClientMixin {
   DateTime time = DateTime.now();
+  bool _tooltipReady = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _tooltipReady = true);
+    });
+  }
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // print(' month daily sales');
     return GestureDetector(
       onDoubleTap: () {
         showDatePicker(
@@ -315,7 +324,7 @@ class _LineChartState extends State<LineChart>
                         Expanded(
                           flex: 1,
                           child: SfCartesianChart(
-                            tooltipBehavior: TooltipBehavior(enable: true),
+                            tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
                             title: ChartTitle(
                               text: time.day == DateTime.now().day &&
                                       time.month == DateTime.now().month &&
@@ -335,6 +344,7 @@ class _LineChartState extends State<LineChart>
                             series: <CartesianSeries>[
                               StackedBarSeries<SalesStats, int>(
                                 name: 'الأرباح',
+                                animationDuration: 0,
                                 color: Colors.brown[400],
                                 dataSource: snapshot.data![0],
                                 xValueMapper: (SalesStats data, _) =>
@@ -349,6 +359,7 @@ class _LineChartState extends State<LineChart>
                               ),
                               StackedBarSeries<SalesStats, int>(
                                 name: 'المبيعات',
+                                animationDuration: 0,
                                 color: Colors.brown,
                                 dataSource: snapshot.data![1],
                                 xValueMapper: (SalesStats data, _) =>
@@ -396,12 +407,20 @@ class MOY extends StatefulWidget {
   State<MOY> createState() => _MOYState();
 }
 
-class _MOYState extends State<MOY> with AutomaticKeepAliveClientMixin {
+class _MOYState extends State<MOY>
+    with AutomaticKeepAliveClientMixin {
   DateTime time = DateTime.now();
+  bool _tooltipReady = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _tooltipReady = true);
+    });
+  }
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // print(' month daily sales');
     return GestureDetector(
       onDoubleTap: () {
         showDatePicker(
@@ -441,7 +460,7 @@ class _MOYState extends State<MOY> with AutomaticKeepAliveClientMixin {
                       children: [
                         Expanded(
                           child: SfCartesianChart(
-                            tooltipBehavior: TooltipBehavior(enable: true),
+                            tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
                             title: ChartTitle(
                               text: time.day == DateTime.now().day &&
                                       time.month == DateTime.now().month &&
@@ -461,6 +480,7 @@ class _MOYState extends State<MOY> with AutomaticKeepAliveClientMixin {
                             series: <CartesianSeries>[
                               StackedBarSeries<SalesStats, int>(
                                 name: 'الأرباح',
+                                animationDuration: 0,
                                 color: Colors.brown[400],
                                 dataSource: snapshot.data![1],
                                 xValueMapper: (SalesStats data, _) =>
@@ -475,6 +495,7 @@ class _MOYState extends State<MOY> with AutomaticKeepAliveClientMixin {
                               ),
                               StackedBarSeries<SalesStats, int>(
                                 name: 'المبيعات',
+                                animationDuration: 0,
                                 color: Colors.brown,
                                 dataSource: snapshot.data![0],
                                 xValueMapper: (SalesStats data, _) =>

@@ -13,20 +13,18 @@ class StatsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // print('list');
-    return Consumer<Lists>(
-      builder: (context, li, child) {
-        ScrollController sc = ScrollController();
-        // li.refreshLogsList();
-        return Scaffold(
-          body: Flex(
-            direction: Axis.vertical,
-            children: [
-              Expanded(
-                child: ListView(
-                  controller: sc,
-                  physics: ClampingScrollPhysics(),
-                  addAutomaticKeepAlives: true,
-                  children: [
+    final li = Provider.of<Lists>(context, listen: false);
+    final ScrollController sc = ScrollController();
+    return Scaffold(
+      body: Flex(
+        direction: Axis.vertical,
+        children: [
+          Expanded(
+            child: ListView(
+              controller: sc,
+              physics: const ClampingScrollPhysics(),
+              addAutomaticKeepAlives: true,
+              children: [
                     // الكلية
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -307,7 +305,5 @@ class StatsPage extends StatelessWidget {
             child: Icon(Icons.arrow_downward_rounded),
           ),
         );
-      },
-    );
   }
 }

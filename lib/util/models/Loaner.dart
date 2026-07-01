@@ -2,17 +2,14 @@ import 'package:isar_community/isar.dart';
 
 part 'Loaner.g.dart';
 
-// @HiveType(typeId: 3)
 @collection
 class Loaner {
   Loaner({
     required this.name,
-    // required this.ID,
     required this.phoneNumber,
     required this.location,
     required this.lastPayment,
-    // required this.lastPaymentDate,
-    required this.loanedAmount,
+    required this.balance,
   });
   Loaner.named({
     required this.name,
@@ -21,11 +18,8 @@ class Loaner {
     required this.location,
     required this.lastPaymentTemp,
     required this.lastPaymentDate,
-    required this.loanedAmount,
+    required this.balance,
   });
-
-  // @ignore
-  // String? oldId;
 
   @Index(type: IndexType.value)
   String? name;
@@ -43,7 +37,8 @@ class Loaner {
   @ignore
   DateTime? lastPaymentDate;
 
-  double? loanedAmount;
+  @Name("loanedAmount")
+  double? balance;
 
   DateTime? zeroingDate;
 
@@ -56,12 +51,7 @@ class Loaner {
           key: (map['lastPaymentDate'] as DateTime).toIso8601String(),
           value: (map['lastPayment'] as double).toString())
     ];
-    // {
-    //   (map['lastPayment'] as DateTime).toIso8601String(),
-    //   map['lastPaymentDate'] as double
-    // } as Map<String, double>?;
-    // // lastPaymentDate = map['lastPaymentDate'];
-    loanedAmount = map['loanedAmount'];
+    balance = (map['loanedAmount'] ?? map['balance']) as double?;
     ID = convertId(map['ID']).toInt();
   }
   Map<String, dynamic> toMap() {
@@ -72,7 +62,7 @@ class Loaner {
       'location': this.location,
       'lastPayment': this.lastPaymentTemp,
       'lastPaymentDate': this.lastPaymentDate,
-      'loanedAmount': this.loanedAmount,
+      'balance': this.balance,
       'zeroingDate': this.zeroingDate,
     };
   }
@@ -82,11 +72,8 @@ class Loaner {
       return 0;
     } else {
       int largeNumber = id;
-
-      // Convert to a 4-digit number using modulo
       int fourDigitNumber = (largeNumber % 10000).toInt();
       return fourDigitNumber;
-      // print('4-digit number: $fourDigitNumber');
     }
   }
 }
@@ -96,6 +83,8 @@ class EmbeddedMap {
   String? key;
   String? value;
   double? remaining;
+  String? type; // "sale" | "payment" | "withdraw"
+  String? notes;
   EmbeddedMap();
   EmbeddedMap.named({required this.key, required this.value});
 }

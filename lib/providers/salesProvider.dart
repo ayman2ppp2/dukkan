@@ -156,13 +156,14 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<int> resetLoanerAcount(int ID) async {
     var loaner = await db.isar!.loaners.get(ID);
-    loaner!.loanedAmount = 0;
+    loaner!.balance = 0;
     loaner.zeroingDate = DateTime.now();
     var temp = loaner.lastPayment!.toList(growable: true);
     temp.add(EmbeddedMap()
       ..value = 'تصفير حساب'
       ..key = DateTime.now().toIso8601String()
-      ..remaining = 0);
+      ..remaining = 0
+      ..type = 'reset');
     loaner.lastPayment = temp;
 
     return await db.insertLoaner(loaner);
@@ -175,22 +176,45 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
       EmbeddedMap()
         ..key = DateTime.now().toIso8601String()
         ..value = cash.toString()
-        ..remaining = temp.loanedAmount! - cash,
+        ..remaining = temp.balance! - cash
+        ..type = 'payment',
     );
     return db.insertLoaner(Loaner(
       name: temp.name,
-      // ID: db.loaners.get(ID).ID,
       phoneNumber: temp.phoneNumber,
       location: temp.location,
       lastPayment: list,
-      // lastPaymentDate: DateTime.now(),
-      loanedAmount: temp.loanedAmount! - cash,
+      balance: temp.balance! - cash,
     )
       ..ID = ID
       ..zeroingDate =
-          (temp.loanedAmount! - cash) == 0 ? DateTime.now() : temp.zeroingDate);
-// fix this shit
-    // refresh();
+          (temp.balance! - cash) == 0 ? DateTime.now() : temp.zeroingDate);
+  }
+
+  Future<int> withdrawFromBalance(double cash, int ID) async {
+    var temp = await db.isar!.loaners.get(ID);
+    if (temp == null) throw Exception('Loaner not found');
+    if ((temp.balance ?? 0) >= 0) {
+      throw Exception('Cannot withdraw: balance is not negative');
+    }
+    var list = List<EmbeddedMap>.from(temp.lastPayment!, growable: true);
+    list.add(
+      EmbeddedMap()
+        ..key = DateTime.now().toIso8601String()
+        ..value = cash.toString()
+        ..remaining = temp.balance! + cash
+        ..type = 'withdraw',
+    );
+    return db.insertLoaner(Loaner(
+      name: temp.name,
+      phoneNumber: temp.phoneNumber,
+      location: temp.location,
+      lastPayment: list,
+      balance: temp.balance! + cash,
+    )
+      ..ID = ID
+      ..zeroingDate =
+          (temp.balance! + cash) == 0 ? DateTime.now() : temp.zeroingDate);
   }
 
   void updateSellListCount({required int index, required int count}) {
@@ -294,7 +318,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
         location: location,
         lastPayment: [],
         // lastPaymentDate: DateTime.now(),
-        loanedAmount: 0,
+        balance: 0,
       ),
     );
 
@@ -312,7 +336,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     // refreshLoanersList();
     // var temp = await db.getLoaners();
     // return temp.fold<double>(
-    //     0.0, (previousValue, element) => previousValue + element.loanedAmount!);
+    //     0.0, (previousValue, element) => previousValue + element.balance!);
   }
 
   Future<void> deleteLoaner(int id) {

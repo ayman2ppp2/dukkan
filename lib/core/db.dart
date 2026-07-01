@@ -184,7 +184,7 @@ class DB {
   }
 
   Future<List<Loaner>> getLoaners() {
-    return isar!.loaners.where().anyID().sortByLoanedAmountDesc().findAll();
+    return isar!.loaners.where().anyID().sortByBalanceDesc().findAll();
     // return List<Loaner>.from(loaners.values);
   }
 
@@ -192,10 +192,10 @@ class DB {
     Loaner temp =
         (await isar!.loaners.where().iDEqualTo(log.loanerID!).findFirst())!;
     DateTime CalculateDate() {
-      if (temp.loanedAmount! == 0) {
+      if (temp.balance! == 0) {
         return DateTime.parse(temp.lastPayment!.last.key!);
       }
-      if (temp.loanedAmount! - (log.price + sum) == 0) {
+      if (temp.balance! - (log.price + sum) == 0) {
         return DateTime.now();
       } else {
         try {
@@ -211,9 +211,7 @@ class DB {
           phoneNumber: temp.phoneNumber,
           location: temp.location,
           lastPayment: temp.lastPayment,
-          loanedAmount: (temp.loanedAmount ?? 0) > 0
-              ? temp.loanedAmount! - (log.price + sum)
-              : 0,
+          balance: (temp.balance ?? 0) - (log.price + sum),
         )
           ..ID = temp.ID
           ..zeroingDate = CalculateDate()));
@@ -445,8 +443,8 @@ class DB {
       if (loanerId != null) {
         updatedLoaner = await isar!.loaners.get(loanerId);
         if (updatedLoaner != null) {
-          updatedLoaner.loanedAmount =
-              (updatedLoaner.loanedAmount ?? 0) + total.round() - discount;
+          updatedLoaner.balance =
+              (updatedLoaner.balance ?? 0) + total.round() - discount;
         }
       }
 
@@ -608,7 +606,7 @@ class DB {
   Stream<List<Loaner>> getLoanersStream() {
     return isar!.loaners
         .where()
-        .sortByLoanedAmountDesc()
+        .sortByBalanceDesc()
         .watch(fireImmediately: true);
   }
 
@@ -968,10 +966,10 @@ class DB {
         Loaner? temp = await isar!.loaners.get(log.loanerID!);
         if (temp != null) {
           DateTime calculateDate() {
-            if (temp.loanedAmount! == 0) {
+            if (temp.balance! == 0) {
               return DateTime.parse(temp.lastPayment!.last.key!);
             }
-            if (temp.loanedAmount! - (log.price + hotSum) == 0) {
+            if (temp.balance! - (log.price + hotSum) == 0) {
               return DateTime.now();
             } else {
               try {
@@ -983,9 +981,7 @@ class DB {
           }
 
           temp
-            ..loanedAmount = (temp.loanedAmount ?? 0) > 0
-                ? temp.loanedAmount! - (log.price + hotSum)
-                : 0
+            ..balance = (temp.balance ?? 0) - (log.price + hotSum)
             ..zeroingDate = calculateDate();
           await isar!.loaners.put(temp);
         }
