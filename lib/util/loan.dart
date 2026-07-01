@@ -702,9 +702,9 @@ class _LoanState extends State<Loan> {
                             if (type == 'reset') {
                               balanceBefore = null;
                             } else if (type == 'withdraw') {
-                              balanceBefore = remaining! - value;
+                              balanceBefore = (remaining ?? 0) - value;
                             } else {
-                              balanceBefore = remaining! + value;
+                              balanceBefore = (remaining ?? 0) + value;
                             }
 
                             Color typeColor;
@@ -738,7 +738,7 @@ class _LoanState extends State<Loan> {
                                                   .format(value),
                                           date: paymentDate,
                                           name: name!,
-                                          remaining: remaining!,
+                                          remaining: remaining ?? 0,
                                           clearField: () {},
                                           type: type),
                                     ));

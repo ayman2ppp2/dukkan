@@ -45,8 +45,9 @@ class _CircularChartState extends State<CircularChart>
           mainAxisSize: MainAxisSize.min,
           direction: Axis.vertical,
           children: [
-            Consumer<Lists>(
-              builder: (context, li, child) {
+            Builder(
+              builder: (context) {
+                final li = context.read<Lists>();
                 return Flexible(
                   child: FutureBuilder(
                       future: li.getSaledProductsByDate(time),
@@ -181,57 +182,60 @@ class _BarChartState extends State<BarChart>
         mainAxisSize: MainAxisSize.min,
         direction: Axis.vertical,
         children: [
-          Flexible(
-            child: Consumer<Lists>(
-              builder: (context, li, child) => FutureBuilder(
-                  future: future,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return const Text(UserSafeMessages.loadFailed);
-                    }
-                    if (snapshot.hasData) {
-                      if (_scrollController.position.pixels ==
-                          _scrollController.position.maxScrollExtent) {
-                        // Show a loading indicator at the bottom when fetching more data
+          Builder(
+            builder: (context) {
+              return Flexible(
+                child: FutureBuilder(
+                    future: future,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return const Text(UserSafeMessages.loadFailed);
                       }
-                      return SizedBox(
-                        height: snapshot.data!.length * 60.0 > 200
-                            ? snapshot.data!.length * 60
-                            : 200,
-                        child: SfCartesianChart(
-                          title: ChartTitle(
-                              text: 'المبيعات لكل منتج',
-                              alignment: ChartAlignment.near),
-                          primaryXAxis: CategoryAxis(),
-                          primaryYAxis: NumericAxis(
-                            numberFormat: NumberFormat.compact(),
-                            isVisible: true,
-                          ),
-                          tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
-                          series: <CartesianSeries>[
-                            StackedBarSeries<ProdStats, String>(
-                              animationDuration: 0,
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.brown,
-                              dataSource: snapshot.data!,
-                              xValueMapper: (ProdStats data, _) => data.name,
-                              yValueMapper: (ProdStats data, _) => data.count,
-                              dataLabelSettings: const DataLabelSettings(
-                                isVisible: true,
-                              ),
+                      if (snapshot.hasData) {
+                        if (_scrollController.position.pixels ==
+                            _scrollController.position.maxScrollExtent) {
+                          // Show a loading indicator at the bottom when fetching more data
+                        }
+                        return SizedBox(
+                          height: snapshot.data!.length * 60.0 > 200
+                              ? snapshot.data!.length * 60
+                              : 200,
+                          child: SfCartesianChart(
+                            title: ChartTitle(
+                                text: 'المبيعات لكل منتج',
+                                alignment: ChartAlignment.near),
+                            primaryXAxis: CategoryAxis(),
+                            primaryYAxis: NumericAxis(
+                              numberFormat: NumberFormat.compact(),
+                              isVisible: true,
                             ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      return Center(
-                        child: SpinKitChasingDots(
-                          color: Colors.white,
-                        ),
-                      );
-                    }
-                  }),
-            ),
+                            tooltipBehavior:
+                                TooltipBehavior(enable: _tooltipReady),
+                            series: <CartesianSeries>[
+                              StackedBarSeries<ProdStats, String>(
+                                animationDuration: 0,
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.brown,
+                                dataSource: snapshot.data!,
+                                xValueMapper: (ProdStats data, _) => data.name,
+                                yValueMapper: (ProdStats data, _) => data.count,
+                                dataLabelSettings: const DataLabelSettings(
+                                  isVisible: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        return Center(
+                          child: SpinKitChasingDots(
+                            color: Colors.white,
+                          ),
+                        );
+                      }
+                    }),
+              );
+            },
           ),
           _isLoadingMore
               ? Padding(
@@ -294,8 +298,9 @@ class _LineChartState extends State<LineChart>
           });
         });
       },
-      child: Consumer<Lists>(
-        builder: (context, li, child) {
+      child: Builder(
+        builder: (context) {
+          final li = context.read<Lists>();
           return FutureBuilder(
               future: Future.wait(
                 [
@@ -437,8 +442,9 @@ class _MOYState extends State<MOY>
           });
         });
       },
-      child: Consumer<Lists>(
-        builder: (context, li, child) {
+      child: Builder(
+        builder: (context) {
+          final li = context.read<Lists>();
           return FutureBuilder(
               future: Future.wait([
                 li.getMonthlySalesOfTheYear(time),
@@ -552,7 +558,7 @@ class _OwnertileState extends State<Ownertile>
     super.build(context);
 
     return FutureBuilder(
-      future: Provider.of<Lists>(context).refreshListOfOwners(),
+      future: context.read<Lists>().refreshListOfOwners(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Text(UserSafeMessages.loadFailed);
@@ -627,24 +633,23 @@ class _OwnertileState extends State<Ownertile>
                       keyboardType: TextInputType.number,
                     ),
                   ),
-                  Consumer<Lists>(
-                    builder: (context, li, child) => IconButton(
-                      onPressed: () {
-                        if (payCon.text.isNotEmpty) {
-                          li.ownersList.elementAt(index).totalPayed +=
-                              double.parse(payCon.text);
-                          li.ownersList.elementAt(index).dueMoney -=
-                              double.parse(payCon.text);
-                          li.ownersList.elementAt(index).lastPaymentDate =
-                              DateTime.now();
-                          li.ownersList.elementAt(index).lastPayment =
-                              double.parse(payCon.text);
-                          li.updateOwner(li.ownersList.elementAt(index));
-                          li.refresh();
-                        }
-                      },
-                      icon: const Icon(Icons.payments_outlined),
-                    ),
+                  IconButton(
+                    onPressed: () {
+                      if (payCon.text.isNotEmpty) {
+                        final li = context.read<Lists>();
+                        li.ownersList.elementAt(index).totalPayed +=
+                            double.parse(payCon.text);
+                        li.ownersList.elementAt(index).dueMoney -=
+                            double.parse(payCon.text);
+                        li.ownersList.elementAt(index).lastPaymentDate =
+                            DateTime.now();
+                        li.ownersList.elementAt(index).lastPayment =
+                            double.parse(payCon.text);
+                        li.updateOwner(li.ownersList.elementAt(index));
+                        li.refresh();
+                      }
+                    },
+                    icon: const Icon(Icons.payments_outlined),
                   ),
                 ],
               );

@@ -78,8 +78,6 @@ class Product {
     if (name == null || name!.trim().isEmpty) return 'Product name is required';
     if (ownerName == null || ownerName!.trim().isEmpty)
       return 'Owner is required';
-    if (barcode == null || barcode!.trim().isEmpty)
-      return 'Barcode is required';
     if (buyprice == null || buyprice! < 0)
       return 'Buy price must be non-negative';
     if (sellPrice == null || sellPrice! < 0)

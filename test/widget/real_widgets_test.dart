@@ -83,7 +83,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('أدخل قيم صحيحة'), findsOneWidget);
+    expect(find.text('خطأ في الإدخال'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

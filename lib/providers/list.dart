@@ -83,8 +83,11 @@ class Lists extends ChangeNotifier with LanSyncState {
     return result;
   }
 
+  int cacheVersion = 0;
+
   void clearAllCache() {
     _cache.clear();
+    cacheVersion++;
     notifyListeners();
   }
 

@@ -121,11 +121,16 @@ class _InPageState extends State<InPage> {
         icon: const Icon(Icons.error_outline_rounded),
         iconColor: Colors.red,
         title: const Text(
-          'أدخل قيم صحيحة',
+          'خطأ في الإدخال',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
+        ),
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 16),
         ),
       ),
     );
@@ -411,26 +416,52 @@ class _InPageState extends State<InPage> {
                     onPressed: () {
                       if (widget.index == -1) {
                         if (_validateFields()) {
+                          final buyPrice = double.tryParse(widget.buyCon.text);
+                          if (buyPrice == null) {
+                            _showErrorDialog(context, 'سعر الشراء يجب أن يكون رقماً');
+                            return;
+                          }
+                          final sellPrice = double.tryParse(widget.sellCon.text);
+                          if (sellPrice == null) {
+                            _showErrorDialog(context, 'سعر البيع يجب أن يكون رقماً');
+                            return;
+                          }
+                          final countText = widget.countCon.text;
+                          if (double.tryParse(countText) == null) {
+                            _showErrorDialog(context, 'الكمية يجب أن تكون رقماً');
+                            return;
+                          }
+                          if (widget.offer) {
+                            if (double.tryParse(widget.offerCountCon.text) == null) {
+                              _showErrorDialog(context, 'عدد العرض يجب أن يكون رقماً');
+                              return;
+                            }
+                            if (widget.offerPriceCon.text.isNotEmpty &&
+                                double.tryParse(widget.offerPriceCon.text) == null) {
+                              _showErrorDialog(context, 'سعر العرض يجب أن يكون رقماً');
+                              return;
+                            }
+                          }
                           List<Product> temp = [];
                           Product temp2 = Product.named(
                             name: widget.nameCon.text,
                             barcode: widget.BarcodeCon.text,
                             buyprice: widget.weightable
-                                ? double.parse(widget.buyCon.text) /
+                                ? buyPrice /
                                     getWholeUnitNumber(widget.wholeUnitCon.text)
                                         .toDouble()
-                                : double.parse(widget.buyCon.text),
+                                : buyPrice,
                             sellPrice: widget.weightable
-                                ? double.parse(widget.sellCon.text) /
+                                ? sellPrice /
                                     getWholeUnitNumber(widget.wholeUnitCon.text)
                                         .toDouble()
-                                : double.parse(widget.sellCon.text),
+                                : sellPrice,
                             count: widget.weightable
                                 ? unPadd(
-                                        padded: widget.countCon.text,
+                                        padded: countText,
                                         wholeUnit: widget.wholeUnitCon.text)
                                     .toInt()
-                                : (double.tryParse(widget.countCon.text) ?? 0)
+                                : (double.tryParse(countText) ?? 0)
                                     .toInt(),
                             ownerName: widget.ownerCon.text,
                             weightable: widget.weightable,
@@ -443,7 +474,6 @@ class _InPageState extends State<InPage> {
                                     ? '0'
                                     : widget.offerPriceCon.text,
                                 wholeUnit: widget.offerCountCon.text),
-                            // double.tryParse(widget.offerPriceCon.text) ?? 0,
                             priceHistory: widget.priceHistory,
                             endDate: widget.endDate,
                             hot: false,
@@ -456,13 +486,37 @@ class _InPageState extends State<InPage> {
                           }
                           Navigator.pop(context);
                           li.db.insertProducts(products: temp);
-                          // sa.refreshProductsList();
-                          // sa.refresh();
                         } else {
                           _showErrorDialog(context, 'ادخل قيم صحيحة');
                         }
                       } else {
                         if (_validateFields()) {
+                          final buyPrice = double.tryParse(widget.buyCon.text);
+                          if (buyPrice == null) {
+                            _showErrorDialog(context, 'سعر الشراء يجب أن يكون رقماً');
+                            return;
+                          }
+                          final sellPrice = double.tryParse(widget.sellCon.text);
+                          if (sellPrice == null) {
+                            _showErrorDialog(context, 'سعر البيع يجب أن يكون رقماً');
+                            return;
+                          }
+                          final countText = widget.countCon.text;
+                          if (double.tryParse(countText) == null) {
+                            _showErrorDialog(context, 'الكمية يجب أن تكون رقماً');
+                            return;
+                          }
+                          if (widget.offer) {
+                            if (double.tryParse(widget.offerCountCon.text) == null) {
+                              _showErrorDialog(context, 'عدد العرض يجب أن يكون رقماً');
+                              return;
+                            }
+                            if (widget.offerPriceCon.text.isNotEmpty &&
+                                double.tryParse(widget.offerPriceCon.text) == null) {
+                              _showErrorDialog(context, 'سعر العرض يجب أن يكون رقماً');
+                              return;
+                            }
+                          }
                           Emap emap = Emap()
                             ..buyPrice = widget.buyPrice
                             ..sellPrice = widget.sellPrice
@@ -473,21 +527,21 @@ class _InPageState extends State<InPage> {
                             name: widget.nameCon.text,
                             barcode: widget.BarcodeCon.text,
                             buyprice: widget.weightable
-                                ? double.parse(widget.buyCon.text) /
+                                ? buyPrice /
                                     getWholeUnitNumber(widget.wholeUnitCon.text)
                                         .toDouble()
-                                : double.parse(widget.buyCon.text),
+                                : buyPrice,
                             sellPrice: widget.weightable
-                                ? double.parse(widget.sellCon.text) /
+                                ? sellPrice /
                                     getWholeUnitNumber(widget.wholeUnitCon.text)
                                         .toDouble()
-                                : double.parse(widget.sellCon.text),
+                                : sellPrice,
                             count: widget.weightable
                                 ? unPadd(
-                                        padded: widget.countCon.text,
+                                        padded: countText,
                                         wholeUnit: widget.wholeUnitCon.text)
                                     .toInt()
-                                : (double.tryParse(widget.countCon.text) ?? 0)
+                                : (double.tryParse(countText) ?? 0)
                                     .toInt(),
                             ownerName: widget.ownerCon.text,
                             weightable: widget.weightable,
@@ -500,7 +554,6 @@ class _InPageState extends State<InPage> {
                                     ? '0'
                                     : widget.offerPriceCon.text,
                                 wholeUnit: widget.offerCountCon.text),
-                            // double.tryParse(widget.offerPriceCon.text) ?? 0,
                             priceHistory: widget.priceHistory,
                             endDate: widget.endDate,
                             hot: false,
@@ -511,8 +564,6 @@ class _InPageState extends State<InPage> {
                             return;
                           }
                           sa.updateProduct(temp2);
-                          // sa.refreshProductsList();
-                          // li.refresh();
                           Navigator.pop(context);
                         } else {
                           _showErrorDialog(context, 'ادخل قيم صحيحة');

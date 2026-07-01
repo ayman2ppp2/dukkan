@@ -120,30 +120,6 @@ class MyApp extends StatelessWidget {
                               null
                           ? const LandingPage()
                           : const HomePage();
-                  if (auth.isOffline) {
-                    return Stack(
-                      children: [
-                        content,
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: MaterialBanner(
-                            backgroundColor: Colors.amber.shade100,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            leading: Icon(Icons.cloud_off,
-                                color: Colors.amber.shade800),
-                            content: Text(
-                              'أنت غير متصل بالإنترنت. يتم عرض البيانات المحفوظة.',
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                            actions: const [SizedBox.shrink()],
-                          ),
-                        ),
-                      ],
-                    );
-                  }
                   return content;
                 }
                 return LoginPage();
