@@ -74,6 +74,7 @@ class AuthAPI extends ChangeNotifier {
     _startRevalidationTimer();
   }
 
+// just a test
   void _startRevalidationTimer() {
     Future.delayed(revalidationInterval, () async {
       if (_status == AuthStatus.authenticated && _isOffline) {
