@@ -68,7 +68,7 @@ Loaner loanerFixture({
         ..value = '0'
         ..remaining = amount,
     ],
-    loanedAmount: amount,
+    balance: amount,
   )..zeroingDate = DateTime(1900);
 }
 
