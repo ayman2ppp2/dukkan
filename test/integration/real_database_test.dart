@@ -225,7 +225,7 @@ void main() {
 
       final loaner = await handle.db.isar!.loaners.get(loanerId);
       expect(loaner!.balance, 0);
-      expect(loaner.lastPayment!.last.value, 'تصفير حساب');
+      expect(loaner.lastPayment!.last.value, '0');
     });
 
     test('account statement includes loan receipts and payments', () async {

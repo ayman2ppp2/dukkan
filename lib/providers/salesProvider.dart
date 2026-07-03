@@ -160,7 +160,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     loaner.zeroingDate = DateTime.now();
     var temp = loaner.lastPayment!.toList(growable: true);
     temp.add(EmbeddedMap()
-      ..value = 'تصفير حساب'
+      ..value = '0'
       ..key = DateTime.now().toIso8601String()
       ..remaining = 0
       ..type = 'reset');

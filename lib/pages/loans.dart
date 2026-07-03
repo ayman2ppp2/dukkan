@@ -54,8 +54,8 @@ class _LoansState extends State<Loans> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     textDirection: TextDirection.rtl,
                     children: [
@@ -64,8 +64,8 @@ class _LoansState extends State<Loans> {
                           textDirection: TextDirection.rtl,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-Icon(Icons.arrow_downward,
-                                 color: Colors.red[700], size: 20),
+                            Icon(Icons.arrow_downward,
+                                color: Colors.red[700], size: 20),
                             const SizedBox(width: 4),
                             Text(
                               'مطلوب',
@@ -88,15 +88,14 @@ Icon(Icons.arrow_downward,
                           ],
                         ),
                       ),
-                      Container(
-                          width: 1, height: 24, color: Colors.grey[300]),
+                      Container(width: 1, height: 24, color: Colors.grey[300]),
                       Expanded(
                         child: Row(
                           textDirection: TextDirection.rtl,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-Icon(Icons.arrow_upward,
-                                 color: Colors.green[700], size: 20),
+                            Icon(Icons.arrow_upward,
+                                color: Colors.green[700], size: 20),
                             const SizedBox(width: 4),
                             Text(
                               'طالب',
@@ -137,13 +136,11 @@ Icon(Icons.arrow_upward,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      color:
-                          isPositive ? Colors.red[50] : Colors.green[50],
+                      color: isPositive ? Colors.red[50] : Colors.green[50],
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: isPositive
-                              ? Colors.red[200]
-                              : Colors.green[200],
+                          backgroundColor:
+                              isPositive ? Colors.red[200] : Colors.green[200],
                           child: Text(
                             (loaner.name ?? '?')[0],
                             style: TextStyle(
@@ -156,8 +153,7 @@ Icon(Icons.arrow_upward,
                         ),
                         title: Text(
                           loaner.name ?? '',
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         subtitle: loaner.phoneNumber != null &&
                                 loaner.phoneNumber!.isNotEmpty
@@ -184,8 +180,7 @@ Icon(Icons.arrow_upward,
                         onTap: () {
                           var sa = Provider.of<SalesProvider>(context,
                               listen: false);
-                          var li =
-                              Provider.of<Lists>(context, listen: false);
+                          var li = Provider.of<Lists>(context, listen: false);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -223,9 +218,10 @@ Icon(Icons.arrow_upward,
     TextEditingController na = TextEditingController();
     TextEditingController ph = TextEditingController();
     TextEditingController lo = TextEditingController();
+    final sa = context.read<SalesProvider>(); // Capture before showDialog
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('إضافة دائن'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -266,15 +262,13 @@ Icon(Icons.arrow_upward,
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
             onPressed: () {
-              var sa =
-                  Provider.of<SalesProvider>(context, listen: false);
               sa.addLoaner(na.text, ph.text, lo.text);
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             },
             child: const Text('حفظ'),
           ),
@@ -283,3 +277,5 @@ Icon(Icons.arrow_upward,
     );
   }
 }
+
+//

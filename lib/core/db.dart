@@ -206,12 +206,20 @@ class DB {
       }
     }
 
+    final newBalance = (temp.balance ?? 0) - (log.price + sum);
+    final payments =
+        List<EmbeddedMap>.from(temp.lastPayment ?? [], growable: true);
+    payments.add(EmbeddedMap()
+      ..key = DateTime.now().toIso8601String()
+      ..value = (log.price + sum).toString()
+      ..remaining = newBalance
+      ..type = 'cancel');
     return isar!.writeTxn(() async => isar!.loaners.put(Loaner(
           name: temp.name,
           phoneNumber: temp.phoneNumber,
           location: temp.location,
-          lastPayment: temp.lastPayment,
-          balance: (temp.balance ?? 0) - (log.price + sum),
+          lastPayment: payments,
+          balance: newBalance,
         )
           ..ID = temp.ID
           ..zeroingDate = CalculateDate()));
@@ -445,6 +453,14 @@ class DB {
         if (updatedLoaner != null) {
           updatedLoaner.balance =
               (updatedLoaner.balance ?? 0) + total.round() - discount;
+          final payments = List<EmbeddedMap>.from(
+              updatedLoaner.lastPayment ?? [], growable: true);
+          payments.add(EmbeddedMap()
+            ..key = DateTime.now().toIso8601String()
+            ..value = (total.round() - discount).toString()
+            ..remaining = updatedLoaner.balance
+            ..type = 'sale');
+          updatedLoaner.lastPayment = payments;
         }
       }
 
@@ -983,6 +999,14 @@ class DB {
           temp
             ..balance = (temp.balance ?? 0) - (log.price + hotSum)
             ..zeroingDate = calculateDate();
+          final payments = List<EmbeddedMap>.from(
+              temp.lastPayment ?? [], growable: true);
+          payments.add(EmbeddedMap()
+            ..key = DateTime.now().toIso8601String()
+            ..value = (log.price + hotSum).toString()
+            ..remaining = temp.balance
+            ..type = 'cancel');
+          temp.lastPayment = payments;
           await isar!.loaners.put(temp);
         }
       }
