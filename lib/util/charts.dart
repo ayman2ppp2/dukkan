@@ -676,43 +676,55 @@ class _OwnertileState extends State<Ownertile>
   }
 }
 
-class ExpensesPieChart extends StatefulWidget {
-  const ExpensesPieChart({super.key});
+class ExpensesPieChart extends StatelessWidget {
+  final List<ChartData> data;
+  final bool compact;
+  const ExpensesPieChart({
+    super.key,
+    required this.data,
+    this.compact = false,
+  });
 
-  @override
-  State<ExpensesPieChart> createState() => _ExpensesPieChartState();
-}
-
-class _ExpensesPieChartState extends State<ExpensesPieChart> {
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  static const _colors = [
+    Color(0xFF8B4513),
+    Color(0xFFCD853F),
+    Color(0xFFD2691E),
+    Color(0xFFB8860B),
+    Color(0xFFA0522D),
+    Color(0xFFBC8F8F),
+    Color(0xFFDEB887),
+    Color(0xFFD2B48C),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final List<ChartData> chartData = [
-      ChartData('David', 25),
-      ChartData('Steve', 38),
-      ChartData('Jack', 34),
-      ChartData('Others', 52)
-    ];
-    return Scaffold(
-        body: Center(
-            child: Container(
-                child: SfCircularChart(series: <CircularSeries>[
-      // Render pie chart
-      PieSeries<ChartData, String>(
-          enableTooltip: true,
-          explode: true,
-          dataSource: chartData,
-          groupMode: CircularChartGroupMode.value,
-          dataLabelMapper: (datum, index) => datum.y.toString(),
-          dataLabelSettings: DataLabelSettings(isVisible: true),
-          pointColorMapper: (ChartData data, _) => data.color,
-          xValueMapper: (ChartData data, _) => data.x,
-          yValueMapper: (ChartData data, _) => data.y)
-    ]))));
+    final colored = data.asMap().entries.map((e) {
+      return ChartData(e.value.x, e.value.y, _colors[e.key % _colors.length]);
+    }).toList();
+
+    return Center(
+      child: SfCircularChart(
+        legend: compact ? Legend(isVisible: false) : Legend(isVisible: true, position: LegendPosition.bottom),
+        series: <CircularSeries>[
+          PieSeries<ChartData, String>(
+            enableTooltip: true,
+            explode: true,
+            dataSource: colored,
+            groupMode: CircularChartGroupMode.value,
+            dataLabelMapper: (datum, _) =>
+                '${datum.x}: ${NumberFormat.simpleCurrency(name: '').format(datum.y)}',
+            dataLabelSettings: DataLabelSettings(
+              isVisible: !compact,
+              labelIntersectAction: LabelIntersectAction.shift,
+              labelPosition: ChartDataLabelPosition.outside,
+            ),
+            pointColorMapper: (ChartData data, _) => data.color ?? Colors.brown,
+            xValueMapper: (ChartData data, _) => data.x,
+            yValueMapper: (ChartData data, _) => data.y,
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/util/models/Expense.dart';
+import 'package:dukkan/util/models/Log.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
@@ -33,12 +34,6 @@ class ExpenseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Map Amap = {
-    30: 1,
-    7: 4,
-    1: 30,
-  };
-
   Stream<Expense?> watchExpense({required int id}) {
     return db.watchExpense(id: id);
   }
@@ -60,6 +55,25 @@ class ExpenseProvider extends ChangeNotifier {
       refresh();
       return value;
     });
+  }
+
+  Future<void> updateExpense({
+    required int id,
+    required String name,
+    required double amount,
+    required int period,
+    int? payDate,
+    required bool fixed,
+  }) async {
+    await db.updateExpense(
+      id: id,
+      name: name,
+      amount: amount,
+      period: period,
+      payDate: payDate,
+      fixed: fixed,
+    );
+    refresh();
   }
 
   Future<double> getProfitOfTheMonth() {
@@ -98,13 +112,28 @@ class ExpenseProvider extends ChangeNotifier {
     map['1'] = _getRootIsolateToken() ??
         (throw StateError('RootIsolateToken not available'));
     return pool.scheduleJob(getTotalExpenseNow(map: map));
-    // return (await getIndvidualExpenses()).fold<double>(
-    //     0.0,
-    //     (previousValue, element) =>
-    //         element.amount! * Amap[element.period] + previousValue);
   }
 
   Future<bool> deleteExpense({required int id}) {
     return db.deleteExpense(id: id);
+  }
+
+  Future<List<Log>> getExpenseLogs(int expenseId) {
+    return db.getExpenseLogs(expenseId);
+  }
+
+  Future<List<Log>> getMonthExpenseLogs() {
+    return db.getMonthExpenseLogs();
+  }
+
+  Future<void> recordFixedExpensePayment({
+    required int expenseId,
+    required double amount,
+  }) async {
+    await db.recordFixedExpensePayment(
+      expenseId: expenseId,
+      amount: amount,
+    );
+    refresh();
   }
 }

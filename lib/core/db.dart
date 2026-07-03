@@ -603,6 +603,74 @@ class DB {
     return isar!.writeTxn(() async => await isar!.expenses.delete(id));
   }
 
+  Future<void> updateExpense({
+    required int id,
+    required String name,
+    required double amount,
+    required int period,
+    int? payDate,
+    required bool fixed,
+  }) async {
+    final expense = await isar!.expenses.get(id);
+    if (expense == null) return;
+    expense
+      ..name = name
+      ..amount = amount
+      ..period = period
+      ..payDate = payDate
+      ..fixed = fixed;
+    await isar!.writeTxn(() async => await isar!.expenses.put(expense));
+  }
+
+  Future<List<Log>> getExpenseLogs(int expenseId) async {
+    return isar!.logs.where().expenseIdEqualTo(expenseId).findAll();
+  }
+
+  Future<List<Log>> getMonthExpenseLogs() async {
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthEnd = DateTime(now.year, now.month + 1, 1);
+    return isar!.logs
+        .filter()
+        .expenseEqualTo(true)
+        .dateBetween(monthStart, monthEnd)
+        .findAll();
+  }
+
+  Future<void> recordFixedExpensePayment({
+    required int expenseId,
+    required double amount,
+  }) async {
+    final expense = await isar!.expenses.get(expenseId);
+    if (expense == null) return;
+
+    final product = EmbeddedProduct()
+      ..name = expense.name
+      ..sellPrice = amount
+      ..count = 1
+      ..hot = true
+      ..buyPrice = 0;
+
+    final log = Log.named2(
+      price: amount,
+      profit: 0,
+      products: [product],
+      date: DateTime.now(),
+      discount: 0,
+      loaned: false,
+      loanerID: null,
+      expenseId: expenseId,
+      expense: true,
+    );
+
+    expense.lastCalculationDate = DateTime.now();
+
+    await isar!.writeTxn(() async {
+      await isar!.logs.put(log);
+      await isar!.expenses.put(expense);
+    });
+  }
+
   Stream<Loaner?> watchLoaner(int id) {
     return isar!.loaners.watchObject(id, fireImmediately: true);
   }
@@ -1921,7 +1989,9 @@ class getTotalExpenseNow extends PooledJob<double> {
       var expenses = await isar.expenses.where().anyID().findAll();
       double total = 0.0;
       for (var expense in expenses) {
-        if (!(expense.fixed!)) {
+        if (expense.fixed == true) {
+          total += expense.amount ?? 0;
+        } else {
           var logs = await isar.logs
               .where()
               .expenseIdEqualTo(expense.ID)
@@ -1935,8 +2005,6 @@ class getTotalExpenseNow extends PooledJob<double> {
             (previousValue, element) =>
                 previousValue + element.price - element.discount,
           );
-        } else {
-          total += expense.amount!;
         }
       }
       return total;

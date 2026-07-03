@@ -1,3 +1,5 @@
+import 'package:dukkan/providers/expense_provider.dart';
+import 'package:dukkan/util/charts.dart';
 import 'package:dukkan/util/statsItem.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -5,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/list.dart';
-import '../util/charts.dart';
 
 class StatsPage extends StatefulWidget {
   const StatsPage({super.key});
@@ -46,6 +47,7 @@ class _StatsPageState extends State<StatsPage> {
   @override
   Widget build(BuildContext context) {
     final li = context.read<Lists>();
+    final ex = context.read<ExpenseProvider>();
     if (_lastCacheVersion == -1) _lastCacheVersion = li.cacheVersion;
     return Scaffold(
       body: Flex(
@@ -72,7 +74,6 @@ class _StatsPageState extends State<StatsPage> {
                                   padding: const EdgeInsets.all(10.0),
                                   child: Text(
                                     ' الارباح الكلية : \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
-                                    //textDirection: TextDirection.rtl,
                                   ),
                                 ),
                               ),
@@ -94,7 +95,6 @@ class _StatsPageState extends State<StatsPage> {
                                 padding: const EdgeInsets.all(10.0),
                                 child: Text(
                                   'المبيعات الكلية  : \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
-                                  //textDirection: TextDirection.rtl,
                                 ),
                               ),
                             ),
@@ -123,7 +123,6 @@ class _StatsPageState extends State<StatsPage> {
                                 padding: const EdgeInsets.all(10.0),
                                 child: Text(
                                   'الأرباح اليومية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
-                                  ////textDirection: TextDirection.rtl,
                                 ),
                               ),
                             ),
@@ -146,7 +145,6 @@ class _StatsPageState extends State<StatsPage> {
                                 padding: const EdgeInsets.all(10.0),
                                 child: Text(
                                   'المبيعات اليومية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
-                                  ////textDirection: TextDirection.rtl,
                                 ),
                               ),
                             ),
@@ -175,7 +173,6 @@ class _StatsPageState extends State<StatsPage> {
                                 padding: const EdgeInsets.all(10.0),
                                 child: Text(
                                   'الأرباح الشهرية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
-                                  ////textDirection: TextDirection.rtl,
                                 ),
                               ),
                             ),
@@ -198,7 +195,6 @@ class _StatsPageState extends State<StatsPage> {
                                 padding: const EdgeInsets.all(10.0),
                                 child: Text(
                                   'المبيعات الشهرية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
-                                  ////textDirection: TextDirection.rtl,
                                 ),
                               ),
                             ),
@@ -227,7 +223,6 @@ class _StatsPageState extends State<StatsPage> {
                                 padding: const EdgeInsets.all(10.0),
                                 child: Text(
                                   ' متوسط نسبة الأرباح العامة: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
-                                  ////textDirection: TextDirection.rtl,
                                 ),
                               ),
                             ),
@@ -240,6 +235,91 @@ class _StatsPageState extends State<StatsPage> {
                       },
                     ),
                   ],
+                ),
+                // المصروفات
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    'المصروفات',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.brown[800],
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    FutureBuilder(
+                      future: ex.getTotalExpenses(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Sitem(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: Text(
+                                  'إجمالي المصروفات الشهرية: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          return SpinKitChasingDots(
+                            color: Colors.brown[200],
+                          );
+                        }
+                      },
+                    ),
+                    FutureBuilder(
+                      future: ex.getRealProfit(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Sitem(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: Text(
+                                  'صافي الربح: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          return SpinKitChasingDots(
+                            color: Colors.brown[200],
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                // Expense pie chart
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Container(
+                    height: 300,
+                    decoration: BoxDecoration(
+                      color: Colors.brown[200],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: FutureBuilder<Map<String, double>>(
+                      future: _buildPieData(ex),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Center(child: Text('لا توجد بيانات'));
+                        }
+                        final data = snapshot.data!;
+                        final chartData = data.entries
+                            .map((e) => ChartData(e.key, e.value))
+                            .toList();
+                        return ExpensesPieChart(data: chartData);
+                      },
+                    ),
+                  ),
                 ),
                 // daily saled products chart
                 Padding(
@@ -337,5 +417,19 @@ class _StatsPageState extends State<StatsPage> {
         child: const Icon(Icons.arrow_downward_rounded),
       ),
     );
+  }
+
+  Future<Map<String, double>> _buildPieData(ExpenseProvider ex) async {
+    final fixed = await ex.getIndvidualExpenses(fixed: true).first;
+    final logs = await ex.getMonthExpenseLogs();
+    final Map<String, double> result = {};
+    for (final e in fixed) {
+      result[e.name ?? 'أخرى'] = (result[e.name ?? 'أخرى'] ?? 0) + (e.amount ?? 0);
+    }
+    final adhocTotal = logs.fold<double>(0, (sum, l) => sum + l.price);
+    if (adhocTotal > 0) {
+      result['متفرقات'] = adhocTotal;
+    }
+    return result;
   }
 }
