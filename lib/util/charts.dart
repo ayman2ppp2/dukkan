@@ -58,43 +58,43 @@ class _CircularChartState extends State<CircularChart>
                         }
                         if (snapshot.hasData) {
                           return SizedBox(
-                            height: snapshot.data!.length * 60.0 > 200
-                                ? snapshot.data!.length * 60
-                                : 200,
-                            child: SfCartesianChart(
-                              title: ChartTitle(
-                                text: time.day == DateTime.now().day &&
-                                        time.month == DateTime.now().month &&
-                                        time.year == DateTime.now().year
-                                    ? 'مبيعات هذا اليوم لكل منتج'
-                                    : 'المبيعات ليوم${time.month}/${time.day} لكل منتج',
-                                alignment: ChartAlignment.near,
-                              ),
-                              primaryXAxis: CategoryAxis(
-                                  // labelsExtent: 70 % (MediaQuery.of(context).size.width),
+                            height: 300,
+                            child: ExcludeSemantics(
+                              excluding: true,
+                              child: RepaintBoundary(
+                                child: SfCartesianChart(
+                                  title: ChartTitle(
+                                    text: time.day == DateTime.now().day &&
+                                            time.month == DateTime.now().month &&
+                                            time.year == DateTime.now().year
+                                        ? 'مبيعات هذا اليوم لكل منتج'
+                                        : 'المبيعات ليوم${time.month}/${time.day} لكل منتج',
+                                    alignment: ChartAlignment.near,
                                   ),
-                              primaryYAxis: NumericAxis(
-                                numberFormat: NumberFormat.compact(),
-                                isVisible: true,
-                              ),
-                              // tooltipBehavior: TooltipBehavior(enable: true),
-                              series: <CartesianSeries<dynamic, dynamic>>[
-                                StackedBarSeries<Product, String>(
-                                  // enableTooltip: true,
-                                  animationDuration: 0,
-                                  // borderRadius: BorderRadius.circular(12),
-                                  dataSource: snapshot.data!,
-                                  xValueMapper: (Product data, _) => data.name,
-                                  yValueMapper: (Product data, _) => data.count,
-                                  dataLabelSettings: const DataLabelSettings(
+                                  primaryXAxis: CategoryAxis(
+                                      // labelsExtent: 70 % (MediaQuery.of(context).size.width),
+                                      ),
+                                  primaryYAxis: NumericAxis(
+                                    numberFormat: NumberFormat.compact(),
                                     isVisible: true,
                                   ),
-                                  color: Colors.brown,
-                                )
+                                  // tooltipBehavior: TooltipBehavior(enable: true),
+                                  series: <CartesianSeries<dynamic, dynamic>>[
+                                    StackedBarSeries<Product, String>(
+                                      // enableTooltip: true,
+                                      animationDuration: 0,
+                                      // borderRadius: BorderRadius.circular(12),
+                                      dataSource: snapshot.data!,
+                                      xValueMapper: (Product data, _) => data.name,
+                                      yValueMapper: (Product data, _) => data.count,
+                                      color: Colors.brown,
+                                    )
                               ],
                             ),
-                          );
-                        } else {
+                          ),
+                        ),
+                      );
+                } else {
                           return Center(
                             child: SpinKitChasingDots(
                               color: Colors.white,
@@ -197,33 +197,33 @@ class _BarChartState extends State<BarChart>
                           // Show a loading indicator at the bottom when fetching more data
                         }
                         return SizedBox(
-                          height: snapshot.data!.length * 60.0 > 200
-                              ? snapshot.data!.length * 60
-                              : 200,
-                          child: SfCartesianChart(
-                            title: ChartTitle(
-                                text: 'المبيعات لكل منتج',
-                                alignment: ChartAlignment.near),
-                            primaryXAxis: CategoryAxis(),
-                            primaryYAxis: NumericAxis(
-                              numberFormat: NumberFormat.compact(),
-                              isVisible: true,
-                            ),
-                            tooltipBehavior:
-                                TooltipBehavior(enable: _tooltipReady),
-                            series: <CartesianSeries>[
-                              StackedBarSeries<ProdStats, String>(
-                                animationDuration: 0,
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.brown,
-                                dataSource: snapshot.data!,
-                                xValueMapper: (ProdStats data, _) => data.name,
-                                yValueMapper: (ProdStats data, _) => data.count,
-                                dataLabelSettings: const DataLabelSettings(
+                          height: 300,
+                          child: ExcludeSemantics(
+                            excluding: true,
+                            child: RepaintBoundary(
+                              child: SfCartesianChart(
+                                title: ChartTitle(
+                                    text: 'المبيعات لكل منتج',
+                                    alignment: ChartAlignment.near),
+                                primaryXAxis: CategoryAxis(),
+                                primaryYAxis: NumericAxis(
+                                  numberFormat: NumberFormat.compact(),
                                   isVisible: true,
                                 ),
+                                tooltipBehavior:
+                                    TooltipBehavior(enable: _tooltipReady),
+                                series: <CartesianSeries>[
+                                  StackedBarSeries<ProdStats, String>(
+                                    animationDuration: 0,
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.brown,
+                                    dataSource: snapshot.data!,
+                                    xValueMapper: (ProdStats data, _) => data.name,
+                                    yValueMapper: (ProdStats data, _) => data.count,
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         );
                       } else {
@@ -318,17 +318,17 @@ class _LineChartState extends State<LineChart>
                 }
                 if (snapshot.hasData) {
                   return Container(
-                    constraints: BoxConstraints(
-                        maxHeight: snapshot.data![0].length * 22 < 200
-                            ? 200
-                            : snapshot.data![0].length * 22),
+                    height: 300,
                     child: Flex(
                       mainAxisSize: MainAxisSize.min,
                       direction: Axis.vertical,
                       children: [
                         Expanded(
                           flex: 1,
-                          child: SfCartesianChart(
+                          child: ExcludeSemantics(
+                            excluding: true,
+                            child: RepaintBoundary(
+                              child: SfCartesianChart(
                             tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
                             title: ChartTitle(
                               text: time.day == DateTime.now().day &&
@@ -380,9 +380,11 @@ class _LineChartState extends State<LineChart>
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  );
+                  ],
+                ),
+              );
                 } else {
                   return Center(
                     child: SpinKitChasingDots(
@@ -456,65 +458,63 @@ class _MOYState extends State<MOY>
                 }
                 if (snapshot.hasData) {
                   return Container(
-                    constraints: BoxConstraints(
-                        maxHeight: snapshot.data![0].length * 26 < 200
-                            ? 250
-                            : snapshot.data![0].length * 26),
+                    height: 300,
                     child: Flex(
                       mainAxisSize: MainAxisSize.min,
                       direction: Axis.vertical,
                       children: [
                         Expanded(
-                          child: SfCartesianChart(
-                            tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
-                            title: ChartTitle(
-                              text: time.day == DateTime.now().day &&
-                                      time.month == DateTime.now().month &&
-                                      time.year == DateTime.now().year
-                                  ? 'المبيعات الشهرية لهذه السنة'
-                                  : '  المبيعات الشهرية لسنة ${time.year}',
-                            ),
-                            primaryXAxis: CategoryAxis(
-                              // arrangeByIndex: false,
-
-                              isInversed: true,
-                            ),
-                            primaryYAxis: NumericAxis(
-                              numberFormat: NumberFormat.compact(),
-                              isVisible: true,
-                            ),
-                            series: <CartesianSeries>[
-                              StackedBarSeries<SalesStats, int>(
-                                name: 'الأرباح',
-                                animationDuration: 0,
-                                color: Colors.brown[400],
-                                dataSource: snapshot.data![1],
-                                xValueMapper: (SalesStats data, _) =>
-                                    data.date.month,
-                                yValueMapper: (SalesStats data, _) =>
-                                    data.sales.floor(),
-                                dataLabelSettings: const DataLabelSettings(
-                                  isVisible: true,
-                                  // textStyle: TextStyle(fontSize: 12),
-                                  labelAlignment: ChartDataLabelAlignment.top,
+                          child: ExcludeSemantics(
+                            excluding: true,
+                            child: RepaintBoundary(
+                              child: SfCartesianChart(
+                                tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
+                                title: ChartTitle(
+                                  text: time.day == DateTime.now().day &&
+                                          time.month == DateTime.now().month &&
+                                          time.year == DateTime.now().year
+                                      ? 'المبيعات الشهرية لهذه السنة'
+                                      : '  المبيعات الشهرية لسنة ${time.year}',
                                 ),
-                              ),
-                              StackedBarSeries<SalesStats, int>(
-                                name: 'المبيعات',
-                                animationDuration: 0,
-                                color: Colors.brown,
-                                dataSource: snapshot.data![0],
-                                xValueMapper: (SalesStats data, _) =>
-                                    data.date.month,
-                                yValueMapper: (SalesStats data, _) =>
-                                    data.sales.floor(),
-                                dataLabelSettings: const DataLabelSettings(
-                                  isVisible: true,
-                                  // textStyle: TextStyle(fontSize: 12),
-                                  labelAlignment: ChartDataLabelAlignment.top,
+                                primaryXAxis: CategoryAxis(
+                                  isInversed: true,
                                 ),
+                                primaryYAxis: NumericAxis(
+                                  numberFormat: NumberFormat.compact(),
+                                  isVisible: true,
+                                ),
+                                series: <CartesianSeries>[
+                                  StackedBarSeries<SalesStats, int>(
+                                    name: 'الأرباح',
+                                    animationDuration: 0,
+                                    color: Colors.brown[400],
+                                    dataSource: snapshot.data![1],
+                                    xValueMapper: (SalesStats data, _) =>
+                                        data.date.month,
+                                    yValueMapper: (SalesStats data, _) =>
+                                        data.sales.floor(),
+                                    dataLabelSettings: const DataLabelSettings(
+                                      isVisible: true,
+                                      labelAlignment: ChartDataLabelAlignment.top,
+                                    ),
+                                  ),
+                                  StackedBarSeries<SalesStats, int>(
+                                    name: 'المبيعات',
+                                    animationDuration: 0,
+                                    color: Colors.brown,
+                                    dataSource: snapshot.data![0],
+                                    xValueMapper: (SalesStats data, _) =>
+                                        data.date.month,
+                                    yValueMapper: (SalesStats data, _) =>
+                                        data.sales.floor(),
+                                    dataLabelSettings: const DataLabelSettings(
+                                      isVisible: true,
+                                      labelAlignment: ChartDataLabelAlignment.top,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ],
@@ -698,21 +698,31 @@ class _ExpensesPieChartState extends State<ExpensesPieChart> {
       ChartData('Others', 52)
     ];
     return Scaffold(
-        body: Center(
-            child: Container(
-                child: SfCircularChart(series: <CircularSeries>[
-      // Render pie chart
-      PieSeries<ChartData, String>(
-          enableTooltip: true,
-          explode: true,
-          dataSource: chartData,
-          groupMode: CircularChartGroupMode.value,
-          dataLabelMapper: (datum, index) => datum.y.toString(),
-          dataLabelSettings: DataLabelSettings(isVisible: true),
-          pointColorMapper: (ChartData data, _) => data.color,
-          xValueMapper: (ChartData data, _) => data.x,
-          yValueMapper: (ChartData data, _) => data.y)
-    ]))));
+      body: Center(
+        child: Container(
+          child: ExcludeSemantics(
+            excluding: true,
+            child: RepaintBoundary(
+              child: SfCircularChart(
+                series: <CircularSeries>[
+                  PieSeries<ChartData, String>(
+                    enableTooltip: true,
+                    explode: true,
+                    dataSource: chartData,
+                    groupMode: CircularChartGroupMode.value,
+                    dataLabelMapper: (datum, index) => datum.y.toString(),
+                    dataLabelSettings: DataLabelSettings(isVisible: true),
+                    pointColorMapper: (ChartData data, _) => data.color,
+                    xValueMapper: (ChartData data, _) => data.x,
+                    yValueMapper: (ChartData data, _) => data.y,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

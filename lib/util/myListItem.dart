@@ -15,15 +15,21 @@ class MyListTile extends StatefulWidget {
   State<MyListTile> createState() => _MyListTileState();
 }
 
-class _MyListTileState extends State<MyListTile> {
+class _MyListTileState extends State<MyListTile>
+    with AutomaticKeepAliveClientMixin {
   String weight = "";
   int gg = 0;
   int _multiplyer = 1;
   int precession = 0;
 
   TextEditingController con = TextEditingController();
+
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Consumer<SalesProvider>(
       builder: (context, li, child) {
         precession = li.getWeightPrececsion() ?? 0;
