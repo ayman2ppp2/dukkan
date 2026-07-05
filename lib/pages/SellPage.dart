@@ -195,7 +195,7 @@ class _SellPageState extends State<SellPage> {
                                   padding: const EdgeInsets.only(
                                     left: 20,
                                     right: 20,
-                                    top: 100,
+                                    top: 60,
                                   ),
                                   child: ChangeNotifierProvider.value(
                                     value: exp,
