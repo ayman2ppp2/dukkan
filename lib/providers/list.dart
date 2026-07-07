@@ -662,7 +662,23 @@ class Lists extends ChangeNotifier with LanSyncState {
     );
     clearAllCache();
     notifyListeners();
-    return embeddedToProduct(log.products);
+    var result = embeddedToProduct(log.products);
+    Map<int, int> originalCounts = {};
+    for (var ep in log.products) {
+      if (!ep.hot! && ep.productId != null) {
+        originalCounts.update(
+          ep.productId!,
+          (v) => v + (ep.count ?? 0),
+          ifAbsent: () => ep.count ?? 0,
+        );
+      }
+    }
+    for (var p in result) {
+      if (p != null && !p.hot! && originalCounts.containsKey(p.id)) {
+        p.count = originalCounts[p.id]!;
+      }
+    }
+    return result;
   }
 
   getLogsChunk(int chunkSize, int currentLog) {

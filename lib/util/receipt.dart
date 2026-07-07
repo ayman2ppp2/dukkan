@@ -2,6 +2,7 @@ import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loadingOverlay.dart';
 import 'package:dukkan/util/models/Log.dart';
+import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as intl;
@@ -147,10 +148,92 @@ class _ReceiptState extends State<Receipt> {
                             ' : سلع خاصة'),
                         IconButton(
                           onPressed: () async {
-                            AppLogger.debug('Edit receipt pressed',
-                                data: {'area': 'receipt.edit'});
+                            final outerContext = context;
+                            showDialog(
+                              context: outerContext,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text(
+                                  'هل تريد تعديل الفاتورة؟',
+                                  style: TextStyle(fontSize: 20),
+                                ),
+                                content: const Text(
+                                  'سيتم إلغاء الفاتورة الحالية وإعادة المنتجات للمخزون',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () async {
+                                      Navigator.pop(ctx);
+                                      showGeneralDialog(
+                                        context: outerContext,
+                                        pageBuilder: (c, a, s) =>
+                                            LoadingOverlay(),
+                                      );
+                                      try {
+                                        var result =
+                                            await li.editReceipt(
+                                                widget.log.date,
+                                                widget.log);
+                                        var products = result
+                                            .whereType<Product>()
+                                            .toList();
+                                        if (products.isEmpty) {
+                                          if (outerContext.mounted) {
+                                            Navigator.pop(outerContext);
+                                            ScaffoldMessenger.of(
+                                                    outerContext)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    'لا توجد منتجات في الفاتورة'),
+                                              ),
+                                            );
+                                          }
+                                          return;
+                                        }
+                                        sa.sellList = products;
+                                        li.editing = true;
+                                        li.logID = widget.log.date;
+                                        if (outerContext.mounted) {
+                                          Navigator.pop(outerContext);
+                                          Navigator.pop(outerContext);
+                                        }
+                                      } catch (e, st) {
+                                        await AppLogger.captureException(
+                                            e,
+                                            stackTrace: st,
+                                            area: 'receipt.edit');
+                                        if (outerContext.mounted) {
+                                          Navigator.pop(outerContext);
+                                          ScaffoldMessenger.of(
+                                                  outerContext)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                  'فشل تعديل الفاتورة'),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    child: const Text(
+                                      'نعم',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(ctx),
+                                    child: const Text(
+                                      'لا',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
                           },
-                          icon: Icon(
+                          icon: const Icon(
                             Icons.edit_note_rounded,
                           ),
                         ),
