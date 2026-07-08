@@ -42,25 +42,28 @@ class ParkingDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              _buildCurrentCartSection(),
-              const SizedBox(height: 16),
-              _buildSectionDivider(),
-              const SizedBox(height: 16),
-              _buildParkedCartsSection(),
-            ],
+        child: DefaultTextStyle(
+          style: const TextStyle(decoration: TextDecoration.none),
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildCurrentCartSection(),
+                const SizedBox(height: 16),
+                _buildSectionDivider(),
+                const SizedBox(height: 16),
+                _buildParkedCartsSection(),
+              ],
+            ),
           ),
         ),
       ),
@@ -110,24 +113,33 @@ class ParkingDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(Icons.shopping_cart_outlined,
                   size: 16, color: Colors.brown[600]),
               const SizedBox(width: 8),
-              Text(
-                'الفاتورة الحالية',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.brown[700],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'الفاتورة الحالية',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.brown[700],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$currentCartCount منتجات | المجموع: ${NumberFormat.simpleCurrency().format(currentCartTotal)}',
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.brown[500]),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$currentCartCount منتجات | المجموع: ${NumberFormat.simpleCurrency().format(currentCartTotal)}',
-            style: TextStyle(fontSize: 13, color: Colors.brown[500]),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -161,46 +173,54 @@ class ParkingDialog extends StatelessWidget {
   }
 
   Widget _buildParkedCartsSection() {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(Icons.inbox_outlined, size: 16, color: Colors.brown[600]),
-            const SizedBox(width: 8),
-            Text(
-              'الفواتير المعلقة',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.brown[700],
+        Icon(Icons.inbox_outlined, size: 16, color: Colors.brown[600]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'الفواتير المعلقة',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.brown[700],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.brown[100],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${parkedCarts.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.brown[600],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.brown[100],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${parkedCarts.length}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.brown[600],
-                ),
-              ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              if (parkedCarts.isEmpty)
+                _buildEmptyState()
+              else
+                ...parkedCarts.asMap().entries.map(
+                      (entry) => _buildParkedCart(entry.key, entry.value),
+                    ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        if (parkedCarts.isEmpty)
-          _buildEmptyState()
-        else
-          ...parkedCarts.asMap().entries.map(
-                (entry) => _buildParkedCart(entry.key, entry.value),
-              ),
       ],
     );
   }

@@ -317,7 +317,7 @@ class _LineChartState extends State<LineChart>
                   return const Text(UserSafeMessages.loadFailed);
                 }
                 if (snapshot.hasData) {
-                  return Container(
+                  return SizedBox(
                     height: 300,
                     child: Flex(
                       mainAxisSize: MainAxisSize.min,
@@ -457,7 +457,7 @@ class _MOYState extends State<MOY>
                   return const Text(UserSafeMessages.loadFailed);
                 }
                 if (snapshot.hasData) {
-                  return Container(
+                  return SizedBox(
                     height: 300,
                     child: Flex(
                       mainAxisSize: MainAxisSize.min,
