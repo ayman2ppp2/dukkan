@@ -3,8 +3,8 @@ import 'package:appwrite/appwrite.dart';
 import 'package:dukkan/core/appwrite_config.dart';
 import 'package:dukkan/core/db.dart';
 import 'package:dukkan/core/observability.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter/widgets.dart';
+import 'package:path_provider/path_provider.dart';
 
 class SyncProvider extends ChangeNotifier {
   Client client = Client();
@@ -12,6 +12,11 @@ class SyncProvider extends ChangeNotifier {
 
   SyncProvider() {
     init();
+  }
+
+  @visibleForTesting
+  SyncProvider.forTesting() {
+    storage = Storage(client);
   }
 
   void init() {

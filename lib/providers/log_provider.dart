@@ -10,6 +10,9 @@ class LogProvider extends ChangeNotifier {
     init();
   }
 
+  @visibleForTesting
+  LogProvider.forTesting(this.db);
+
   Future<void> init() async {
     db = await DB.getInstance();
   }

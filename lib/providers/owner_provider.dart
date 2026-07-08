@@ -9,6 +9,9 @@ class OwnerProvider extends ChangeNotifier {
     init();
   }
 
+  @visibleForTesting
+  OwnerProvider.forTesting(this.db);
+
   Future<void> init() async {
     db = await DB.getInstance();
   }
