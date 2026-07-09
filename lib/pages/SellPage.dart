@@ -2,8 +2,9 @@ import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/CheckOutPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
-// import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/myListItem.dart';
+import 'package:dukkan/util/parking_dialog.dart';
+import 'package:dukkan/util/models/Product.dart';
 import 'package:dukkan/pages/searchPage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +19,124 @@ class SellPage extends StatefulWidget {
 
 class _SellPageState extends State<SellPage> {
   TrackingScrollController con = TrackingScrollController();
+
+  double _cartTotal(List<Product> products) {
+    if (products.isEmpty) return 0;
+    return products.fold(0.0, (prev, e) => prev +
+        ((e.offer! && e.count! % e.offerCount! == 0)
+            ? (e.offerPrice! * e.count!)
+            : (e.sellPrice! * e.count!)));
+  }
+
+  void _showParkDialog(BuildContext context, SalesProvider sa) {
+    showGeneralDialog(
+      barrierDismissible: true,
+      barrierLabel: 'إدارة الفواتير المعلقة',
+      context: context,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return ChangeNotifierProvider.value(
+          value: sa,
+          child: Consumer<SalesProvider>(
+            builder: (context, sa, _) {
+              final parkedData = sa.pendingCarts
+                  .map((cart) => ParkedCartData(
+                        uniqueKey:
+                            'parked_${cart.parkedAt.millisecondsSinceEpoch}',
+                        name: cart.name,
+                        productCount: cart.products.length,
+                        total: _cartTotal(cart.products),
+                      ))
+                  .toList();
+
+              return ParkingDialog(
+                parkedCarts: parkedData,
+                currentCartCount: sa.sellList.length,
+                currentCartTotal: _cartTotal(sa.sellList),
+                canPark: sa.sellList.isNotEmpty,
+                onPark: () {
+                  if (sa.pendingCarts.length >=
+                      SalesProvider.maxPendingCarts) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('لا يمكن ركن أكثر من 5 فواتير'),
+                      ),
+                    );
+                    return;
+                  }
+                  sa.parkCurrentCart();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم ركن الفاتورة')),
+                  );
+                  Navigator.pop(context);
+                },
+                onRestore: (index) {
+                  if (sa.sellList.isNotEmpty) {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: Text('تنبيه',
+                            style: TextStyle(color: Colors.brown[700])),
+                        content: const Text(
+                          'الفاتورة الحالية غير فارغة. هل تريد استبدالها؟',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('لا'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              sa.restoreCart(index);
+                              Navigator.pop(ctx);
+                              Navigator.pop(context);
+                            },
+                            child: Text('نعم',
+                                style:
+                                    TextStyle(color: Colors.brown[600])),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    sa.restoreCart(index);
+                    Navigator.pop(context);
+                  }
+                },
+                onDelete: (index) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text('تأكيد الحذف',
+                          style: TextStyle(color: Colors.brown[700])),
+                      content: const Text(
+                        'هل تريد حذف هذه الفاتورة المعلقة؟',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('لا'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            sa.deletePendingCart(index);
+                            Navigator.pop(ctx);
+                          },
+                          child: Text('نعم',
+                              style:
+                                  TextStyle(color: Colors.brown[600])),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                onDismiss: () => Navigator.pop(context),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +299,51 @@ class _SellPageState extends State<SellPage> {
                   // 2nd button
                   Padding(
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        IconButton.filled(
+                          tooltip: 'ركن الفاتورة',
+                          onPressed: () {
+                            _showParkDialog(context, sa);
+                          },
+                          icon: const Icon(
+                            Icons.pause_circle_outline,
+                            color: Colors.white,
+                          ),
+                          iconSize: 40,
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStatePropertyAll(
+                              Colors.brown[400],
+                            ),
+                            elevation: const WidgetStatePropertyAll(20),
+                          ),
+                        ),
+                        if (sa.pendingCarts.isNotEmpty)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${sa.pendingCarts.length}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20, top: 10),
                     child: Consumer<Lists>(
                       builder: (context, li, child) => IconButton.filled(
                         tooltip: 'فتح الفاتورة',
@@ -195,7 +359,7 @@ class _SellPageState extends State<SellPage> {
                                   padding: const EdgeInsets.only(
                                     left: 20,
                                     right: 20,
-                                    top: 100,
+                                    top: 60,
                                   ),
                                   child: ChangeNotifierProvider.value(
                                     value: exp,

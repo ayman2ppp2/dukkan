@@ -20,6 +20,9 @@ class StatsProvider extends ChangeNotifier {
     init();
   }
 
+  @visibleForTesting
+  StatsProvider.forTesting(this.db);
+
   Future<void> init() async {
     db = await DB.getInstance();
     pool = await Pool.init();

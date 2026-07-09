@@ -1,0 +1,6 @@
+timeout: 60s
+concurrency: 1
+
+tags:
+  integration:
+    timeout: 120s

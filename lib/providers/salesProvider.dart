@@ -5,8 +5,10 @@ import 'dart:convert';
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/core/db.dart';
+import 'package:dukkan/util/models/PendingCart.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:isar_community/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:provider/provider.dart';
@@ -37,12 +39,67 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   Future<void> init() async {
     _pref = await SharedPreferences.getInstance();
     db = await DB.getInstance();
+    await _loadPendingCarts();
+  }
+
+  Future<void> _loadPendingCarts() async {
+    final data = _pref.getString(_pendingCartsKey);
+    if (data != null && data.isNotEmpty) {
+      final List<dynamic> jsonList = jsonDecode(data);
+      pendingCarts = jsonList
+          .map((e) => PendingCart.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+  }
+
+  Future<void> _savePendingCarts() async {
+    final jsonList = pendingCarts.map((c) => c.toJson()).toList();
+    await _pref.setString(_pendingCartsKey, jsonEncode(jsonList));
+  }
+
+  void parkCurrentCart() {
+    if (sellList.isEmpty) return;
+    final now = DateTime.now();
+    final timeStr = DateFormat('HH:mm').format(now);
+    final name = 'فاتورة $timeStr';
+    pendingCarts.insert(
+      0,
+      PendingCart(
+        name: name,
+        products: List.from(sellList),
+        parkedAt: now,
+      ),
+    );
+    if (pendingCarts.length > maxPendingCarts) {
+      pendingCarts.removeLast();
+    }
+    sellList.clear();
+    _savePendingCarts();
+    notifyListeners();
+  }
+
+  void restoreCart(int index) {
+    if (index < 0 || index >= pendingCarts.length) return;
+    final cart = pendingCarts.removeAt(index);
+    sellList = cart.products;
+    _savePendingCarts();
+    notifyListeners();
+  }
+
+  void deletePendingCart(int index) {
+    if (index < 0 || index >= pendingCarts.length) return;
+    pendingCarts.removeAt(index);
+    _savePendingCarts();
+    notifyListeners();
   }
 
   List<Loaner> loanersList = [];
   // List<Product> productsList = [];
   List<Product> sellList = [];
   List<Product> inboundList = [];
+  List<PendingCart> pendingCarts = [];
+  static const int maxPendingCarts = 5;
+  static const String _pendingCartsKey = 'pendingCarts';
   List<Product> searchTemp = [];
   Map<String, double> kg = {
     'كيلو': 1000,
@@ -160,7 +217,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     loaner.zeroingDate = DateTime.now();
     var temp = loaner.lastPayment!.toList(growable: true);
     temp.add(EmbeddedMap()
-      ..value = 'تصفير حساب'
+      ..value = '0'
       ..key = DateTime.now().toIso8601String()
       ..remaining = 0
       ..type = 'reset');

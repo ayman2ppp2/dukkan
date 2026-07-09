@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
                 builder: (context, as, child) => Consumer<Lists>(
                   builder: (context, li, child) => IconButton(
                     tooltip: 'السجلات',
-                    onPressed: () async {
+                    onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(

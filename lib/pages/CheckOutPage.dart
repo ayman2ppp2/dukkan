@@ -45,160 +45,12 @@ class _CheckOutState extends State<CheckOut> {
             color: Colors.white,
           ),
         ),
-        title: widget.inbound
-            ? Center(
-                child: const Text(
-                  'فاتورة إدخال',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              )
-            : Flex(
-                direction: Axis.horizontal,
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Expanded(
-                    flex: 0,
-                    child: const Text(
-                      'الفاتورة',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 5,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (radio == 1) // Loaner selection
-                          Expanded(
-                            flex: 4,
-                            child: FutureBuilder(
-                              future: Provider.of<SalesProvider>(context,
-                                      listen: false)
-                                  .refreshLoanersList(),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasError) {
-                                  return const Text(
-                                      UserSafeMessages.loadFailed);
-                                }
-                                if (snapshot.hasData) {
-                                  var loanerOptions = snapshot.data!
-                                      .map((loaner) => DropdownMenuEntry(
-                                            value: loaner.ID,
-                                            label: loaner.name!,
-                                          ))
-                                      .toList();
-                                  return DropdownMenu(
-                                    onSelected: (value) {
-                                      loanerID = value;
-                                    },
-                                    dropdownMenuEntries: loanerOptions,
-                                    label: const Text(
-                                      'الدائن',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    width: 114,
-                                    menuHeight: 300,
-                                    menuStyle: const MenuStyle(
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  );
-                                }
-                                return const SpinKitChasingDots(
-                                  color: Colors.white,
-                                  size: 50,
-                                );
-                              },
-                            ),
-                          ),
-                        if (radio == 2) // Expense selection
-                          Expanded(
-                            flex: 4,
-                            child: StreamBuilder(
-                              stream: Provider.of<ExpenseProvider>(context,
-                                      listen: false)
-                                  .getIndvidualExpenses(fixed: false),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasError) {
-                                  return const Text(
-                                      UserSafeMessages.loadFailed);
-                                }
-                                if (snapshot.hasData) {
-                                  var expenseOptions = snapshot.data!
-                                      .map((expense) => DropdownMenuEntry(
-                                            value: expense.ID,
-                                            label: expense.name!,
-                                          ))
-                                      .toList();
-                                  return DropdownMenu(
-                                    onSelected: (value) {
-                                      expenseID = value;
-                                    },
-                                    dropdownMenuEntries: expenseOptions,
-                                    label: const Text(
-                                      'المنصرف',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    menuStyle: const MenuStyle(
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  );
-                                }
-                                return const SpinKitChasingDots(
-                                  color: Colors.white,
-                                  size: 50,
-                                );
-                              },
-                            ),
-                          ),
-                        Expanded(
-                          flex: 0,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              // Loan radio button
-                              Row(
-                                children: [
-                                  const Text(
-                                    'دين',
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 17),
-                                  ),
-                                  Radio(
-                                    value: 1,
-                                    groupValue: radio,
-                                    onChanged: (value) => setState(() {
-                                      radio = value!;
-                                    }),
-                                  ),
-                                ],
-                              ),
-                              // Expense radio button
-                              Row(
-                                children: [
-                                  const Text(
-                                    'منصرف',
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 15),
-                                  ),
-                                  Radio(
-                                    value: 2,
-                                    groupValue: radio,
-                                    onChanged: (value) => setState(() {
-                                      radio = value!;
-                                    }),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+        title: Center(
+          child: Text(
+            widget.inbound ? 'فاتورة إدخال' : 'الفاتورة',
+            style: const TextStyle(color: Colors.white, fontSize: 18),
+          ),
+        ),
         backgroundColor: Colors.brown,
       ),
       body: ClipRRect(
@@ -212,11 +64,13 @@ class _CheckOutState extends State<CheckOut> {
                   itemCount: widget.lst.length,
                   itemBuilder: (context, index) {
                     return Padding(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       child: Material(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                         color: Colors.brown[200],
                         child: ListTile(
+                          visualDensity: VisualDensity.compact,
                           leading: widget.inbound
                               ? Text(NumberFormat.simpleCurrency()
                                   .format(widget.lst[index].buyprice))
@@ -253,8 +107,135 @@ class _CheckOutState extends State<CheckOut> {
                   },
                 ),
               ),
+              // Payment controls card
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('نقدي'),
+                              selected: radio == 0,
+                              onSelected: (_) =>
+                                  setState(() => radio = 0),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('دين'),
+                              selected: radio == 1,
+                              onSelected: (_) =>
+                                  setState(() => radio = 1),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ChoiceChip(
+                              label: const Text('منصرف'),
+                              selected: radio == 2,
+                              onSelected: (_) =>
+                                  setState(() => radio = 2),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (radio == 1)
+                        FutureBuilder(
+                          future: Provider.of<SalesProvider>(context,
+                                  listen: false)
+                              .refreshLoanersList(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasError) {
+                              return Text(UserSafeMessages.loadFailed);
+                            }
+                            if (snapshot.hasData) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.only(top: 6),
+                                child: DropdownMenu(
+                                  onSelected: (value) {
+                                    loanerID = value;
+                                  },
+                                  dropdownMenuEntries: snapshot.data!
+                                      .map((loaner) => DropdownMenuEntry(
+                                            value: loaner.ID,
+                                            label: loaner.name!,
+                                          ))
+                                      .toList(),
+                                  label: const Text('اختر الدائن'),
+                                  width:
+                                      MediaQuery.of(context).size.width *
+                                          0.5,
+                                  menuHeight: 300,
+                                  menuStyle: const MenuStyle(
+                                    visualDensity:
+                                        VisualDensity.compact,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SpinKitChasingDots(
+                              color: Colors.brown,
+                              size: 30,
+                            );
+                          },
+                        ),
+                      if (radio == 2)
+                        StreamBuilder(
+                          stream: Provider.of<ExpenseProvider>(context,
+                                  listen: false)
+                              .getIndvidualExpenses(fixed: false),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasError) {
+                              return Text(UserSafeMessages.loadFailed);
+                            }
+                            if (snapshot.hasData) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.only(top: 6),
+                                child: DropdownMenu(
+                                  onSelected: (value) {
+                                    expenseID = value;
+                                  },
+                                  dropdownMenuEntries: snapshot.data!
+                                      .map((expense) => DropdownMenuEntry(
+                                            value: expense.ID,
+                                            label: expense.name!,
+                                          ))
+                                      .toList(),
+                                  label: const Text('اختر المنصرف'),
+                                  width:
+                                      MediaQuery.of(context).size.width *
+                                          0.5,
+                                  menuStyle: const MenuStyle(
+                                    visualDensity:
+                                        VisualDensity.compact,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SpinKitChasingDots(
+                              color: Colors.brown,
+                              size: 30,
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
                 child: Consumer<Lists>(
                   builder: (context, li, child) {
                     // debugPrint('77');

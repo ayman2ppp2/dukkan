@@ -21,6 +21,9 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
     init();
   }
 
+  @visibleForTesting
+  ShareProvider.forTesting(this.db);
+
   Future<void> init() async {
     db = await DB.getInstance();
   }

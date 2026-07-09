@@ -12,14 +12,14 @@ class Emap {
   Emap.fromMap({required Map map}) {
     buyPrice = map['buyPrice'];
     sellPrice = map['sellPrice'];
-    date = map['date'];
+    date = map['date'] != null ? DateTime.parse(map['date'] as String) : null;
   }
 
   Map<String, dynamic> toMap() {
     return {
       'buyPrice': buyPrice,
       'sellPrice': sellPrice,
-      'date': date,
+      'date': date?.toIso8601String(),
     };
   }
 }

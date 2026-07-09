@@ -259,9 +259,6 @@ class _StatsPageState extends State<StatsPage> {
                   padding: const EdgeInsets.all(10.0),
                   child: Container(
                       height: 300,
-                      constraints: const BoxConstraints(
-                        maxWidth: 200,
-                      ),
                       decoration: BoxDecoration(
                           color: Colors.brown[200],
                           borderRadius: BorderRadius.circular(12)),

@@ -206,12 +206,20 @@ class DB {
       }
     }
 
+    final newBalance = (temp.balance ?? 0) - (log.price + sum);
+    final payments =
+        List<EmbeddedMap>.from(temp.lastPayment ?? [], growable: true);
+    payments.add(EmbeddedMap()
+      ..key = DateTime.now().toIso8601String()
+      ..value = (log.price + sum).toString()
+      ..remaining = newBalance
+      ..type = 'cancel');
     return isar!.writeTxn(() async => isar!.loaners.put(Loaner(
           name: temp.name,
           phoneNumber: temp.phoneNumber,
           location: temp.location,
-          lastPayment: temp.lastPayment,
-          balance: (temp.balance ?? 0) - (log.price + sum),
+          lastPayment: payments,
+          balance: newBalance,
         )
           ..ID = temp.ID
           ..zeroingDate = CalculateDate()));
@@ -445,6 +453,14 @@ class DB {
         if (updatedLoaner != null) {
           updatedLoaner.balance =
               (updatedLoaner.balance ?? 0) + total.round() - discount;
+          final payments = List<EmbeddedMap>.from(
+              updatedLoaner.lastPayment ?? [], growable: true);
+          payments.add(EmbeddedMap()
+            ..key = DateTime.now().toIso8601String()
+            ..value = (total.round() - discount).toString()
+            ..remaining = updatedLoaner.balance
+            ..type = 'sale');
+          updatedLoaner.lastPayment = payments;
         }
       }
 
@@ -983,6 +999,14 @@ class DB {
           temp
             ..balance = (temp.balance ?? 0) - (log.price + hotSum)
             ..zeroingDate = calculateDate();
+          final payments = List<EmbeddedMap>.from(
+              temp.lastPayment ?? [], growable: true);
+          payments.add(EmbeddedMap()
+            ..key = DateTime.now().toIso8601String()
+            ..value = (log.price + hotSum).toString()
+            ..remaining = temp.balance
+            ..type = 'cancel');
+          temp.lastPayment = payments;
           await isar!.loaners.put(temp);
         }
       }
@@ -1850,11 +1874,18 @@ class CgetMonthlyloans extends PooledJob<double> {
       final endOfMonth = DateTime(now.year, now.month + 1, 1)
           .subtract(Duration(milliseconds: 1));
 
-      final receipts = await isar.logs
+      final allReceipts = await isar.logs
           .filter()
           .loanedEqualTo(true)
           .dateBetween(startOfMonth, endOfMonth)
           .findAll();
+
+      final excludedLoaners = await isar.loaners
+          .filter()
+          .balanceLessThan(0)
+          .findAll();
+      final excludedIds = excludedLoaners.map((l) => l.ID).toSet();
+      final receipts = allReceipts.where((r) => !excludedIds.contains(r.loanerID)).toList();
 
       final totalUnpaidLoans = receipts.fold<double>(0.0, (total, receipt) {
         final receiptTotal = receipt.products.fold<double>(
@@ -1951,11 +1982,18 @@ class CgetDailyloans extends PooledJob<double> {
       final endOfDay =
           startOfDay.add(Duration(days: 1)).subtract(Duration(milliseconds: 1));
 
-      final receipts = await isar.logs
+      final allReceipts = await isar.logs
           .filter()
           .loanedEqualTo(true)
           .dateBetween(startOfDay, endOfDay)
           .findAll();
+
+      final excludedLoaners = await isar.loaners
+          .filter()
+          .balanceLessThan(0)
+          .findAll();
+      final excludedIds = excludedLoaners.map((l) => l.ID).toSet();
+      final receipts = allReceipts.where((r) => !excludedIds.contains(r.loanerID)).toList();
 
       final totalUnpaidLoans = receipts.fold<double>(
         0.0,

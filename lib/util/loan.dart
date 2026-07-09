@@ -701,7 +701,7 @@ class _LoanState extends State<Loan> {
                             final double? balanceBefore;
                             if (type == 'reset') {
                               balanceBefore = null;
-                            } else if (type == 'withdraw') {
+                            } else if (type == 'withdraw' || type == 'sale') {
                               balanceBefore = (remaining ?? 0) - value;
                             } else {
                               balanceBefore = (remaining ?? 0) + value;
@@ -721,6 +721,10 @@ class _LoanState extends State<Loan> {
                               case 'reset':
                                 typeColor = Colors.orange;
                                 typeLabel = 'تصفير';
+                                break;
+                              case 'cancel':
+                                typeColor = Colors.red;
+                                typeLabel = 'إلغاء';
                                 break;
                               default:
                                 typeColor = Colors.green;

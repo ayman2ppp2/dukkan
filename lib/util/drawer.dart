@@ -42,9 +42,9 @@ class drawerItems extends StatelessWidget {
             style: TextStyle(fontSize: 15),
           ),
           onTap: () {
-            var li = Provider.of<Lists>(context, listen: false);
-            var as = Provider.of<SalesProvider>(context, listen: false);
-            var exp = Provider.of<ExpenseProvider>(context, listen: false);
+            var li = context.read<Lists>();
+            var as = context.read<SalesProvider>();
+            var exp = context.read<ExpenseProvider>();
             Navigator.push(
               context,
               MaterialPageRoute(

@@ -18,7 +18,7 @@ import 'package:dukkan/core/db.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+// just a change
 Future<void> main() async {
   await AppLogger.bootstrap(() async {
     await DB.initialize();
@@ -109,22 +109,18 @@ class MyApp extends StatelessWidget {
           ],
           builder: (context, child) {
             WidgetsBinding.instance.addObserver(context.read<SalesProvider>());
-            return Consumer<AuthAPI>(
-              builder: (context, auth, child) {
-                if (auth.status == AuthStatus.uninitialized) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (auth.status == AuthStatus.authenticated) {
-                  final content =
-                      context.read<SalesProvider>().getWeightPrececsion() ==
-                              null
-                          ? const LandingPage()
-                          : const HomePage();
-                  return content;
-                }
-                return LoginPage();
-              },
-            );
+            var auth = context.watch<AuthAPI>();
+            if (auth.status == AuthStatus.uninitialized) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (auth.status == AuthStatus.authenticated) {
+              final content =
+                  context.read<SalesProvider>().getWeightPrececsion() == null
+                      ? const LandingPage()
+                      : const HomePage();
+              return content;
+            }
+            return LoginPage();
           },
         ),
       ),

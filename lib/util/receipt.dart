@@ -2,6 +2,7 @@ import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loadingOverlay.dart';
 import 'package:dukkan/util/models/Log.dart';
+import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as intl;
@@ -10,8 +11,9 @@ import '../providers/list.dart';
 
 class Receipt extends StatefulWidget {
   final Log log;
+  final String? loanerName;
 
-  Receipt({required this.log, super.key});
+  Receipt({required this.log, this.loanerName, super.key});
 
   @override
   State<Receipt> createState() => _ReceiptState();
@@ -22,7 +24,7 @@ class _ReceiptState extends State<Receipt> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SalesProvider>(builder: (context, sa, child) {
+    return Consumer2<SalesProvider, Lists>(builder: (context, sa, li, child) {
       return Padding(
           padding: const EdgeInsets.all(10.0),
           child: Stack(
@@ -46,97 +48,82 @@ class _ReceiptState extends State<Receipt> {
                         Text(intl.NumberFormat.simpleCurrency()
                                 .format(widget.log.profit) +
                             ' : الربح'),
-                        Consumer<Lists>(
-                          builder: (context, li, child) =>
-                              Consumer<SalesProvider>(
-                            builder: (context, sa, child) => IconButton(
-                              // Provider.of<Lists>(context, listen: false)
-                              //       .cancelReceipt(widget.log.date, widget.log);
-                              //   Provider.of<SalesProvider>(context, listen: false)
-                              //       .refreshProductsList();
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      title: const Text(
-                                        'هل أنت متأكد؟',
+                        IconButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text(
+                                    'هل أنت متأكد؟',
+                                    style: TextStyle(fontSize: 20),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () async {
+                                        showDialog(
+                                          context: context,
+                                          barrierDismissible: false,
+                                          builder: (context) =>
+                                              LoadingOverlay(),
+                                        );
+
+                                        try {
+                                          if (widget.log.loaned) {
+                                            var loaner =
+                                                await sa.getLoanerName(
+                                                    id: widget
+                                                        .log.loanerID!);
+                                            if (loaner != null &&
+                                                (loaner.zeroingDate ??
+                                                        DateTime(1999))
+                                                    .isAfter(
+                                                        widget.log.date)) {
+                                              await accounAlreadyZeroed(
+                                                  context, li);
+                                            } else {
+                                              await li.cancelReceipt(
+                                                  widget.log.date,
+                                                  widget.log);
+                                              Navigator.pop(context);
+                                            }
+                                          } else {
+                                            await li.cancelReceipt(
+                                                widget.log.date,
+                                                widget.log);
+                                            Navigator.pop(context);
+                                          }
+                                        } catch (e, s) {
+                                          await AppLogger.captureException(
+                                              e,
+                                              stackTrace: s,
+                                              area: 'receipt.cancel');
+                                        } finally {
+                                          Navigator.of(context,
+                                                  rootNavigator: true)
+                                              .pop();
+                                        }
+                                      },
+                                      child: const Text(
+                                        'نعم',
                                         style: TextStyle(fontSize: 20),
                                       ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () async {
-                                            // Show loading overlay
-                                            showDialog(
-                                              context: context,
-                                              barrierDismissible: false,
-                                              builder: (context) =>
-                                                  LoadingOverlay(),
-                                            );
-
-                                            try {
-                                              if (widget.log.loaned) {
-                                                var loaner =
-                                                    await sa.getLoanerName(
-                                                        id: widget
-                                                            .log.loanerID!);
-                                                if (loaner != null &&
-                                                    (loaner.zeroingDate ??
-                                                            DateTime(1999))
-                                                        .isAfter(
-                                                            widget.log.date)) {
-                                                  await accounAlreadyZeroed(
-                                                      context, li);
-                                                } else {
-                                                  await li.cancelReceipt(
-                                                      widget.log.date,
-                                                      widget.log);
-                                                  Navigator.pop(context);
-                                                }
-                                              } else {
-                                                await li.cancelReceipt(
-                                                    widget.log.date,
-                                                    widget.log);
-                                                Navigator.pop(context);
-                                              }
-                                            } catch (e, s) {
-                                              await AppLogger.captureException(
-                                                  e,
-                                                  stackTrace: s,
-                                                  area: 'receipt.cancel');
-                                            } finally {
-                                              // Ensure the loading overlay is dismissed
-                                              Navigator.of(context,
-                                                      rootNavigator: true)
-                                                  .pop();
-                                              // Navigator.of(context,
-                                              //         rootNavigator: true)
-                                              //     .pop();
-                                            }
-                                          },
-                                          child: const Text(
-                                            'نعم',
-                                            style: TextStyle(fontSize: 20),
-                                          ),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(
-                                                context); // Close the dialog
-                                          },
-                                          child: const Text(
-                                            'لا',
-                                            style: TextStyle(fontSize: 20),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text(
+                                        'لا',
+                                        style: TextStyle(fontSize: 20),
+                                      ),
+                                    ),
+                                  ],
                                 );
                               },
-                              icon: Icon(Icons.keyboard_return_rounded),
-                            ),
-                          ),
+                            );
+                          },
+                          icon: Icon(Icons.keyboard_return_rounded),
                         ),
                         IconButton(
                           onPressed: () {
@@ -159,56 +146,95 @@ class _ReceiptState extends State<Receipt> {
                         Text(intl.NumberFormat.simpleCurrency()
                                 .format(countSpecial(widget.log)) +
                             ' : سلع خاصة'),
-                        Consumer<Lists>(
-                          builder: (context, li, child) =>
-                              Consumer<SalesProvider>(
-                            builder: (context, sa, child) => IconButton(
-                              // onPressed: null,
-                              onPressed: () async {
-                                AppLogger.debug('Edit receipt pressed',
-                                    data: {'area': 'receipt.edit'});
-                                // var temp = await li.editReceipt(
-                                //     widget.log.date, widget.log);
-                                // li.editing = true;
-                                // li.logID = widget.log.date;
-                                // sa.sellList.addAll(
-                                //     temp.nonNulls.map((e) => Product.named2(
-                                //         name: e.name,
-                                //         ownerName: e.ownerName,
-                                //         barcode: e.barcode,
-                                //         buyprice: e.buyprice,
-                                //         sellPrice: e.sellPrice,
-                                //         count: widget.log.products.firstWhere(
-                                //           (element) =>
-                                //               element.productId == e.id,
-                                //           orElse: () {
-                                //             return EmbeddedProduct()
-                                //               ..count = e.count
-                                //               ..buyPrice = 1
-                                //               ..sellPrice = 1
-                                //               ..hot = true;
-                                //           },
-                                //         ).count,
-                                //         weightable: e.weightable,
-                                //         wholeUnit: e.wholeUnit,
-                                //         offer: e.hot! ? false : e.offer,
-                                //         offerCount: e.offerCount,
-                                //         offerPrice: e.offerPrice,
-                                //         priceHistory: e.priceHistory,
-                                //         endDate: e.endDate,
-                                //         hot: e.hot,
-                                //         id: e.id)));
-                                // sa.refresh();
-
-                                // // li.db.logs.delete(
-                                // //     '${widget.log.date.year}-${widget.log.date.month}-${widget.log.date.day}-${widget.log.date.hour}-${widget.log.date.minute}-${widget.log.date.second}');
-                                // Navigator.pop(context);
-                              },
-
-                              icon: Icon(
-                                Icons.edit_note_rounded,
+                        IconButton(
+                          onPressed: () async {
+                            final outerContext = context;
+                            showDialog(
+                              context: outerContext,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text(
+                                  'هل تريد تعديل الفاتورة؟',
+                                  style: TextStyle(fontSize: 20),
+                                ),
+                                content: const Text(
+                                  'سيتم إلغاء الفاتورة الحالية وإعادة المنتجات للمخزون',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () async {
+                                      Navigator.pop(ctx);
+                                      showGeneralDialog(
+                                        context: outerContext,
+                                        pageBuilder: (c, a, s) =>
+                                            LoadingOverlay(),
+                                      );
+                                      try {
+                                        var result =
+                                            await li.editReceipt(
+                                                widget.log.date,
+                                                widget.log);
+                                        var products = result
+                                            .whereType<Product>()
+                                            .toList();
+                                        if (products.isEmpty) {
+                                          if (outerContext.mounted) {
+                                            Navigator.pop(outerContext);
+                                            ScaffoldMessenger.of(
+                                                    outerContext)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    'لا توجد منتجات في الفاتورة'),
+                                              ),
+                                            );
+                                          }
+                                          return;
+                                        }
+                                        sa.sellList = products;
+                                        li.editing = true;
+                                        li.logID = widget.log.date;
+                                        if (outerContext.mounted) {
+                                          Navigator.pop(outerContext);
+                                          Navigator.pop(outerContext);
+                                        }
+                                      } catch (e, st) {
+                                        await AppLogger.captureException(
+                                            e,
+                                            stackTrace: st,
+                                            area: 'receipt.edit');
+                                        if (outerContext.mounted) {
+                                          Navigator.pop(outerContext);
+                                          ScaffoldMessenger.of(
+                                                  outerContext)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                  'فشل تعديل الفاتورة'),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    child: const Text(
+                                      'نعم',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(ctx),
+                                    child: const Text(
+                                      'لا',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.edit_note_rounded,
                           ),
                         ),
                       ],
@@ -239,31 +265,38 @@ class _ReceiptState extends State<Receipt> {
               if (widget.log.loaned)
                 Positioned.fill(
                   child: ClipRRect(
-                      child: FutureBuilder(
-                    future: sa.getLoanerName(id: widget.log.loanerID!),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return const Text(UserSafeMessages.loadFailed);
-                      }
-                      if (snapshot.hasData) {
-                        return Banner(
-                          message: snapshot.data!.name!,
-                          location: BannerLocation.topEnd,
-                          child: SizedBox(),
-                        );
-                      }
-                      if (snapshot.data == null) {
-                        return Banner(
-                          message: 'تم مسح العميل برقم ${widget.log.loanerID}',
-                          location: BannerLocation.topEnd,
-                          child: SizedBox(),
-                        );
-                      }
-                      return SpinKitChasingDots(
-                        color: Colors.brown[200],
-                      );
-                    },
-                  )),
+                    child: widget.loanerName != null
+                        ? Banner(
+                            message: widget.loanerName!,
+                            location: BannerLocation.topEnd,
+                            child: const SizedBox(),
+                          )
+                        : FutureBuilder(
+                            future: sa.getLoanerName(id: widget.log.loanerID!),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasError) {
+                                return const Text(UserSafeMessages.loadFailed);
+                              }
+                              if (snapshot.hasData) {
+                                return Banner(
+                                  message: snapshot.data!.name!,
+                                  location: BannerLocation.topEnd,
+                                  child: const SizedBox(),
+                                );
+                              }
+                              if (snapshot.data == null) {
+                                return Banner(
+                                  message: 'تم مسح العميل برقم ${widget.log.loanerID}',
+                                  location: BannerLocation.topEnd,
+                                  child: const SizedBox(),
+                                );
+                              }
+                              return SpinKitChasingDots(
+                                color: Colors.brown[200],
+                              );
+                            },
+                          ),
+                  ),
                 )
             ],
           ));
