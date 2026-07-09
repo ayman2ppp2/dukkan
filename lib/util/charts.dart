@@ -1,4 +1,6 @@
 // import 'package:dukkan/util/models/BcLog.dart';
+import 'dart:math';
+
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/util/models/prodStats.dart';
 
@@ -25,7 +27,6 @@ class _CircularChartState extends State<CircularChart>
   Widget build(BuildContext context) {
     super.build(context);
     return SingleChildScrollView(
-      // physics: NeverScrollableScrollPhysics(),
       primary: false,
       child: GestureDetector(
         onDoubleTap: () {
@@ -41,72 +42,56 @@ class _CircularChartState extends State<CircularChart>
             });
           });
         },
-        child: Flex(
-          mainAxisSize: MainAxisSize.min,
-          direction: Axis.vertical,
-          children: [
-            Builder(
-              builder: (context) {
-                final li = context.read<Lists>();
-                return Flexible(
-                  child: FutureBuilder(
-                      future: li.getSaledProductsByDate(time),
-                      builder: (context, snapshot) {
-                        // li.refreshLogsList();
-                        if (snapshot.hasError) {
-                          return const Text(UserSafeMessages.loadFailed);
-                        }
-                        if (snapshot.hasData) {
-                          return SizedBox(
-                            height: 300,
-                            child: ExcludeSemantics(
-                              excluding: true,
-                              child: RepaintBoundary(
-                                child: SfCartesianChart(
-                                  title: ChartTitle(
-                                    text: time.day == DateTime.now().day &&
-                                            time.month == DateTime.now().month &&
-                                            time.year == DateTime.now().year
-                                        ? 'مبيعات هذا اليوم لكل منتج'
-                                        : 'المبيعات ليوم${time.month}/${time.day} لكل منتج',
-                                    alignment: ChartAlignment.near,
-                                  ),
-                                  primaryXAxis: CategoryAxis(
-                                      // labelsExtent: 70 % (MediaQuery.of(context).size.width),
-                                      ),
-                                  primaryYAxis: NumericAxis(
-                                    numberFormat: NumberFormat.compact(),
-                                    isVisible: true,
-                                  ),
-                                  // tooltipBehavior: TooltipBehavior(enable: true),
-                                  series: <CartesianSeries<dynamic, dynamic>>[
-                                    StackedBarSeries<Product, String>(
-                                      // enableTooltip: true,
-                                      animationDuration: 0,
-                                      // borderRadius: BorderRadius.circular(12),
-                                      dataSource: snapshot.data!,
-                                      xValueMapper: (Product data, _) => data.name,
-                                      yValueMapper: (Product data, _) => data.count,
-                                      color: Colors.brown,
-                                    )
-                              ],
-                            ),
-                          ),
+        child: FutureBuilder(
+            future: context.read<Lists>().getSaledProductsByDate(time),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Text(UserSafeMessages.loadFailed);
+              }
+              if (snapshot.hasData) {
+                final products = snapshot.data!;
+                final chartHeight =
+                    max(300.0, products.length * 30.0);
+                return SizedBox(
+                  height: chartHeight,
+                  child: ExcludeSemantics(
+                    excluding: true,
+                    child: RepaintBoundary(
+                      child: SfCartesianChart(
+                        title: ChartTitle(
+                          text: time.day == DateTime.now().day &&
+                                  time.month == DateTime.now().month &&
+                                  time.year == DateTime.now().year
+                              ? 'مبيعات هذا اليوم لكل منتج'
+                              : 'المبيعات ليوم${time.month}/${time.day} لكل منتج',
+                          alignment: ChartAlignment.near,
                         ),
-                      );
-                } else {
-                          return Center(
-                            child: SpinKitChasingDots(
-                              color: Colors.white,
-                            ),
-                          );
-                        }
-                      }),
+                        primaryXAxis: CategoryAxis(),
+                        primaryYAxis: NumericAxis(
+                          numberFormat: NumberFormat.compact(),
+                          isVisible: true,
+                        ),
+                        series: <CartesianSeries<dynamic, dynamic>>[
+                          StackedBarSeries<Product, String>(
+                            animationDuration: 0,
+                            dataSource: snapshot.data!,
+                            xValueMapper: (Product data, _) => data.name,
+                            yValueMapper: (Product data, _) => data.count,
+                            color: Colors.brown,
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
                 );
-              },
-            ),
-          ],
-        ),
+              } else {
+                return Center(
+                  child: SpinKitChasingDots(
+                    color: Colors.white,
+                  ),
+                );
+              }
+            }),
       ),
     );
   }
@@ -174,80 +159,69 @@ class _BarChartState extends State<BarChart>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // print('products sales');
     return SingleChildScrollView(
       controller: _scrollController,
       physics: ClampingScrollPhysics(),
-      child: Flex(
-        mainAxisSize: MainAxisSize.min,
-        direction: Axis.vertical,
-        children: [
-          Builder(
-            builder: (context) {
-              return Flexible(
-                child: FutureBuilder(
-                    future: future,
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return const Text(UserSafeMessages.loadFailed);
-                      }
-                      if (snapshot.hasData) {
-                        if (_scrollController.position.pixels ==
-                            _scrollController.position.maxScrollExtent) {
-                          // Show a loading indicator at the bottom when fetching more data
-                        }
-                        return SizedBox(
-                          height: 300,
-                          child: ExcludeSemantics(
-                            excluding: true,
-                            child: RepaintBoundary(
-                              child: SfCartesianChart(
-                                title: ChartTitle(
-                                    text: 'المبيعات لكل منتج',
-                                    alignment: ChartAlignment.near),
-                                primaryXAxis: CategoryAxis(),
-                                primaryYAxis: NumericAxis(
-                                  numberFormat: NumberFormat.compact(),
-                                  isVisible: true,
-                                ),
-                                tooltipBehavior:
-                                    TooltipBehavior(enable: _tooltipReady),
-                                series: <CartesianSeries>[
-                                  StackedBarSeries<ProdStats, String>(
-                                    animationDuration: 0,
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: Colors.brown,
-                                    dataSource: snapshot.data!,
-                                    xValueMapper: (ProdStats data, _) => data.name,
-                                    yValueMapper: (ProdStats data, _) => data.count,
-                                  ),
-                                ],
-                              ),
+      child: FutureBuilder(
+          future: future,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Text(UserSafeMessages.loadFailed);
+            }
+            if (snapshot.hasData) {
+              final stats = snapshot.data!;
+              final chartHeight = max(300.0, stats.length * 30.0);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: chartHeight,
+                    child: ExcludeSemantics(
+                      excluding: true,
+                      child: RepaintBoundary(
+                        child: SfCartesianChart(
+                          title: ChartTitle(
+                              text: 'المبيعات لكل منتج',
+                              alignment: ChartAlignment.near),
+                          primaryXAxis: CategoryAxis(),
+                          primaryYAxis: NumericAxis(
+                            numberFormat: NumberFormat.compact(),
+                            isVisible: true,
+                          ),
+                          tooltipBehavior:
+                              TooltipBehavior(enable: _tooltipReady),
+                          series: <CartesianSeries>[
+                            StackedBarSeries<ProdStats, String>(
+                              animationDuration: 0,
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.brown,
+                              dataSource: snapshot.data!,
+                              xValueMapper: (ProdStats data, _) => data.name,
+                              yValueMapper: (ProdStats data, _) => data.count,
                             ),
-                          ),
-                        );
-                      } else {
-                        return Center(
-                          child: SpinKitChasingDots(
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  _isLoadingMore
+                      ? Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Center(
+                              child: SpinKitChasingDots(
                             color: Colors.white,
-                          ),
-                        );
-                      }
-                    }),
+                          )))
+                      : const SizedBox.shrink(),
+                ],
               );
-            },
-          ),
-          _isLoadingMore
-              ? Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Center(
-                      child: SpinKitChasingDots(
-                    color: Colors.white,
-                  )),
-                )
-              : SizedBox.shrink(),
-        ],
-      ),
+            } else {
+              return Center(
+                child: SpinKitChasingDots(
+                  color: Colors.white,
+                ),
+              );
+            }
+          }),
     );
   }
 

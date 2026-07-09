@@ -1874,11 +1874,18 @@ class CgetMonthlyloans extends PooledJob<double> {
       final endOfMonth = DateTime(now.year, now.month + 1, 1)
           .subtract(Duration(milliseconds: 1));
 
-      final receipts = await isar.logs
+      final allReceipts = await isar.logs
           .filter()
           .loanedEqualTo(true)
           .dateBetween(startOfMonth, endOfMonth)
           .findAll();
+
+      final excludedLoaners = await isar.loaners
+          .filter()
+          .balanceLessThan(0)
+          .findAll();
+      final excludedIds = excludedLoaners.map((l) => l.ID).toSet();
+      final receipts = allReceipts.where((r) => !excludedIds.contains(r.loanerID)).toList();
 
       final totalUnpaidLoans = receipts.fold<double>(0.0, (total, receipt) {
         final receiptTotal = receipt.products.fold<double>(
@@ -1975,11 +1982,18 @@ class CgetDailyloans extends PooledJob<double> {
       final endOfDay =
           startOfDay.add(Duration(days: 1)).subtract(Duration(milliseconds: 1));
 
-      final receipts = await isar.logs
+      final allReceipts = await isar.logs
           .filter()
           .loanedEqualTo(true)
           .dateBetween(startOfDay, endOfDay)
           .findAll();
+
+      final excludedLoaners = await isar.loaners
+          .filter()
+          .balanceLessThan(0)
+          .findAll();
+      final excludedIds = excludedLoaners.map((l) => l.ID).toSet();
+      final receipts = allReceipts.where((r) => !excludedIds.contains(r.loanerID)).toList();
 
       final totalUnpaidLoans = receipts.fold<double>(
         0.0,
