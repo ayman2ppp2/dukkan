@@ -18,7 +18,7 @@ import 'package:dukkan/core/db.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+// just a change
 Future<void> main() async {
   await AppLogger.bootstrap(() async {
     await DB.initialize();
