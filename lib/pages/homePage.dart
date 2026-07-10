@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
           appBar: AppBar(
             backgroundColor: Colors.brown,
             title: Text(
-              Provider.of<SalesProvider>(context).getStoreName() ?? 'دكان',
+              Provider.of<SalesProvider>(context, listen: false).getStoreName() ?? 'دكان',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

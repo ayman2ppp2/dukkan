@@ -141,10 +141,9 @@ class _SellPageState extends State<SellPage> {
   @override
   Widget build(BuildContext context) {
     var exp = Provider.of<ExpenseProvider>(context, listen: false);
+    var sa = context.watch<SalesProvider>();
 
-    return Consumer<SalesProvider>(
-      builder: (context, sa, child) {
-        return LayoutBuilder(builder: (context, constraints) {
+    return LayoutBuilder(builder: (context, constraints) {
           final isDesktop = constraints.maxWidth > 800;
 
           return Column(
@@ -178,9 +177,7 @@ class _SellPageState extends State<SellPage> {
                               return Dismissible(
                                 key: ValueKey(sa.sellList[index]),
                                 onDismissed: (direction) {
-                                  setState(() {
-                                    sa.sellList.removeAt(index);
-                                  });
+                                  sa.removeItemAt(index);
                                 },
                                 background: Container(
                                   color: Colors.red[100],
@@ -213,9 +210,7 @@ class _SellPageState extends State<SellPage> {
                               return Dismissible(
                                 key: ValueKey(sa.sellList[index]),
                                 onDismissed: (direction) {
-                                  setState(() {
-                                    sa.sellList.removeAt(index);
-                                  });
+                                  sa.removeItemAt(index);
                                 },
                                 background: Container(
                                   color: Colors.red[100],
@@ -430,7 +425,5 @@ class _SellPageState extends State<SellPage> {
             ],
           );
         });
-      },
-    );
   }
 }
