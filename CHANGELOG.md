@@ -2,6 +2,15 @@
 
 All notable production-readiness changes are tracked here.
 
+## 2.4.16
+
+- Fixed monthly loans calculation: credit sales no longer double-counted as payments in `_calculateTotalPayments`.
+- Fixed account statement same filtering bug.
+- Relabeled monthly loans to "صافي ديون هذا الشهر" to clarify negative = net repayment.
+- Added AGENTS.md with standardized commit/push/release workflows for agents.
+- Pre-download Isar native library in CI to fix integration test failures.
+- Tagged all integration tests with `@Tags(['integration'])`.
+
 ## 2.4.15
 
 - Added priceHistory-based profit recalculation: each sale now uses the next restock's buy price instead of the current product buyprice.
