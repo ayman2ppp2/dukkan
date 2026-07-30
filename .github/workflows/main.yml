@@ -23,6 +23,11 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
       - run: flutter pub get
       - run: flutter analyze
+      - name: Pre-download Isar native library
+        run: |
+          if [ ! -f libisar.so ]; then
+            curl -sLo libisar.so https://binaries.isar-community.dev/3.3.2/libisar_linux_x64.so
+          fi
       - run: flutter test
 
   # ─────────── Builds ──────────────────────────────────
