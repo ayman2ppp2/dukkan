@@ -737,9 +737,11 @@ class DB {
     // Add payments
     if (loaner.lastPayment != null) {
       var monthPayments = loaner.lastPayment!.where(
-        (payment) => DateTime.parse(payment.key!).isAfter(
-          DateTime(date.year, date.month, 1, 0),
-        ),
+        (payment) =>
+            (payment.type == null || payment.type == 'payment') &&
+            DateTime.parse(payment.key!).isAfter(
+              DateTime(date.year, date.month, 1, 0),
+            ),
       );
       for (var payment in monthPayments) {
         double amount = double.tryParse(payment.value ?? '0') ?? 0;
@@ -1795,6 +1797,7 @@ class CgetMonthlyloans extends PooledJob<double> {
         return total +
             (loaner.lastPayment ?? []).where((value) {
               if (value.key == null) return false;
+              if (value.type != null && value.type != 'payment') return false;
               try {
                 final paymentDate = DateTime.parse(value.key!);
                 return paymentDate.year == year && paymentDate.month == month;

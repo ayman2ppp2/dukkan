@@ -8,9 +8,18 @@
       "program": "lib/main.dart",
       "args": [
         "--observatory-port=8181",
-        "--devtools-server-address=http://127.0.0.1:8080",
+        "--devtools-server-address=http://127.0.0.1:8080"
       ],
-      "vmArgs": ["-Ddart.developer.ext.enabled=true"],
+      "vmArgs": ["-Ddart.developer.ext.enabled=true"]
     },
-  ],
+    {
+      "name": "Flutter: Debug (hot reload on save)",
+      "type": "flutter",
+      "request": "launch",
+      "program": "lib/main.dart",
+      "env": {
+        "PATH": "/home/ayman/Projects/Flutter/dukkan/.zed/tools/bin:/opt/flutter/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  ]
 }

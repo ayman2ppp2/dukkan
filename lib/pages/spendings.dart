@@ -123,7 +123,7 @@ class _SpendingsState extends State<Spendings> {
                                     FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Text(
-                                        'الديون الشهرية',
+                                        'صافي ديون هذا الشهر',
                                         // style: TextStyle(fontSize: 18),
                                       ),
                                     ),

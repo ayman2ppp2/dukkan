@@ -1,0 +1,41 @@
+#!/bin/sh
+
+SOURCE=$0
+while [ -L "$SOURCE" ]; do
+  source_dir=$(CDPATH= cd -- "$(dirname -- "$SOURCE")" && pwd)
+  source_target=$(readlink "$SOURCE")
+  case $source_target in
+    /*) SOURCE=$source_target ;;
+    *) SOURCE=$source_dir/$source_target ;;
+  esac
+done
+
+SHIM_DIR=$(CDPATH= cd -- "$(dirname -- "$SOURCE")" && pwd)
+CONFIG_DIR=$(CDPATH= cd -- "$SHIM_DIR/.." && pwd)
+
+find_real_flutter() {
+  old_ifs=$IFS
+  IFS=:
+  for directory in $PATH; do
+    [ -n "$directory" ] || directory=.
+    if [ "$directory" != "$SHIM_DIR" ] && [ -x "$directory/flutter" ]; then
+      printf '%s\n' "$directory/flutter"
+      IFS=$old_ifs
+      return 0
+    fi
+  done
+  IFS=$old_ifs
+  return 1
+}
+
+REAL_FLUTTER=${ZED_REAL_FLUTTER:-$(find_real_flutter)}
+if [ -z "$REAL_FLUTTER" ]; then
+  echo "flutter shim: could not find the real Flutter executable" >&2
+  exit 127
+fi
+
+if [ "$1" = "debug_adapter" ]; then
+  ZED_REAL_FLUTTER="$REAL_FLUTTER" exec "$CONFIG_DIR/flutter_dap_hot_reload_proxy.py"
+fi
+
+exec "$REAL_FLUTTER" "$@"
