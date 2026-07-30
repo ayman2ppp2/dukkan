@@ -2,6 +2,16 @@
 
 All notable production-readiness changes are tracked here.
 
+## 2.4.15
+
+- Added priceHistory-based profit recalculation: each sale now uses the next restock's buy price instead of the current product buyprice.
+- Added LoanerComparison chart on StatsPage showing original sell price vs current buy price per loaner.
+- Added yearly inflation rate (نسبة تغير أسعار الشراء) to StatsPage.
+- Consolidated yearly profit, sales, and inflation into a single `CgetYearlyTotals` pooled job.
+- Added `verify_profit.dart` CLI script for manual profit trace verification against the live database.
+- Updated all profit pooled jobs (monthly, daily, daily-of-month, monthly-of-year) to use priceHistory.
+- Unit tests added for `recalculateProfit()` covering empty logs, priceHistory lookups, hot skip, discount, and fallback scenarios.
+
 ## 2.4.7
 
 - Added production GitHub release builds for Android, Windows, and Linux.
