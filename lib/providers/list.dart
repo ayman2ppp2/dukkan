@@ -175,12 +175,29 @@ class Lists extends ChangeNotifier with LanSyncState {
     clearAllCache();
   }
 
-  Future<double> getAverageProfitPercent() async {
-    var temp = await Future.wait([getAllSales(), getAllProfit()]);
-    double profit = temp[1];
-    double price = temp[0];
+  Future<YearlyTotals> getYearlyTotals() {
+    return getCachedCalculation('yearlyTotals', () {
+      Map map = Map();
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
+      return pool.scheduleJob(CgetYearlyTotals(map: map));
+    });
+  }
 
-    return (profit / (price - profit)) * 100;
+  Future<double> getAverageProfitPercent() async {
+    return (await getYearlyTotals()).profitPercent;
+  }
+
+  Future<double> getYearlyInflation() async {
+    return (await getYearlyTotals()).yearlyInflation;
+  }
+
+  Future<double> getAllProfit() {
+    return getYearlyTotals().then((t) => t.yearlyProfit);
+  }
+
+  Future<double> getAllSales() {
+    return getYearlyTotals().then((t) => t.yearlySales);
   }
 
   Future<double> getProfitOfTheMonth() {
@@ -222,25 +239,6 @@ class Lists extends ChangeNotifier with LanSyncState {
     });
   }
 
-  Future<double> getAllProfit() {
-    return getCachedCalculation('totalProfit', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = DateTime.now();
-      return pool.scheduleJob(CgetTotalProfit(map: map));
-    });
-  }
-
-  Future<double> getAllSales() {
-    return getCachedCalculation('allSales', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      return pool.scheduleJob(CgetAllSales(map: map));
-    });
-  }
-
   Future<int> getNumberOfSalesForAproduct({required String key}) {
     return getCachedCalculation('numberOfSalesPerProduct', () {
       Map map = Map();
@@ -269,6 +267,15 @@ class Lists extends ChangeNotifier with LanSyncState {
       map['2'] = chunkSize;
       return pool
           .scheduleJob(CgetSalesPerProduct(chunkSize: chunkSize, map: map));
+    });
+  }
+
+  Future<List<LoanerComparison>> getLoanerComparison() async {
+    return getCachedCalculation('loanerComparison', () {
+      Map map = Map();
+      map['1'] = _getRootIsolateToken() ??
+          (throw StateError('RootIsolateToken not available'));
+      return pool.scheduleJob(CgetLoanerComparison(map: map));
     });
   }
 

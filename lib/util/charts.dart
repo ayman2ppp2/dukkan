@@ -105,19 +105,15 @@ class _CircularChartState extends State<CircularChart>
   }
 }
 
-class BarChart extends StatefulWidget {
-  const BarChart({super.key});
+class LoanerChart extends StatefulWidget {
+  const LoanerChart({super.key});
 
   @override
-  State<BarChart> createState() => _BarChartState();
+  State<LoanerChart> createState() => _LoanerChartState();
 }
 
-class _BarChartState extends State<BarChart>
+class _LoanerChartState extends State<LoanerChart>
     with AutomaticKeepAliveClientMixin {
-  final ScrollController _scrollController = ScrollController();
-  Future<List<ProdStats>>? future;
-  int _chunkSize = 20;
-  bool _isLoadingMore = false;
   bool _tooltipReady = false;
 
   @override
@@ -126,102 +122,84 @@ class _BarChartState extends State<BarChart>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _tooltipReady = true);
     });
-    future = Provider.of<Lists>(context, listen: false)
-        .getSalesPerProduct(_chunkSize);
-
-    // Listen to scroll events to load more logs when reaching the bottom
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels ==
-              _scrollController.position.maxScrollExtent &&
-          !_isLoadingMore) {
-        _loadMoreData();
-      }
-    });
-  }
-
-  // Method to increase the chunk size and trigger a new stream
-  void _loadMoreData() {
-    Provider.of<Lists>(context, listen: false).clearCache('salesPerProduct');
-    setState(() {
-      _isLoadingMore = true;
-      _chunkSize += 50; // Increase the chunk size by 50 logs
-      future = Provider.of<Lists>(context, listen: false)
-          .getSalesPerProduct(_chunkSize);
-    });
-
-    future!.then((value) {
-      setState(() {
-        _isLoadingMore = false;
-      });
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return SingleChildScrollView(
-      controller: _scrollController,
-      physics: ClampingScrollPhysics(),
-      child: FutureBuilder(
-          future: future,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return const Text(UserSafeMessages.loadFailed);
-            }
-            if (snapshot.hasData) {
-              final stats = snapshot.data!;
-              final chartHeight = max(300.0, stats.length * 30.0);
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    height: chartHeight,
-                    child: ExcludeSemantics(
-                      excluding: true,
-                      child: RepaintBoundary(
-                        child: SfCartesianChart(
-                          title: ChartTitle(
-                              text: 'المبيعات لكل منتج',
-                              alignment: ChartAlignment.near),
-                          primaryXAxis: CategoryAxis(),
-                          primaryYAxis: NumericAxis(
-                            numberFormat: NumberFormat.compact(),
-                            isVisible: true,
-                          ),
-                          tooltipBehavior:
-                              TooltipBehavior(enable: _tooltipReady),
-                          series: <CartesianSeries>[
-                            StackedBarSeries<ProdStats, String>(
-                              animationDuration: 0,
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.brown,
-                              dataSource: snapshot.data!,
-                              xValueMapper: (ProdStats data, _) => data.name,
-                              yValueMapper: (ProdStats data, _) => data.count,
-                            ),
-                          ],
-                        ),
+    return FutureBuilder(
+      future: context.read<Lists>().getLoanerComparison(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Text(UserSafeMessages.loadFailed);
+        }
+        if (snapshot.hasData) {
+          final data = snapshot.data!;
+          if (data.isEmpty) {
+            return Center(
+              child: Text(
+                'لا توجد قروض',
+                style: TextStyle(color: Colors.brown[900]),
+              ),
+            );
+          }
+          final chartHeight = max(300.0, data.length * 50.0);
+          return SizedBox(
+            height: chartHeight,
+            child: ExcludeSemantics(
+              excluding: true,
+              child: RepaintBoundary(
+                child: SfCartesianChart(
+                  title: ChartTitle(
+                    text: 'مقارنة القروض لهذا الشهر',
+                    alignment: ChartAlignment.near,
+                  ),
+                  primaryXAxis: CategoryAxis(
+                    labelRotation: 45,
+                  ),
+                  primaryYAxis: NumericAxis(
+                    numberFormat: NumberFormat.compact(),
+                    isVisible: true,
+                  ),
+                  tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
+                  series: <CartesianSeries>[
+                    ColumnSeries<LoanerComparison, String>(
+                      name: 'سعر البيع الأصلي',
+                      animationDuration: 0,
+                      color: Colors.brown,
+                      dataSource: data,
+                      xValueMapper: (LoanerComparison d, _) => d.name,
+                      yValueMapper: (LoanerComparison d, _) => d.loanedAmount,
+                      dataLabelSettings: const DataLabelSettings(
+                        isVisible: true,
+                        labelAlignment: ChartDataLabelAlignment.top,
                       ),
                     ),
-                  ),
-                  _isLoadingMore
-                      ? Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Center(
-                              child: SpinKitChasingDots(
-                            color: Colors.white,
-                          )))
-                      : const SizedBox.shrink(),
-                ],
-              );
-            } else {
-              return Center(
-                child: SpinKitChasingDots(
-                  color: Colors.white,
+                    ColumnSeries<LoanerComparison, String>(
+                      name: 'سعر الشراء الحالي',
+                      animationDuration: 0,
+                      color: Colors.red[400],
+                      dataSource: data,
+                      xValueMapper: (LoanerComparison d, _) => d.name,
+                      yValueMapper: (LoanerComparison d, _) => d.currentValue,
+                      dataLabelSettings: const DataLabelSettings(
+                        isVisible: true,
+                        labelAlignment: ChartDataLabelAlignment.top,
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            }
-          }),
+              ),
+            ),
+          );
+        } else {
+          return Center(
+            child: SpinKitChasingDots(
+              color: Colors.white,
+            ),
+          );
+        }
+      },
     );
   }
 
@@ -230,7 +208,6 @@ class _BarChartState extends State<BarChart>
 
   @override
   void dispose() {
-    _scrollController.dispose();
     super.dispose();
   }
 }

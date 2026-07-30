@@ -71,7 +71,7 @@ class _StatsPageState extends State<StatsPage> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(10.0),
                                   child: Text(
-                                    ' الارباح الكلية : \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                    ' أرباح السنة : \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
                                     //textDirection: TextDirection.rtl,
                                   ),
                                 ),
@@ -92,8 +92,8 @@ class _StatsPageState extends State<StatsPage> {
                             child: Sitem(
                               child: Padding(
                                 padding: const EdgeInsets.all(10.0),
-                                child: Text(
-                                  'المبيعات الكلية  : \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                  child: Text(
+                                    ' مبيعات السنة  : \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
                                   //textDirection: TextDirection.rtl,
                                 ),
                               ),
@@ -212,9 +212,9 @@ class _StatsPageState extends State<StatsPage> {
                     ),
                   ],
                 ),
-                // متوسط الارباح
+                // متوسط الارباح والتضخم
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     FutureBuilder(
                       future: li.getAverageProfitPercent(),
@@ -225,9 +225,32 @@ class _StatsPageState extends State<StatsPage> {
                             child: Sitem(
                               child: Padding(
                                 padding: const EdgeInsets.all(10.0),
-                                child: Text(
-                                  ' متوسط نسبة الأرباح العامة: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
+                                  child: Text(
+                                    ' متوسط نسبة أرباح السنة: \n ${NumberFormat.simpleCurrency().format(snapshot.data)}',
                                   ////textDirection: TextDirection.rtl,
+                                ),
+                              ),
+                            ),
+                          );
+                        } else {
+                          return SpinKitChasingDots(
+                            color: Colors.brown[200],
+                          );
+                        }
+                      },
+                    ),
+                    FutureBuilder(
+                      future: li.getYearlyInflation(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final value = snapshot.data as double;
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Sitem(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: Text(
+                                  'نسبة تغير أسعار الشراء: \n ${value.toStringAsFixed(1)}%',
                                 ),
                               ),
                             ),
@@ -254,7 +277,7 @@ class _StatsPageState extends State<StatsPage> {
                         child: CircularChart(),
                       )),
                 ),
-                // total sales per product
+                // loaner comparison chart
                 Padding(
                   padding: const EdgeInsets.all(10.0),
                   child: Container(
@@ -264,7 +287,7 @@ class _StatsPageState extends State<StatsPage> {
                           borderRadius: BorderRadius.circular(12)),
                       child: ChangeNotifierProvider.value(
                         value: li,
-                        child: BarChart(),
+                        child: LoanerChart(),
                       )),
                 ),
                 // total sales for each day in the month
