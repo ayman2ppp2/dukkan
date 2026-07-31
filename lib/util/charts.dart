@@ -144,6 +144,10 @@ class _LoanerChartState extends State<LoanerChart>
             );
           }
           final chartHeight = max(300.0, data.length * 50.0);
+          final maxValue = data.fold<double>(
+            0,
+            (m, d) => max(m, max(d.loanedAmount, d.currentValue)),
+          );
           return SizedBox(
             height: chartHeight,
             child: ExcludeSemantics(
@@ -151,31 +155,33 @@ class _LoanerChartState extends State<LoanerChart>
               child: RepaintBoundary(
                 child: SfCartesianChart(
                   title: ChartTitle(
-                    text: 'مقارنة القروض لهذا الشهر',
+                    text: 'مقارنة القروض (آخر ٤٥ يوم)',
                     alignment: ChartAlignment.near,
                   ),
-                  primaryXAxis: CategoryAxis(
-                    labelRotation: 45,
-                  ),
+                  primaryXAxis: CategoryAxis(),
                   primaryYAxis: NumericAxis(
                     numberFormat: NumberFormat.compact(),
                     isVisible: true,
+                    maximum: maxValue <= 0 ? 1 : maxValue * 1.25,
                   ),
                   tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
                   series: <CartesianSeries>[
-                    ColumnSeries<LoanerComparison, String>(
+                    BarSeries<LoanerComparison, String>(
                       name: 'سعر البيع الأصلي',
                       animationDuration: 0,
                       color: Colors.brown,
                       dataSource: data,
                       xValueMapper: (LoanerComparison d, _) => d.name,
                       yValueMapper: (LoanerComparison d, _) => d.loanedAmount,
+                      dataLabelMapper: (LoanerComparison d, _) =>
+                          '${NumberFormat.simpleCurrency().format(d.loanedAmount)}\n'
+                          '${_formatGainLoss(d.loanedAmount - d.currentValue)}',
                       dataLabelSettings: const DataLabelSettings(
                         isVisible: true,
-                        labelAlignment: ChartDataLabelAlignment.top,
+                        labelAlignment: ChartDataLabelAlignment.outer,
                       ),
                     ),
-                    ColumnSeries<LoanerComparison, String>(
+                    BarSeries<LoanerComparison, String>(
                       name: 'سعر الشراء الحالي',
                       animationDuration: 0,
                       color: Colors.red[400],
@@ -184,7 +190,7 @@ class _LoanerChartState extends State<LoanerChart>
                       yValueMapper: (LoanerComparison d, _) => d.currentValue,
                       dataLabelSettings: const DataLabelSettings(
                         isVisible: true,
-                        labelAlignment: ChartDataLabelAlignment.top,
+                        labelAlignment: ChartDataLabelAlignment.outer,
                       ),
                     ),
                   ],
@@ -201,6 +207,14 @@ class _LoanerChartState extends State<LoanerChart>
         }
       },
     );
+  }
+
+  String _formatGainLoss(double diff) {
+    final formatted = NumberFormat.simpleCurrency().format(diff.abs());
+    if (diff >= 0) {
+      return '▲ ربح $formatted';
+    }
+    return '▼ خسارة $formatted';
   }
 
   @override

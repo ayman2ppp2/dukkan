@@ -2011,12 +2011,12 @@ class CgetLoanerComparison extends PooledJob<List<LoanerComparison>> {
       }
 
       final now = DateTime.now();
-      final monthAgo = DateTime(now.year, now.month - 1, now.day);
+      final windowStart = loanComparisonWindowStart(now);
       final loaners = await isar.loaners.where().findAll();
       final allLoanedLogs = await isar.logs
           .filter()
           .loanedEqualTo(true)
-          .dateBetween(monthAgo, now)
+          .dateBetween(windowStart, now)
           .findAll();
       final allProducts = await isar.products.where().findAll();
       final productMap = <int, Product>{};
@@ -2024,45 +2024,68 @@ class CgetLoanerComparison extends PooledJob<List<LoanerComparison>> {
         productMap[p.id] = p;
       }
 
-      final List<LoanerComparison> results = [];
-
-      for (final loaner in loaners) {
-        final loanerLogs =
-            allLoanedLogs.where((l) => l.loanerID == loaner.ID).toList();
-        if (loanerLogs.isEmpty) continue;
-
-        double loanedAmount = 0;
-        double currentValue = 0;
-
-        for (final log in loanerLogs) {
-          for (final ep in log.products) {
-            final count = ep.count ?? 0;
-            loanedAmount += (ep.sellPrice ?? 0) * count;
-
-            final buyPrice = (ep.productId != null && ep.productId! > 0)
-                ? (productMap[ep.productId]?.buyprice ?? (ep.buyPrice ?? 0))
-                : (ep.buyPrice ?? 0);
-            currentValue += buyPrice * count;
-          }
-        }
-
-        if (loanedAmount == 0 && currentValue == 0) continue;
-
-        results.add(LoanerComparison(
-          name: loaner.name ?? 'Unknown',
-          loanedAmount: loanedAmount,
-          currentValue: currentValue,
-        ));
-      }
-
-      results.sort((a, b) => b.loanedAmount.compareTo(a.loanedAmount));
-      return results;
+      return computeLoanerComparison(
+        loaners: loaners,
+        loanedLogs: allLoanedLogs,
+        productMap: productMap,
+      );
     } catch (e) {
       AppLogger.warning('Loaner comparison calculation failed',
           data: {'area': 'stats.loaner_comparison'});
       return [];
     }
   }
+}
+
+@visibleForTesting
+DateTime loanComparisonWindowStart(DateTime now) {
+  return now.subtract(const Duration(days: 45));
+}
+
+@visibleForTesting
+List<LoanerComparison> computeLoanerComparison({
+  required Iterable<Loaner> loaners,
+  required Iterable<Log> loanedLogs,
+  required Map<int, Product> productMap,
+}) {
+  final logsByLoaner = <int, List<Log>>{};
+  for (final log in loanedLogs) {
+    final id = log.loanerID;
+    if (id == null) continue;
+    logsByLoaner.putIfAbsent(id, () => []).add(log);
+  }
+
+  final results = <LoanerComparison>[];
+  for (final loaner in loaners) {
+    final loanerLogs = logsByLoaner[loaner.ID];
+    if (loanerLogs == null || loanerLogs.isEmpty) continue;
+
+    double loanedAmount = 0;
+    double currentValue = 0;
+
+    for (final log in loanerLogs) {
+      for (final ep in log.products) {
+        final count = ep.count ?? 0;
+        loanedAmount += (ep.sellPrice ?? 0) * count;
+
+        final buyPrice = (ep.productId != null && ep.productId! > 0)
+            ? (productMap[ep.productId]?.buyprice ?? (ep.buyPrice ?? 0))
+            : (ep.buyPrice ?? 0);
+        currentValue += buyPrice * count;
+      }
+    }
+
+    if (loanedAmount == 0 && currentValue == 0) continue;
+
+    results.add(LoanerComparison(
+      name: loaner.name ?? 'Unknown',
+      loanedAmount: loanedAmount,
+      currentValue: currentValue,
+    ));
+  }
+
+  results.sort((a, b) => b.loanedAmount.compareTo(a.loanedAmount));
+  return results;
 }
 
 double recalculateProfit(Iterable<Log> logs, Map<int, Product> productMap) {

@@ -517,11 +517,37 @@ class _InPageState extends State<InPage> {
                               return;
                             }
                           }
-                          Emap emap = Emap()
-                            ..buyPrice = widget.buyPrice
-                            ..sellPrice = widget.sellPrice
-                            ..date = DateTime.now();
-                          widget.priceHistory.add(emap);
+                          final unitBuyPrice = widget.weightable
+                              ? buyPrice /
+                                  getWholeUnitNumber(widget.wholeUnitCon.text)
+                                      .toDouble()
+                              : buyPrice;
+                          final unitSellPrice = widget.weightable
+                              ? sellPrice /
+                                  getWholeUnitNumber(widget.wholeUnitCon.text)
+                                      .toDouble()
+                              : sellPrice;
+                          final now = DateTime.now();
+                          final todayIndex = widget.priceHistory.indexWhere(
+                            (e) {
+                              final d = e.date;
+                              return d != null &&
+                                  d.year == now.year &&
+                                  d.month == now.month &&
+                                  d.day == now.day;
+                            },
+                          );
+                          if (todayIndex != -1) {
+                            widget.priceHistory[todayIndex]
+                              ..buyPrice = unitBuyPrice
+                              ..sellPrice = unitSellPrice
+                              ..date = now;
+                          } else {
+                            widget.priceHistory.add(Emap()
+                              ..buyPrice = unitBuyPrice
+                              ..sellPrice = unitSellPrice
+                              ..date = now);
+                          }
                           Product temp2 = Product.named2(
                             id: widget.id!,
                             name: widget.nameCon.text,
