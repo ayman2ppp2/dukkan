@@ -217,13 +217,6 @@ class _LoanerChartState extends State<LoanerChart>
                       dataSource: data,
                       xValueMapper: (LoanerComparison d, _) => d.name,
                       yValueMapper: (LoanerComparison d, _) => d.loanedAmount,
-                      dataLabelMapper: (LoanerComparison d, _) =>
-                          '${NumberFormat.simpleCurrency().format(d.loanedAmount)}\n'
-                          '${_formatGainLoss(d.loanedAmount - d.currentValue)}',
-                      dataLabelSettings: const DataLabelSettings(
-                        isVisible: true,
-                        labelAlignment: ChartDataLabelAlignment.outer,
-                      ),
                     ),
                     BarSeries<LoanerComparison, String>(
                       name: 'سعر الشراء الحالي',
@@ -232,10 +225,6 @@ class _LoanerChartState extends State<LoanerChart>
                       dataSource: data,
                       xValueMapper: (LoanerComparison d, _) => d.name,
                       yValueMapper: (LoanerComparison d, _) => d.currentValue,
-                      dataLabelSettings: const DataLabelSettings(
-                        isVisible: true,
-                        labelAlignment: ChartDataLabelAlignment.outer,
-                      ),
                     ),
                   ],
                 ),
