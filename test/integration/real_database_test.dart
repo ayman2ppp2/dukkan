@@ -1,3 +1,6 @@
+@Tags(['integration'])
+library;
+
 import 'dart:io';
 
 import 'package:dukkan/providers/loan_provider.dart';

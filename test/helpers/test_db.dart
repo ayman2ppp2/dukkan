@@ -21,10 +21,7 @@ class TestDbHandle {
 
 Future<TestDbHandle> openTestDb({String? name}) async {
   if (!_isarCoreInitialized) {
-    final localCore = File('libisar.so');
-    if (!await localCore.exists()) {
-      await Isar.initializeIsarCore(download: true);
-    }
+    await Isar.initializeIsarCore(download: !await File('libisar.so').exists());
     _isarCoreInitialized = true;
   }
   final directory = await Directory.systemTemp.createTemp('dukkan_test_db_');

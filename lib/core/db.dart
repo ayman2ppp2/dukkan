@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/core/postgres_connection.dart';
+import 'package:dukkan/util/models/Emap.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Product.dart';
@@ -736,9 +737,11 @@ class DB {
     // Add payments
     if (loaner.lastPayment != null) {
       var monthPayments = loaner.lastPayment!.where(
-        (payment) => DateTime.parse(payment.key!).isAfter(
-          DateTime(date.year, date.month, 1, 0),
-        ),
+        (payment) =>
+            (payment.type == null || payment.type == 'payment') &&
+            DateTime.parse(payment.key!).isAfter(
+              DateTime(date.year, date.month, 1, 0),
+            ),
       );
       for (var payment in monthPayments) {
         double amount = double.tryParse(payment.value ?? '0') ?? 0;
@@ -1191,21 +1194,21 @@ class CgetProfitOfTheMonth extends PooledJob<double> {
           name: 'isarInstance',
         );
       } catch (e) {
-        // print(e);
         isar = await DB.openIsarSafely(dir.path);
       }
-      List<Log> temp = await isar.logs.where().anyId().findAll();
-      temp = temp
-          .where((value) =>
-              value.date.month == DateTime.now().month &&
-              value.date.year == DateTime.now().year)
-          .toList();
-      double profit = 0;
-      for (var log in temp) {
-        profit += log.profit;
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+      final logs = await isar.logs
+          .filter()
+          .dateBetween(startOfMonth, endOfMonth)
+          .findAll();
+      final allProducts = await isar.products.where().findAll();
+      final productMap = <int, Product>{};
+      for (final p in allProducts) {
+        productMap[p.id] = p;
       }
-
-      return profit;
+      return recalculateProfit(logs, productMap);
     } on Exception {
       AppLogger.warning('Monthly profit calculation failed',
           data: {'area': 'stats.monthly_profit'});
@@ -1217,6 +1220,7 @@ class CgetProfitOfTheMonth extends PooledJob<double> {
 class CgetDailyProfit extends PooledJob<double> {
   Map map;
   CgetDailyProfit({required this.map});
+
   @override
   Future<double> job() async {
     try {
@@ -1230,21 +1234,21 @@ class CgetDailyProfit extends PooledJob<double> {
           name: 'isarInstance',
         );
       } catch (e) {
-        // print(e);
         isar = await DB.openIsarSafely(dir.path);
       }
-      List<Log> temp = await isar.logs.where().anyId().findAll();
-      double profit = 0;
-      var time = map['2'];
-      for (var log in temp) {
-        if (log.date.day == time.day &&
-            log.date.month == time.month &&
-            log.date.year == time.year) {
-          profit += log.profit;
-        }
+      final time = map['2'] as DateTime;
+      final startOfDay = DateTime(time.year, time.month, time.day);
+      final endOfDay = DateTime(time.year, time.month, time.day, 23, 59, 59);
+      final logs = await isar.logs
+          .filter()
+          .dateBetween(startOfDay, endOfDay)
+          .findAll();
+      final allProducts = await isar.products.where().findAll();
+      final productMap = <int, Product>{};
+      for (final p in allProducts) {
+        productMap[p.id] = p;
       }
-
-      return profit;
+      return recalculateProfit(logs, productMap);
     } catch (e) {
       AppLogger.warning('Daily profit calculation failed',
           data: {'area': 'stats.daily_profit'});
@@ -1252,7 +1256,6 @@ class CgetDailyProfit extends PooledJob<double> {
     }
   }
 }
-
 class CgetDailySales extends PooledJob<double> {
   Map map;
   CgetDailySales({required this.map});
@@ -1570,52 +1573,31 @@ class CgetDailyProfitOfTheMont extends PooledJob<List<SalesStats>> {
         );
       } catch (e) {
         isar = await DB.openIsarSafely(dir.path);
-        // print(e);
       }
-      DateTime month = map['2'];
+      final month = map['2'] as DateTime;
       final startOfMonth = DateTime(month.year, month.month, 1);
       final endOfMonth = DateTime(month.year, month.month + 1, 0);
-      List<Log> logs = await isar.logs
+      final logs = await isar.logs
           .filter()
           .dateBetween(startOfMonth, endOfMonth)
           .sortByDateDesc()
           .findAll();
-      List<SalesStats> result = [];
-      // // List<BcLog> temp = map['1'];
-      // // temp.sort(
-      // //   (a, b) => a.date.compareTo(b.date),
-      // // );
-      // // temp = temp.reversed.toList();
-      // for (var log in temp) {
-      //   if (tt.day != log.date.day) {
-      //     result.add(SalesStats(
-      //       date: log.date,
-      //       sales: getDailySales(log.date),
-      //     ));
-      //     tt = log.date;
-      //   }
-      // }
-      // Set<SalesStats> temp = {};
-      Map<String, double> dailySales = {};
-
-      for (var receipt in logs) {
-        String date =
-            "${receipt.date.year}-${receipt.date.month.toString().padLeft(2, '0')}-${receipt.date.day.toString().padLeft(2, '0')}";
-
-        if (dailySales.containsKey(date)) {
-          double temp1 = dailySales[date]!;
-          temp1 += receipt.profit;
-          dailySales[date] = temp1;
-        } else {
-          dailySales[date] = receipt.profit;
-        }
+      final allProducts = await isar.products.where().findAll();
+      final productMap = <int, Product>{};
+      for (final p in allProducts) {
+        productMap[p.id] = p;
       }
-      result = dailySales.entries
+
+      final Map<String, double> dailySales = {};
+      for (final log in logs) {
+        final date =
+            "${log.date.year}-${log.date.month.toString().padLeft(2, '0')}-${log.date.day.toString().padLeft(2, '0')}";
+        dailySales[date] = (dailySales[date] ?? 0) + recalculateProfit([log], productMap);
+      }
+      return dailySales.entries
           .map((e) => SalesStats(date: DateTime.parse(e.key), sales: e.value))
           .toList();
-      return result;
     } catch (e) {
-      // debugPrint(e.toString() + 'here');
       return [];
     }
   }
@@ -1769,44 +1751,29 @@ class CgetMonthlyProfitsOfTheyear extends PooledJob<List<SalesStats>> {
       } catch (e) {
         isar = await DB.openIsarSafely(dir.path);
       }
-      List<Log> temp = await isar.logs.where().anyId().findAll();
-      double getMonthlyProfits(DateTime time) {
-        // List<BcLog> temp = map['2'];
-        double sales = 0;
-        for (var log in temp) {
-          if (log.date.month == time.month && log.date.year == time.year) {
-            sales += log.profit;
-          }
-        }
-
-        return sales;
+      final year = (map['2'] as DateTime).year;
+      final startOfYear = DateTime(year, 1, 1);
+      final endOfYear = DateTime(year, 12, 31, 23, 59, 59);
+      final logs = await isar.logs
+          .filter()
+          .dateBetween(startOfYear, endOfYear)
+          .findAll();
+      final allProducts = await isar.products.where().findAll();
+      final productMap = <int, Product>{};
+      for (final p in allProducts) {
+        productMap[p.id] = p;
       }
 
-      DateTime tt = map['2'];
-      List<SalesStats> result = [];
-      // List<BcLog> temp = map['2'];
-      for (var log in temp) {
-        if (log.date.year == map['2'].year) {
-          if (tt.month == log.date.month) {
-            continue;
-          } else {
-            result.add(
-              SalesStats(
-                date: log.date,
-                sales: getMonthlyProfits(log.date),
-              ),
-            );
-            if (log.date.compareTo(tt) != 0) {
-              tt = log.date;
-            }
-          }
-        }
+      final Map<String, double> monthlySales = {};
+      for (final log in logs) {
+        final key = "${log.date.year}-${log.date.month.toString().padLeft(2, '0')}";
+        monthlySales[key] = (monthlySales[key] ?? 0) + recalculateProfit([log], productMap);
       }
-      // print(result);
-      result.sort(
-        (a, b) => a.date.compareTo(b.date),
-      );
-      result = result.reversed.toList();
+      final result = monthlySales.entries
+          .map((e) => SalesStats(
+              date: DateTime.parse("${e.key}-01"), sales: e.value))
+          .toList();
+      result.sort((a, b) => b.date.compareTo(a.date));
       return result;
     } catch (e) {
       AppLogger.warning('Monthly profit series calculation failed',
@@ -1830,6 +1797,7 @@ class CgetMonthlyloans extends PooledJob<double> {
         return total +
             (loaner.lastPayment ?? []).where((value) {
               if (value.key == null) return false;
+              if (value.type != null && value.type != 'payment') return false;
               try {
                 final paymentDate = DateTime.parse(value.key!);
                 return paymentDate.year == year && paymentDate.month == month;
@@ -2012,6 +1980,192 @@ class CgetDailyloans extends PooledJob<double> {
       AppLogger.warning('Daily loans calculation failed',
           data: {'area': 'stats.daily_loans'});
       return -1;
+    }
+  }
+}
+
+class CgetLoanerComparison extends PooledJob<List<LoanerComparison>> {
+  Map map;
+  CgetLoanerComparison({required this.map});
+
+  @override
+  Future<List<LoanerComparison>> job() async {
+    try {
+      BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
+      final dir = await getApplicationDocumentsDirectory();
+      Isar isar;
+      try {
+        isar = await Isar.open(
+          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+          directory: dir.path,
+          name: 'isarInstance',
+        );
+      } catch (e) {
+        final existing = await Isar.getInstance('isarInstance');
+        if (existing == null) {
+          AppLogger.warning('No Isar instance available',
+              data: {'area': 'stats.loaner_comparison'});
+          return [];
+        }
+        isar = existing;
+      }
+
+      final now = DateTime.now();
+      final monthAgo = DateTime(now.year, now.month - 1, now.day);
+      final loaners = await isar.loaners.where().findAll();
+      final allLoanedLogs = await isar.logs
+          .filter()
+          .loanedEqualTo(true)
+          .dateBetween(monthAgo, now)
+          .findAll();
+      final allProducts = await isar.products.where().findAll();
+      final productMap = <int, Product>{};
+      for (final p in allProducts) {
+        productMap[p.id] = p;
+      }
+
+      final List<LoanerComparison> results = [];
+
+      for (final loaner in loaners) {
+        final loanerLogs =
+            allLoanedLogs.where((l) => l.loanerID == loaner.ID).toList();
+        if (loanerLogs.isEmpty) continue;
+
+        double loanedAmount = 0;
+        double currentValue = 0;
+
+        for (final log in loanerLogs) {
+          for (final ep in log.products) {
+            final count = ep.count ?? 0;
+            loanedAmount += (ep.sellPrice ?? 0) * count;
+
+            final buyPrice = (ep.productId != null && ep.productId! > 0)
+                ? (productMap[ep.productId]?.buyprice ?? (ep.buyPrice ?? 0))
+                : (ep.buyPrice ?? 0);
+            currentValue += buyPrice * count;
+          }
+        }
+
+        if (loanedAmount == 0 && currentValue == 0) continue;
+
+        results.add(LoanerComparison(
+          name: loaner.name ?? 'Unknown',
+          loanedAmount: loanedAmount,
+          currentValue: currentValue,
+        ));
+      }
+
+      results.sort((a, b) => b.loanedAmount.compareTo(a.loanedAmount));
+      return results;
+    } catch (e) {
+      AppLogger.warning('Loaner comparison calculation failed',
+          data: {'area': 'stats.loaner_comparison'});
+      return [];
+    }
+  }
+}
+
+double recalculateProfit(Iterable<Log> logs, Map<int, Product> productMap) {
+  double total = 0;
+  for (final log in logs) {
+    double subtotal = 0;
+    for (final ep in log.products) {
+      if (ep.hot == true) continue;
+      double buyPrice;
+      final product = (ep.productId != null && ep.productId! > 0)
+          ? productMap[ep.productId]
+          : null;
+      if (product != null) {
+        Emap? next;
+        for (final entry in product.priceHistory) {
+          if (entry.date != null && !entry.date!.isBefore(log.date)) {
+            if (next == null || entry.date!.isBefore(next.date!)) {
+              next = entry;
+            }
+          }
+        }
+        buyPrice = next?.buyPrice ?? product.buyprice ?? ep.buyPrice ?? 0;
+      } else {
+        buyPrice = ep.buyPrice ?? 0;
+      }
+      subtotal += ((ep.sellPrice ?? 0) - buyPrice) * (ep.count ?? 0);
+    }
+    total += subtotal - log.discount;
+  }
+  return total;
+}
+
+class CgetYearlyTotals extends PooledJob<YearlyTotals> {
+  Map map;
+  CgetYearlyTotals({required this.map});
+
+  @override
+  Future<YearlyTotals> job() async {
+    try {
+      BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
+      final dir = await getApplicationDocumentsDirectory();
+      Isar isar;
+      try {
+        isar = await Isar.open(
+          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
+          directory: dir.path,
+          name: 'isarInstance',
+        );
+      } catch (e) {
+        final existing = await Isar.getInstance('isarInstance');
+        if (existing == null) {
+          AppLogger.warning('No Isar instance available',
+              data: {'area': 'stats.yearly_totals'});
+          return YearlyTotals(yearlyProfit: 0, yearlySales: 0);
+        }
+        isar = existing;
+      }
+
+      final now = DateTime.now();
+      final startOfYear = DateTime(now.year, 1, 1);
+      final endOfYear = DateTime(now.year, 12, 31, 23, 59, 59);
+
+      final logs = await isar.logs
+          .filter()
+          .dateBetween(startOfYear, endOfYear)
+          .findAll();
+      final allProducts = await isar.products.where().findAll();
+      final productMap = <int, Product>{};
+      for (final p in allProducts) {
+        productMap[p.id] = p;
+      }
+
+      final yearlyProfit = recalculateProfit(logs, productMap);
+      double yearlySales = 0;
+      for (final log in logs) {
+        yearlySales += log.price;
+      }
+
+      double totalInflation = 0;
+      int inflationCount = 0;
+      for (final p in allProducts) {
+        if (p.priceHistory.isEmpty) continue;
+        Emap? beforeYear;
+        for (final entry in p.priceHistory) {
+          if (entry.date != null && !entry.date!.isAfter(startOfYear)) {
+            if (beforeYear == null || entry.date!.isAfter(beforeYear.date!)) {
+              beforeYear = entry;
+            }
+          }
+        }
+        if (beforeYear?.buyPrice == null || beforeYear!.buyPrice == 0) continue;
+        final currentPrice = p.buyprice;
+        if (currentPrice == null || currentPrice == 0) continue;
+        totalInflation += ((currentPrice - beforeYear.buyPrice!) / beforeYear.buyPrice!) * 100;
+        inflationCount++;
+      }
+      final yearlyInflation = inflationCount > 0 ? totalInflation / inflationCount : 0.0;
+
+      return YearlyTotals(yearlyProfit: yearlyProfit, yearlySales: yearlySales, yearlyInflation: yearlyInflation);
+    } catch (e) {
+      AppLogger.warning('Yearly totals calculation failed',
+          data: {'area': 'stats.yearly_totals'});
+      return YearlyTotals(yearlyProfit: 0, yearlySales: 0);
     }
   }
 }

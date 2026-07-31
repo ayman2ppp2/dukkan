@@ -1,7 +1,13 @@
-// Project-local debug tasks
-//
-// For more documentation on how to configure debug tasks,
-// see: https://zed.dev/docs/debugger
 [
-  
+  {
+    "label": "Debug Flutter app (hot reload on save)",
+    "adapter": "Dart",
+    "type": "flutter",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "request": "launch",
+    "program": "lib/main.dart",
+    "env": {
+      "PATH": "/home/ayman/Projects/Flutter/dukkan/.zed/tools/bin:/opt/flutter/bin:/usr/local/bin:/usr/bin:/bin"
+    }
+  }
 ]

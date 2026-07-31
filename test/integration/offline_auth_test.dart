@@ -1,3 +1,6 @@
+@Tags(['integration'])
+library;
+
 import 'package:appwrite/enums.dart';
 import 'package:dukkan/providers/onlineProvider.dart';
 import 'package:flutter/services.dart';
