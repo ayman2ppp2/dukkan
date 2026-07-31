@@ -164,7 +164,51 @@ class _LoanerChartState extends State<LoanerChart>
                     isVisible: true,
                     maximum: maxValue <= 0 ? 1 : maxValue * 1.25,
                   ),
-                  tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
+                  tooltipBehavior: TooltipBehavior(
+                    enable: _tooltipReady,
+                    builder: (dynamic data, dynamic point, dynamic series,
+                        int pointIndex, int seriesIndex) {
+                      final d = data as LoanerComparison;
+                      final diff = d.loanedAmount - d.currentValue;
+                      return Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.brown[700],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              d.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'بيع: ${NumberFormat.simpleCurrency().format(d.loanedAmount)}',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            Text(
+                              'شراء: ${NumberFormat.simpleCurrency().format(d.currentValue)}',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            Text(
+                              _formatGainLoss(diff),
+                              style: TextStyle(
+                                color: diff >= 0
+                                    ? Colors.greenAccent
+                                    : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   series: <CartesianSeries>[
                     BarSeries<LoanerComparison, String>(
                       name: 'سعر البيع الأصلي',
