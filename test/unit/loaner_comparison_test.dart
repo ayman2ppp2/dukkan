@@ -49,6 +49,7 @@ EmbeddedProduct _makeEmbedded({
   required double buyPrice,
   required double sellPrice,
   required int count,
+  bool hot = false,
 }) {
   final ep = EmbeddedProduct();
   ep.productId = productId;
@@ -56,7 +57,7 @@ EmbeddedProduct _makeEmbedded({
   ep.buyPrice = buyPrice;
   ep.sellPrice = sellPrice;
   ep.count = count;
-  ep.hot = false;
+  ep.hot = hot;
   return ep;
 }
 
@@ -366,6 +367,34 @@ void main() {
 
       expect(result.first.loanedAmount, 200);
       expect(result.first.currentValue, 50);
+    });
+
+    test('skips hot products from the current value only', () {
+      final product = _makeProduct(id: 1, buyPrice: 10);
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 260);
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 1,
+            hot: true,
+          ),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [log],
+        productMap: {1: product, 2: _makeProduct(id: 2, buyPrice: 100)},
+      );
+
+      expect(result.first.loanedAmount, (30 * 2) + (200 * 1));
+      expect(result.first.currentValue, 20);
     });
 
     test('loaner with no loaned logs is skipped', () {

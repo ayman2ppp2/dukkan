@@ -2105,6 +2105,7 @@ List<LoanerComparison> computeLoanerComparison({
 
       double logCurrentValue = 0;
       for (final ep in log.products) {
+        if (ep.hot == true) continue;
         final count = ep.count ?? 0;
         final buyPrice = (ep.productId != null && ep.productId! > 0)
             ? (productMap[ep.productId]?.buyprice ?? (ep.buyPrice ?? 0))
