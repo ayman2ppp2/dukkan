@@ -2096,17 +2096,31 @@ List<LoanerComparison> computeLoanerComparison({
 
     double loanedAmount = 0;
     double currentValue = 0;
+    var remaining = loaner.balance ?? 0;
 
-    for (final log in loanerLogs) {
-      loanedAmount += log.price;
+    final sorted = [...loanerLogs]..sort((a, b) => b.date.compareTo(a.date));
+    for (final log in sorted) {
+      final price = log.price;
+      if (price <= 0) continue;
 
+      double logCurrentValue = 0;
       for (final ep in log.products) {
         final count = ep.count ?? 0;
         final buyPrice = (ep.productId != null && ep.productId! > 0)
             ? (productMap[ep.productId]?.buyprice ?? (ep.buyPrice ?? 0))
             : (ep.buyPrice ?? 0);
-        currentValue += buyPrice * count;
+        logCurrentValue += buyPrice * count;
       }
+
+      if (remaining <= price) {
+        final fraction = remaining / price;
+        loanedAmount += price * fraction;
+        currentValue += logCurrentValue * fraction;
+        break;
+      }
+      loanedAmount += price;
+      currentValue += logCurrentValue;
+      remaining -= price;
     }
 
     if (loanedAmount == 0 && currentValue == 0) continue;

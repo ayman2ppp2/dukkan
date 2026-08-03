@@ -231,7 +231,7 @@ void main() {
     test('uses the log price for loaned amount and buy price for current value',
         () {
       final product = _makeProduct(id: 1, buyPrice: 10);
-      final loaner = _makeLoaner(id: 5, name: 'Ahmed');
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 150);
       final log = _makeLoanedLog(
         loanerId: 5,
         date: DateTime(2026, 5, 10),
@@ -257,7 +257,7 @@ void main() {
 
     test('loaner balance is deducted from the log price', () {
       final product = _makeProduct(id: 1, buyPrice: 10);
-      final loaner = _makeLoaner(id: 5, name: 'Ahmed');
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 50);
       final log = _makeLoanedLog(
         loanerId: 5,
         date: DateTime(2026, 5, 10),
@@ -279,7 +279,7 @@ void main() {
     });
 
     test('missing product in map falls back to receipt buy price snapshot', () {
-      final loaner = _makeLoaner(id: 5, name: 'Ahmed');
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 160);
       final log = _makeLoanedLog(
         loanerId: 5,
         date: DateTime(2026, 5, 10),
@@ -296,6 +296,76 @@ void main() {
 
       expect(result.first.loanedAmount, 40 * 4);
       expect(result.first.currentValue, 15 * 4);
+    });
+
+    test('scales the boundary log to the outstanding balance', () {
+      final product = _makeProduct(id: 1, buyPrice: 10);
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 100);
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 5),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [log],
+        productMap: {1: product},
+      );
+
+      expect(result.first.loanedAmount, 100);
+      expect(result.first.currentValue, 25);
+    });
+
+    test('counts newer logs fully and scales the boundary log', () {
+      final product = _makeProduct(id: 1, buyPrice: 10);
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 100);
+      final newer = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 1),
+        ],
+      );
+      final older = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 4, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 50, count: 6),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [newer, older],
+        productMap: {1: product},
+      );
+
+      expect(result.first.loanedAmount, 100);
+      expect(result.first.currentValue, 22);
+    });
+
+    test('boundary reached exactly uses the full log', () {
+      final product = _makeProduct(id: 1, buyPrice: 10);
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 200);
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 5),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [log],
+        productMap: {1: product},
+      );
+
+      expect(result.first.loanedAmount, 200);
+      expect(result.first.currentValue, 50);
     });
 
     test('loaner with no loaned logs is skipped', () {
@@ -328,8 +398,8 @@ void main() {
     });
 
     test('results are sorted by loaned amount descending', () {
-      final loanerA = _makeLoaner(id: 1, name: 'A');
-      final loanerB = _makeLoaner(id: 2, name: 'B');
+      final loanerA = _makeLoaner(id: 1, name: 'A', balance: 100);
+      final loanerB = _makeLoaner(id: 2, name: 'B', balance: 20);
       final logA = _makeLoanedLog(
         loanerId: 1,
         date: DateTime(2026, 5, 10),
