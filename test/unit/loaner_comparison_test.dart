@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dukkan/core/db.dart'
-    show computeLoanerComparison, loanComparisonWindowStart;
+    show computeLoanerComparison, debtWindowStart;
 import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Product.dart';
@@ -8,6 +8,7 @@ import 'package:dukkan/util/models/Product.dart';
 Loaner _makeLoaner({
   required int id,
   required String name,
+  double balance = 100,
 }) {
   return Loaner.named(
     name: name,
@@ -16,7 +17,7 @@ Loaner _makeLoaner({
     location: '',
     lastPaymentTemp: 0,
     lastPaymentDate: null,
-    balance: 0,
+    balance: balance,
   );
 }
 
@@ -63,13 +64,19 @@ Log _makeLoanedLog({
   required int loanerId,
   required List<EmbeddedProduct> products,
   required DateTime date,
+  double discount = 0,
 }) {
+  final price = products.fold<double>(
+        0,
+        (sum, ep) => sum + ((ep.sellPrice ?? 0) * (ep.count ?? 0)),
+      ) -
+      discount;
   return Log.named2(
-    price: 0,
+    price: price,
     profit: 0,
     date: date,
     products: products,
-    discount: 0,
+    discount: discount,
     loaned: true,
     loanerID: loanerId,
     expense: false,
@@ -78,19 +85,140 @@ Log _makeLoanedLog({
 }
 
 void main() {
-  group('loanComparisonWindowStart', () {
-    test('is exactly 45 days before the given date', () {
-      final now = DateTime(2026, 5, 31);
-      expect(loanComparisonWindowStart(now), DateTime(2026, 4, 16));
+  group('debtWindowStart', () {
+    test('returns null for empty logs', () {
+      expect(debtWindowStart(balance: 100, logsNewestFirst: []), isNull);
     });
 
-    test('does not roll over on month boundaries', () {
-      final now = DateTime(2026, 5, 31);
-      final start = loanComparisonWindowStart(now);
-      final log40DaysBack = now.subtract(const Duration(days: 40));
-      final log50DaysBack = now.subtract(const Duration(days: 50));
-      expect(start.isAfter(log50DaysBack), isTrue);
-      expect(start.isBefore(log40DaysBack), isTrue);
+    test('returns null when balance is not positive', () {
+      final log = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+      expect(debtWindowStart(balance: 0, logsNewestFirst: [log]), isNull);
+    });
+
+    test('returns null when logs do not cover the balance', () {
+      final newer = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+      final older = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 4, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 1),
+        ],
+      );
+      expect(
+        debtWindowStart(balance: 250, logsNewestFirst: [newer, older]),
+        isNull,
+      );
+    });
+
+    test('returns the newest log date when it alone covers the balance', () {
+      final newest = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 2),
+        ],
+      );
+      final older = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 4, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+      expect(
+        debtWindowStart(balance: 50, logsNewestFirst: [newest, older]),
+        newest.date,
+      );
+    });
+
+    test('returns the oldest log date when coverage spans multiple logs', () {
+      final newer = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 2),
+        ],
+      );
+      final older = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 4, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 3),
+        ],
+      );
+      expect(
+        debtWindowStart(balance: 150, logsNewestFirst: [newer, older]),
+        older.date,
+      );
+    });
+
+    test('returns the boundary log when the balance is covered exactly', () {
+      final newest = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 2),
+        ],
+      );
+      final older = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 4, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+      expect(
+        debtWindowStart(balance: 80, logsNewestFirst: [newest, older]),
+        newest.date,
+      );
+    });
+
+    test('skips logs with zero price', () {
+      final zero = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 20),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 0, count: 2),
+        ],
+      );
+      final newest = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 2),
+        ],
+      );
+      expect(
+        debtWindowStart(balance: 50, logsNewestFirst: [zero, newest]),
+        newest.date,
+      );
+    });
+
+    test('discount is included in the log price used for coverage', () {
+      final newest = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 2),
+        ],
+        discount: 30,
+      );
+      expect(
+        debtWindowStart(balance: 50, logsNewestFirst: [newest]),
+        newest.date,
+      );
     });
   });
 
@@ -100,7 +228,7 @@ void main() {
           isEmpty);
     });
 
-    test('aggregates loaned amount at sell price and current value at buy price',
+    test('uses the log price for loaned amount and buy price for current value',
         () {
       final product = _makeProduct(id: 1, buyPrice: 10);
       final loaner = _makeLoaner(id: 5, name: 'Ahmed');
@@ -125,6 +253,29 @@ void main() {
       expect(result.first.name, 'Ahmed');
       expect(result.first.loanedAmount, (30 * 2) + (30 * 3));
       expect(result.first.currentValue, (10 * 2) + (10 * 3));
+    });
+
+    test('loaner balance is deducted from the log price', () {
+      final product = _makeProduct(id: 1, buyPrice: 10);
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed');
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        discount: 10,
+        products: [
+          _makeEmbedded(
+              productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [log],
+        productMap: {1: product},
+      );
+
+      expect(result.first.loanedAmount, 50);
+      expect(result.first.currentValue, 20);
     });
 
     test('missing product in map falls back to receipt buy price snapshot', () {
@@ -154,6 +305,25 @@ void main() {
         loanedLogs: [],
         productMap: {},
       );
+      expect(result, isEmpty);
+    });
+
+    test('loaner with non-positive balance is skipped', () {
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 0);
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 999, buyPrice: 10, sellPrice: 20, count: 5),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [log],
+        productMap: {},
+      );
+
       expect(result, isEmpty);
     });
 

@@ -2010,22 +2010,21 @@ class CgetLoanerComparison extends PooledJob<List<LoanerComparison>> {
         isar = existing;
       }
 
-      final now = DateTime.now();
-      final windowStart = loanComparisonWindowStart(now);
       final loaners = await isar.loaners.where().findAll();
-      final allLoanedLogs = await isar.logs
-          .filter()
-          .loanedEqualTo(true)
-          .dateBetween(windowStart, now)
-          .findAll();
+      final eligible = loaners.where((l) => (l.balance ?? 0) > 0).toList();
       final allProducts = await isar.products.where().findAll();
       final productMap = <int, Product>{};
       for (final p in allProducts) {
         productMap[p.id] = p;
       }
 
+      final allLoanedLogs = <Log>[];
+      for (final loaner in eligible) {
+        allLoanedLogs.addAll(await _loadLoanerDebtTail(isar, loaner));
+      }
+
       return computeLoanerComparison(
-        loaners: loaners,
+        loaners: eligible,
         loanedLogs: allLoanedLogs,
         productMap: productMap,
       );
@@ -2037,9 +2036,43 @@ class CgetLoanerComparison extends PooledJob<List<LoanerComparison>> {
   }
 }
 
+Future<List<Log>> _loadLoanerDebtTail(Isar isar, Loaner loaner,
+    {int batch = 200}) async {
+  final balance = loaner.balance ?? 0;
+  final logs = <Log>[];
+  var offset = 0;
+  while (true) {
+    final chunk = await isar.logs
+        .filter()
+        .loanedEqualTo(true)
+        .loanerIDEqualTo(loaner.ID)
+        .sortByDateDesc()
+        .offset(offset)
+        .limit(batch)
+        .findAll();
+    if (chunk.isEmpty) break;
+    logs.addAll(chunk);
+    if (debtWindowStart(balance: balance, logsNewestFirst: logs) != null) {
+      break;
+    }
+    offset += batch;
+  }
+  return logs;
+}
+
 @visibleForTesting
-DateTime loanComparisonWindowStart(DateTime now) {
-  return now.subtract(const Duration(days: 45));
+DateTime? debtWindowStart({
+  required double balance,
+  required List<Log> logsNewestFirst,
+}) {
+  if (balance <= 0 || logsNewestFirst.isEmpty) return null;
+  var remaining = balance;
+  for (final log in logsNewestFirst) {
+    if (log.price <= 0) continue;
+    remaining -= log.price;
+    if (remaining <= 0) return log.date;
+  }
+  return null;
 }
 
 @visibleForTesting
@@ -2057,6 +2090,7 @@ List<LoanerComparison> computeLoanerComparison({
 
   final results = <LoanerComparison>[];
   for (final loaner in loaners) {
+    if ((loaner.balance ?? 0) <= 0) continue;
     final loanerLogs = logsByLoaner[loaner.ID];
     if (loanerLogs == null || loanerLogs.isEmpty) continue;
 
@@ -2064,10 +2098,10 @@ List<LoanerComparison> computeLoanerComparison({
     double currentValue = 0;
 
     for (final log in loanerLogs) {
+      loanedAmount += log.price;
+
       for (final ep in log.products) {
         final count = ep.count ?? 0;
-        loanedAmount += (ep.sellPrice ?? 0) * count;
-
         final buyPrice = (ep.productId != null && ep.productId! > 0)
             ? (productMap[ep.productId]?.buyprice ?? (ep.buyPrice ?? 0))
             : (ep.buyPrice ?? 0);

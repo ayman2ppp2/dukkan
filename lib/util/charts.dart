@@ -155,7 +155,7 @@ class _LoanerChartState extends State<LoanerChart>
               child: RepaintBoundary(
                 child: SfCartesianChart(
                   title: ChartTitle(
-                    text: 'مقارنة القروض (آخر ٤٥ يوم)',
+                    text: 'مقارنة القروض المستحقة',
                     alignment: ChartAlignment.near,
                   ),
                   primaryXAxis: CategoryAxis(),
