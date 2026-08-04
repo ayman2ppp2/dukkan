@@ -4,6 +4,7 @@ library;
 import 'dart:io';
 
 import 'package:dukkan/providers/loan_provider.dart';
+import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Loaner.dart';
@@ -293,6 +294,70 @@ void main() {
       await handle.db.windows();
       final restored = await handle.db.isar!.products.get(product.id);
       expect(restored!.count, 7);
+    });
+  });
+
+  group('Real receipt edit tests', () {
+    test('hot products restored for editing carry non-null offer fields',
+        () async {
+      final lists = Lists.forTesting(handle.db);
+      final ep = EmbeddedProduct()
+        ..productId = 1
+        ..name = 'Hot'
+        ..buyPrice = 100
+        ..sellPrice = 200
+        ..count = 1
+        ..hot = true;
+
+      final products = lists.embeddedToProduct([ep]);
+
+      final hot = products.single;
+      expect(hot!.hot, isTrue);
+      expect(hot.offer, isNotNull);
+      expect(hot.offerCount, isNotNull);
+      expect(hot.offerPrice, isNotNull);
+      expect(hot.sellPrice, 200);
+    });
+
+    test('edit receipt subtracts hot sell value (not buy value) from balance',
+        () async {
+      final product = await insertProduct(name: 'Sugar', count: 10);
+      final loanerId =
+          await handle.db.insertLoaner(loanerFixture(amount: 500));
+      final normal = EmbeddedProduct()
+        ..productId = product.id
+        ..name = product.name
+        ..buyPrice = product.buyprice
+        ..sellPrice = product.sellPrice
+        ..count = 2
+        ..hot = false;
+      final hot = EmbeddedProduct()
+        ..productId = 0
+        ..name = 'Hot'
+        ..buyPrice = 100
+        ..sellPrice = 200
+        ..count = 1
+        ..hot = true;
+      final log = Log.named2(
+        price: 80,
+        profit: 0,
+        date: DateTime.now(),
+        products: [normal, hot],
+        discount: 0,
+        loaned: true,
+        loanerID: loanerId,
+        expense: false,
+        expenseId: null,
+      );
+      await handle.db.isar!.writeTxn(() async {
+        await handle.db.isar!.logs.put(log);
+      });
+
+      final lists = Lists.forTesting(handle.db);
+      await lists.editReceipt(log.date, log);
+
+      final loaner = await handle.db.isar!.loaners.get(loanerId);
+      expect(loaner!.balance, 220);
     });
   });
 }

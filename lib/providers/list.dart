@@ -136,7 +136,7 @@ class Lists extends ChangeNotifier with LanSyncState {
     List<EmbeddedProduct> products = List.empty(growable: true);
     for (var product in log.products) {
       if (product.hot!) {
-        sum += product.buyPrice! * product.count!;
+        sum += product.sellPrice! * product.count!;
       } else {
         products.add(product);
       }
@@ -621,14 +621,14 @@ class Lists extends ChangeNotifier with LanSyncState {
             name: f.name,
             ownerName: null,
             barcode: null,
-            buyprice: f.buyPrice,
-            sellPrice: f.sellPrice,
-            count: f.count,
+            buyprice: f.buyPrice ?? 0,
+            sellPrice: f.sellPrice ?? 0,
+            count: f.count ?? 0,
             weightable: null,
             wholeUnit: null,
-            offer: null,
-            offerCount: null,
-            offerPrice: null,
+            offer: false,
+            offerCount: 0,
+            offerPrice: 0,
             priceHistory: [],
             endDate: null,
             hot: f.hot,
@@ -656,7 +656,7 @@ class Lists extends ChangeNotifier with LanSyncState {
     List<EmbeddedProduct> products = List.empty(growable: true);
     for (var product in log.products) {
       if (product.hot!) {
-        sum += product.buyPrice! * product.count!;
+        sum += product.sellPrice! * product.count!;
       } else {
         products.add(product);
       }
