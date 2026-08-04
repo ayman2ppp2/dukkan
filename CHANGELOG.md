@@ -2,6 +2,11 @@
 
 All notable production-readiness changes are tracked here.
 
+## 2.4.18
+
+- Inventory page now refreshes deterministically after editing a product: the DB write is awaited before listeners are notified, removing the intermittent stale-tile race.
+- New products added from the inventory page now appear in the grid immediately (insert also notifies inventory listeners after persisting).
+
 ## 2.4.17
 
 - Loaner debt window now counts hot products at sell price (`logLoanedValue`), so the window/current value step correctly.
