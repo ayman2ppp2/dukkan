@@ -413,7 +413,7 @@ class _InPageState extends State<InPage> {
                 // submit
                 Consumer<SalesProvider>(
                   builder: (context, sa, child) => IconButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (widget.index == -1) {
                         if (_validateFields()) {
                           final buyPrice = double.tryParse(widget.buyCon.text);
@@ -485,7 +485,7 @@ class _InPageState extends State<InPage> {
                             return;
                           }
                           Navigator.pop(context);
-                          li.db.insertProducts(products: temp);
+                          li.insertProducts(products: temp);
                         } else {
                           _showErrorDialog(context, 'ادخل قيم صحيحة');
                         }
@@ -589,7 +589,7 @@ class _InPageState extends State<InPage> {
                             _showErrorDialog(context, validationError);
                             return;
                           }
-                          sa.updateProduct(temp2);
+                          await sa.updateProduct(temp2);
                           Navigator.pop(context);
                         } else {
                           _showErrorDialog(context, 'ادخل قيم صحيحة');

@@ -312,10 +312,14 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     return await db.getAllProducts();
   }
 
-  void updateProduct(Product product) {
-    // product.priceHistory.add({DateTime.now(): product.buyprice});
-    db.isar!.writeTxn(() => db.isar!.products.put(product));
-    refreshProductsList();
+  Future<void> updateProduct(Product product) async {
+    await db.isar!.writeTxn(() => db.isar!.products.put(product));
+    await refreshProductsList();
+    onInventoryChanged?.call();
+  }
+
+  Future<void> insertProducts({required List<Product> products}) async {
+    await db.insertProducts(products: products);
     onInventoryChanged?.call();
   }
 

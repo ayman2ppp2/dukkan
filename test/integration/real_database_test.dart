@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:dukkan/providers/loan_provider.dart';
 import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Loaner.dart';
@@ -12,6 +13,7 @@ import 'package:dukkan/util/models/Owner.dart';
 import 'package:dukkan/util/models/Product.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/fixtures.dart';
 import '../helpers/test_db.dart';
@@ -358,6 +360,70 @@ void main() {
 
       final loaner = await handle.db.isar!.loaners.get(loanerId);
       expect(loaner!.balance, 220);
+    });
+  });
+
+  group('Inventory product update refresh', () {
+    late SharedPreferences prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+    });
+
+    test('updateProduct persists before notifying inventory listeners',
+        () async {
+      final product = await insertProduct(name: 'Sugar', count: 10);
+      final sa = SalesProvider.forTesting(db: handle.db, pref: prefs);
+
+      var notified = false;
+      sa.onInventoryChanged = () => notified = true;
+
+      final updated = Product.named2(
+        id: product.id,
+        name: 'Sugar',
+        ownerName: product.ownerName!,
+        barcode: product.barcode ?? '',
+        buyprice: 7,
+        sellPrice: 12,
+        count: 5,
+        weightable: product.weightable ?? false,
+        wholeUnit: product.wholeUnit ?? '',
+        offer: product.offer ?? false,
+        offerCount: product.offerCount ?? 0,
+        offerPrice: product.offerPrice ?? 0,
+        priceHistory: product.priceHistory,
+        endDate: product.endDate ?? DateTime.now(),
+        hot: false,
+      );
+
+      await sa.updateProduct(updated);
+
+      expect(notified, isTrue);
+      final persisted =
+          (await handle.db.isar!.products.get(product.id))!;
+      expect(persisted.buyprice, 7);
+      expect(persisted.sellPrice, 12);
+      expect(persisted.count, 5);
+    });
+
+    test('insertProducts notifies inventory listeners after persisting',
+        () async {
+      final sa = SalesProvider.forTesting(db: handle.db, pref: prefs);
+
+      var notified = false;
+      sa.onInventoryChanged = () => notified = true;
+
+      final product =
+          productFixture(name: 'Rice', count: 3, buyPrice: 5, sellPrice: 8);
+      await sa.insertProducts(products: [product]);
+
+      expect(notified, isTrue);
+      final persisted = await handle.db.isar!.products
+          .where()
+          .nameEqualTo('Rice')
+          .findFirst();
+      expect(persisted, isNotNull);
     });
   });
 }
