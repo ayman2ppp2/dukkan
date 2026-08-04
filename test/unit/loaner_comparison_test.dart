@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dukkan/core/db.dart'
-    show computeLoanerComparison, debtWindowStart;
+    show computeLoanerComparison, debtWindowStart, hotSellValue, logLoanedValue;
 import 'package:dukkan/util/models/Loaner.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Product.dart';
@@ -69,7 +69,8 @@ Log _makeLoanedLog({
 }) {
   final price = products.fold<double>(
         0,
-        (sum, ep) => sum + ((ep.sellPrice ?? 0) * (ep.count ?? 0)),
+        (sum, ep) => sum +
+            ((ep.hot == true ? 0 : ep.sellPrice ?? 0) * (ep.count ?? 0)),
       ) -
       discount;
   return Log.named2(
@@ -221,6 +222,75 @@ void main() {
         newest.date,
       );
     });
+
+    test('counts hot sell value toward the balance coverage', () {
+      final newest = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 1),
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 1,
+            hot: true,
+          ),
+        ],
+      );
+      final older = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 4, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+      expect(
+        debtWindowStart(balance: 100, logsNewestFirst: [newest, older]),
+        newest.date,
+      );
+    });
+
+    test('boundary is reached inside the hot share of a log', () {
+      final newest = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 1),
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 1,
+            hot: true,
+          ),
+        ],
+      );
+      expect(
+        debtWindowStart(balance: 100, logsNewestFirst: [newest]),
+        newest.date,
+      );
+    });
+
+    test('hot-only log (tracked price zero) still covers the balance', () {
+      final newest = _makeLoanedLog(
+        loanerId: 1,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 1,
+            hot: true,
+          ),
+        ],
+      );
+      expect(
+        debtWindowStart(balance: 200, logsNewestFirst: [newest]),
+        newest.date,
+      );
+    });
   });
 
   group('computeLoanerComparison', () {
@@ -369,7 +439,7 @@ void main() {
       expect(result.first.currentValue, 50);
     });
 
-    test('skips hot products from the current value only', () {
+    test('excludes hot products from the comparison but tracks their value', () {
       final product = _makeProduct(id: 1, buyPrice: 10);
       final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 260);
       final log = _makeLoanedLog(
@@ -393,8 +463,135 @@ void main() {
         productMap: {1: product, 2: _makeProduct(id: 2, buyPrice: 100)},
       );
 
-      expect(result.first.loanedAmount, (30 * 2) + (200 * 1));
+      expect(result.first.loanedAmount, 30 * 2);
       expect(result.first.currentValue, 20);
+      expect(hotSellValue(log), 200);
+    });
+
+    test('hot value reconciles tracked debt with the balance', () {
+      final product = _makeProduct(id: 1, buyPrice: 10);
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 260);
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 1,
+            hot: true,
+          ),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [log],
+        productMap: {1: product, 2: _makeProduct(id: 2, buyPrice: 100)},
+      );
+
+      final tracked = result.first.loanedAmount;
+      expect(tracked + hotSellValue(log), loaner.balance);
+    });
+
+    test('hot products size the window and reconcile tracked debt', () {
+      final product = _makeProduct(id: 1, buyPrice: 10);
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 100);
+      final newer = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 40, count: 1),
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 1,
+            hot: true,
+          ),
+        ],
+      );
+      final older = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 4, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [newer, older],
+        productMap: {1: product, 2: _makeProduct(id: 2, buyPrice: 100)},
+      );
+
+      final fraction = 100 / (40 + 200);
+      expect(result.first.loanedAmount, closeTo(40 * fraction, 0.001));
+      expect(result.first.currentValue, closeTo(10 * fraction, 0.001));
+      expect(
+        result.first.loanedAmount + (200 * fraction),
+        closeTo(loaner.balance!, 0.001),
+      );
+    });
+
+    test('hot-only log consumes the window but contributes nothing', () {
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 100);
+      final hotOnly = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 1,
+            hot: true,
+          ),
+        ],
+      );
+      final older = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 4, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [hotOnly, older],
+        productMap: {1: _makeProduct(id: 1, buyPrice: 10)},
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('hot-only log (price zero) is skipped by the chart', () {
+      final loaner = _makeLoaner(id: 5, name: 'Ahmed', balance: 200);
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 1,
+            hot: true,
+          ),
+        ],
+      );
+
+      final result = computeLoanerComparison(
+        loaners: [loaner],
+        loanedLogs: [log],
+        productMap: {},
+      );
+
+      expect(result, isEmpty);
+      expect(hotSellValue(log), 200);
     });
 
     test('loaner with no loaned logs is skipped', () {
@@ -451,6 +648,85 @@ void main() {
       );
 
       expect(result.map((e) => e.name).toList(), ['A', 'B']);
+    });
+  });
+
+  group('hotSellValue', () {
+    test('returns zero for logs without hot products', () {
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+      );
+      expect(hotSellValue(log), 0);
+    });
+
+    test('sums sell value of hot products only', () {
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 3,
+            hot: true,
+          ),
+        ],
+      );
+      expect(hotSellValue(log), 600);
+    });
+
+    test('applies the offer-adjusted sell price snapshot to hot items', () {
+      final ep = _makeEmbedded(
+        productId: 2,
+        buyPrice: 100,
+        sellPrice: 200,
+        count: 1,
+        hot: true,
+      )..sellPrice = 150;
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [ep],
+      );
+      expect(hotSellValue(log), 150);
+    });
+  });
+
+  group('logLoanedValue', () {
+    test('is the tracked price for logs without hot products', () {
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+        ],
+        discount: 10,
+      );
+      expect(logLoanedValue(log), log.price);
+    });
+
+    test('adds the hot sell value to the tracked price', () {
+      final log = _makeLoanedLog(
+        loanerId: 5,
+        date: DateTime(2026, 5, 10),
+        products: [
+          _makeEmbedded(productId: 1, buyPrice: 10, sellPrice: 30, count: 2),
+          _makeEmbedded(
+            productId: 2,
+            buyPrice: 100,
+            sellPrice: 200,
+            count: 3,
+            hot: true,
+          ),
+        ],
+      );
+      expect(logLoanedValue(log), (30 * 2) + (200 * 3));
     });
   });
 }

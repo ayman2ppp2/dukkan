@@ -2068,12 +2068,34 @@ DateTime? debtWindowStart({
   if (balance <= 0 || logsNewestFirst.isEmpty) return null;
   var remaining = balance;
   for (final log in logsNewestFirst) {
-    if (log.price <= 0) continue;
-    remaining -= log.price;
+    final value = logLoanedValue(log);
+    if (value <= 0) continue;
+    remaining -= value;
     if (remaining <= 0) return log.date;
   }
   return null;
 }
+
+/// The sell value of the hot products in a log. Hot products are not tracked
+/// in the product catalog (no reliable buy price), so this value is excluded
+/// from the loaner comparison chart but reconciles a loaner's balance with its
+/// tracked loaned amount.
+@visibleForTesting
+double hotSellValue(Log log) {
+  double value = 0;
+  for (final ep in log.products) {
+    if (ep.hot == true) {
+      value += (ep.sellPrice ?? 0) * (ep.count ?? 0);
+    }
+  }
+  return value;
+}
+
+/// The full sell value of a log, including hot products. A loaner's recorded
+/// balance is raised by this total on checkout, so the debt window must be
+/// sized with it even though the chart itself only shows tracked products.
+@visibleForTesting
+double logLoanedValue(Log log) => log.price + hotSellValue(log);
 
 @visibleForTesting
 List<LoanerComparison> computeLoanerComparison({
@@ -2100,8 +2122,8 @@ List<LoanerComparison> computeLoanerComparison({
 
     final sorted = [...loanerLogs]..sort((a, b) => b.date.compareTo(a.date));
     for (final log in sorted) {
-      final price = log.price;
-      if (price <= 0) continue;
+      final value = logLoanedValue(log);
+      if (value <= 0) continue;
 
       double logCurrentValue = 0;
       for (final ep in log.products) {
@@ -2113,15 +2135,15 @@ List<LoanerComparison> computeLoanerComparison({
         logCurrentValue += buyPrice * count;
       }
 
-      if (remaining <= price) {
-        final fraction = remaining / price;
-        loanedAmount += price * fraction;
+      if (remaining <= value) {
+        final fraction = remaining / value;
+        loanedAmount += log.price * fraction;
         currentValue += logCurrentValue * fraction;
         break;
       }
-      loanedAmount += price;
+      loanedAmount += log.price;
       currentValue += logCurrentValue;
-      remaining -= price;
+      remaining -= value;
     }
 
     if (loanedAmount == 0 && currentValue == 0) continue;

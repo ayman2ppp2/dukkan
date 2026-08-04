@@ -5,6 +5,12 @@
 // window) and cross-checks the result against computeLoanerComparison, the
 // exact function that feeds the chart.
 //
+// Hot products are not tracked in the product catalog (no reliable buy price),
+// so they are excluded from both sides of the chart. Their sell value is
+// reported separately so a loaner's balance can be reconciled:
+//
+//   tracked loaned (chart) + hot = balance
+//
 // Run it on demand against the real data:
 //
 //   DUKKAN_DB_DIR=/path/to/db/folder \
@@ -15,10 +21,11 @@
 //
 // The database is copied to a temp dir before opening, so real data is never
 // touched and the check works while the app is running.
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:io';
 
-// ignore: invalid_use_of_visible_for_testing_member
-import 'package:dukkan/core/db.dart' show computeLoanerComparison;
+import 'package:dukkan/core/db.dart'
+    show computeLoanerComparison, hotSellValue, logLoanedValue;
 import 'package:dukkan/util/models/Expense.dart';
 import 'package:dukkan/util/models/Log.dart';
 import 'package:dukkan/util/models/Loaner.dart';
@@ -36,8 +43,10 @@ final _df = DateFormat('yyyy-MM-dd');
 class _LineCheck {
   final Log log;
   final double price;
+  final double hot;
   final double recomputed;
-  final double loanedAmount;
+  final double trackedAmount;
+  final double hotAmount;
   final double currentValue;
   final double fraction;
   final bool boundary;
@@ -45,14 +54,16 @@ class _LineCheck {
   _LineCheck({
     required this.log,
     required this.price,
+    required this.hot,
     required this.recomputed,
-    required this.loanedAmount,
+    required this.trackedAmount,
+    required this.hotAmount,
     required this.currentValue,
     required this.fraction,
     required this.boundary,
   });
 
-  bool get priceDiffers => (price - recomputed).abs() > 0.01;
+  bool get priceDiffers => (price + hot - recomputed).abs() > 0.01;
 }
 
 class _LoanerCheck {
@@ -60,7 +71,8 @@ class _LoanerCheck {
   final Id id;
   final double balance;
   final List<_LineCheck> lines;
-  final double loanedAmount;
+  final double trackedAmount;
+  final double hotAmount;
   final double currentValue;
 
   _LoanerCheck({
@@ -68,12 +80,13 @@ class _LoanerCheck {
     required this.id,
     required this.balance,
     required this.lines,
-    required this.loanedAmount,
+    required this.trackedAmount,
+    required this.hotAmount,
     required this.currentValue,
   });
 }
 
-bool _feq(double a, double b) => (a - b).abs() < 0.01;
+bool _feq(double a, double b, {double tol = 0.01}) => (a - b).abs() <= tol;
 
 double _currentValue(Log log, Map<int, Product> productMap) {
   double value = 0;
@@ -103,28 +116,37 @@ _LoanerCheck _manualWalk(
 ) {
   final sorted = [...logs]..sort((a, b) => b.date.compareTo(a.date));
   final lines = <_LineCheck>[];
-  double loaned = 0;
+  double tracked = 0;
+  double hot = 0;
   double current = 0;
   var remaining = loaner.balance ?? 0;
 
   for (final log in sorted) {
     final price = log.price;
-    if (price <= 0) continue;
+    final hotValue = hotSellValue(log);
+    final value = logLoanedValue(log);
     final currentValue = _currentValue(log, productMap);
     final recomputed = _recomputePrice(log);
 
-    if (remaining <= price) {
-      final fraction = remaining / price;
+    if (value <= 0) {
+      continue;
+    }
+
+    if (remaining <= value) {
+      final fraction = remaining / value;
       lines.add(_LineCheck(
         log: log,
         price: price,
+        hot: hotValue,
         recomputed: recomputed,
-        loanedAmount: price * fraction,
+        trackedAmount: price * fraction,
+        hotAmount: hotValue * fraction,
         currentValue: currentValue * fraction,
         fraction: fraction,
         boundary: true,
       ));
-      loaned += price * fraction;
+      tracked += price * fraction;
+      hot += hotValue * fraction;
       current += currentValue * fraction;
       break;
     }
@@ -132,15 +154,18 @@ _LoanerCheck _manualWalk(
     lines.add(_LineCheck(
       log: log,
       price: price,
+      hot: hotValue,
       recomputed: recomputed,
-      loanedAmount: price,
+      trackedAmount: price,
+      hotAmount: hotValue,
       currentValue: currentValue,
       fraction: 1,
       boundary: false,
     ));
-    loaned += price;
+    tracked += price;
+    hot += hotValue;
     current += currentValue;
-    remaining -= price;
+    remaining -= value;
   }
 
   return _LoanerCheck(
@@ -148,7 +173,8 @@ _LoanerCheck _manualWalk(
     id: loaner.ID,
     balance: loaner.balance ?? 0,
     lines: lines,
-    loanedAmount: loaned,
+    trackedAmount: tracked,
+    hotAmount: hot,
     currentValue: current,
   );
 }
@@ -233,21 +259,26 @@ void _printReport(_LoanerCheck c, LoanerComparison? chart) {
     final mark =
         line.boundary ? 'جزئي ${_nf.format(line.fraction)}' : 'full';
     print('    ${_df.format(line.log.date)}  '
-        'loaned ${_nf.format(line.loanedAmount)}  '
+        'tracked ${_nf.format(line.trackedAmount)}  '
+        'hot ${_nf.format(line.hotAmount)}  '
         'current ${_nf.format(line.currentValue)}  [$mark]');
     if (line.priceDiffers) {
-      print('      ⚠ stored price ${_nf.format(line.price)} '
+      print('      ⚠ stored tracked+hot ${_nf.format(line.price + line.hot)} '
           '!= Σ(sell×count)-discount ${_nf.format(line.recomputed)} '
           '(offer bundle? verify manually)');
     }
   }
   print('  ──');
-  final balanceOk = _feq(c.loanedAmount, c.balance);
-  print('  Σ loaned  ${_nf.format(c.loanedAmount)}  ==  balance '
-      '${_nf.format(c.balance)}  ${balanceOk ? '✓' : '✗ MISMATCH'}');
-  print('  Σ current ${_nf.format(c.currentValue)}');
+  final sum = c.trackedAmount + c.hotAmount;
+  final balanceOk = _feq(sum, c.balance, tol: 1.0);
+  print('  Σ tracked (chart loanedAmount)  ${_nf.format(c.trackedAmount)}');
+  print('  Σ hot (untracked, no buy price) ${_nf.format(c.hotAmount)}');
+  print('  tracked + hot                   ${_nf.format(sum)}  '
+      '==  balance ${_nf.format(c.balance)}  '
+      '${balanceOk ? '✓' : '✗ MISMATCH (diff ${_nf.format(sum - c.balance)})'}');
+  print('  Σ current                       ${_nf.format(c.currentValue)}');
   if (chart != null) {
-    final ok = _feq(chart.loanedAmount, c.loanedAmount) &&
+    final ok = _feq(chart.loanedAmount, c.trackedAmount) &&
         _feq(chart.currentValue, c.currentValue);
     print('  chart     loaned ${_nf.format(chart.loanedAmount)}  '
         'current ${_nf.format(chart.currentValue)}  '
@@ -312,7 +343,7 @@ void main() {
           checks.add(_manualWalk(loaner, loanerLogs, productMap));
         }
 
-        final chart = computeLoanerComparison( // ignore: invalid_use_of_visible_for_testing_member
+        final chart = computeLoanerComparison(
           loaners: eligible,
           loanedLogs: logs,
           productMap: productMap,
@@ -329,19 +360,29 @@ void main() {
           final chartRes = chartByName[check.name];
           _printReport(check, chartRes);
 
-          if (!_feq(check.loanedAmount, check.balance)) {
-            failures.add('${check.name}: loanedAmount '
-                '${_nf.format(check.loanedAmount)} != balance '
-                '${_nf.format(check.balance)}');
+          final sum = check.trackedAmount + check.hotAmount;
+          if (!_feq(sum, check.balance, tol: 1.0)) {
+            failures.add('${check.name}: tracked+hot '
+                '${_nf.format(sum)} != balance ${_nf.format(check.balance)} '
+                '(diff ${_nf.format(sum - check.balance)})');
           }
           if (chartRes == null) {
-            failures.add(
-                '${check.name}: missing from chart output (no owing logs?)');
+            final purelyHot = check.trackedAmount == 0 &&
+                check.currentValue == 0 &&
+                check.hotAmount > 0;
+            if (purelyHot) {
+              // ignore: avoid_print
+              print('  chart     absent (entirely hot debt, no buy price) — '
+                  'expected');
+            } else {
+              failures.add(
+                  '${check.name}: missing from chart output (no owing logs?)');
+            }
           } else {
-            if (!_feq(chartRes.loanedAmount, check.loanedAmount)) {
+            if (!_feq(chartRes.loanedAmount, check.trackedAmount)) {
               failures.add('${check.name}: chart loanedAmount '
-                  '${_nf.format(chartRes.loanedAmount)} != manual '
-                  '${_nf.format(check.loanedAmount)}');
+                  '${_nf.format(chartRes.loanedAmount)} != manual tracked '
+                  '${_nf.format(check.trackedAmount)}');
             }
             if (!_feq(chartRes.currentValue, check.currentValue)) {
               failures.add('${check.name}: chart currentValue '

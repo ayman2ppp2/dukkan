@@ -144,9 +144,9 @@ class _LoanerChartState extends State<LoanerChart>
             );
           }
           final chartHeight = max(300.0, data.length * 50.0);
-          final maxValue = data.fold<double>(
+          final maxAbs = data.fold<double>(
             0,
-            (m, d) => max(m, max(d.loanedAmount, d.currentValue)),
+            (m, d) => max(m, (d.loanedAmount - d.currentValue).abs()),
           );
           return SizedBox(
             height: chartHeight,
@@ -155,14 +155,15 @@ class _LoanerChartState extends State<LoanerChart>
               child: RepaintBoundary(
                 child: SfCartesianChart(
                   title: ChartTitle(
-                    text: 'مقارنة القروض المستحقة',
+                    text: 'ربح أو خسارة القروض',
                     alignment: ChartAlignment.near,
                   ),
                   primaryXAxis: CategoryAxis(),
                   primaryYAxis: NumericAxis(
                     numberFormat: NumberFormat.compact(),
                     isVisible: true,
-                    maximum: maxValue <= 0 ? 1 : maxValue * 1.25,
+                    minimum: -(maxAbs <= 0 ? 1.0 : maxAbs * 1.15),
+                    maximum: maxAbs <= 0 ? 1.0 : maxAbs * 1.15,
                   ),
                   tooltipBehavior: TooltipBehavior(
                     enable: _tooltipReady,
@@ -210,21 +211,18 @@ class _LoanerChartState extends State<LoanerChart>
                     },
                   ),
                   series: <CartesianSeries>[
-                    BarSeries<LoanerComparison, String>(
-                      name: 'سعر البيع الأصلي',
+                    ColumnSeries<LoanerComparison, String>(
+                      name: 'الربح أو الخسارة',
                       animationDuration: 0,
-                      color: Colors.brown,
+                      width: 0.5,
                       dataSource: data,
                       xValueMapper: (LoanerComparison d, _) => d.name,
-                      yValueMapper: (LoanerComparison d, _) => d.loanedAmount,
-                    ),
-                    BarSeries<LoanerComparison, String>(
-                      name: 'سعر الشراء الحالي',
-                      animationDuration: 0,
-                      color: Colors.red[400],
-                      dataSource: data,
-                      xValueMapper: (LoanerComparison d, _) => d.name,
-                      yValueMapper: (LoanerComparison d, _) => d.currentValue,
+                      yValueMapper: (LoanerComparison d, _) =>
+                          d.loanedAmount - d.currentValue,
+                      pointColorMapper: (LoanerComparison d, _) =>
+                          (d.loanedAmount - d.currentValue) >= 0
+                              ? Colors.green
+                              : Colors.red,
                     ),
                   ],
                 ),
