@@ -6,6 +6,7 @@ import 'package:dukkan/pages/home/search_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/auth_provider.dart';
+import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/models/Product.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,9 @@ void main() {
         ),
         ChangeNotifierProvider<Lists>.value(
           value: Lists.detachedForTesting(owners: [ownerFixture()]),
+        ),
+        ChangeNotifierProvider<OwnerProvider>.value(
+          value: OwnerProvider.detachedForTesting(owners: [ownerFixture()]),
         ),
         ChangeNotifierProvider<ExpenseProvider>.value(
           value: ExpenseProvider.detachedForTesting(),

@@ -335,10 +335,7 @@ class _StatsPageState extends State<StatsPage> {
                     decoration: BoxDecoration(
                         color: Colors.brown[200],
                         borderRadius: BorderRadius.circular(12)),
-                    child: ChangeNotifierProvider.value(
-                      value: li,
-                      child: Ownertile(),
-                    ),
+                    child: Ownertile(),
                   ),
                 ),
               ],

@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/models/Product.dart';
 
 class CircularChart extends StatefulWidget {
@@ -547,14 +548,12 @@ class Ownertile extends StatefulWidget {
 
 class _OwnertileState extends State<Ownertile>
     with AutomaticKeepAliveClientMixin {
-  TextEditingController payCon = TextEditingController();
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
     return FutureBuilder(
-      future: context.read<Lists>().refreshListOfOwners(),
+      future: context.read<OwnerProvider>().refreshListOfOwners(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Text(UserSafeMessages.loadFailed);
@@ -622,31 +621,6 @@ class _OwnertileState extends State<Ownertile>
                   const SizedBox(
                     height: 0,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: TextFormField(
-                      controller: payCon,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      if (payCon.text.isNotEmpty) {
-                        final li = context.read<Lists>();
-                        li.ownersList.elementAt(index).totalPayed +=
-                            double.parse(payCon.text);
-                        li.ownersList.elementAt(index).dueMoney -=
-                            double.parse(payCon.text);
-                        li.ownersList.elementAt(index).lastPaymentDate =
-                            DateTime.now();
-                        li.ownersList.elementAt(index).lastPayment =
-                            double.parse(payCon.text);
-                        li.updateOwner(li.ownersList.elementAt(index));
-                        li.refresh();
-                      }
-                    },
-                    icon: const Icon(Icons.payments_outlined),
-                  ),
                 ],
               );
             },
@@ -667,7 +641,6 @@ class _OwnertileState extends State<Ownertile>
 
   @override
   void dispose() {
-    payCon.dispose();
     super.dispose();
   }
 }

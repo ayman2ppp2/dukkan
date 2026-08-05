@@ -1,8 +1,7 @@
 import 'package:dukkan/models/Owner.dart';
+import 'package:dukkan/providers/owner_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import 'package:dukkan/providers/list.dart';
 
 class AddUser extends StatelessWidget {
   AddUser({super.key});
@@ -28,7 +27,7 @@ class AddUser extends StatelessWidget {
               decoration: const InputDecoration(
                   constraints: BoxConstraints(maxWidth: 250)),
             ),
-            Consumer<Lists>(
+            Consumer<OwnerProvider>(
               builder: (context, li, child) => IconButton(
                 onPressed: () {
                   li.addOwner(
@@ -40,7 +39,6 @@ class AddUser extends StatelessWidget {
                       dueMoney: 0,
                     ),
                   );
-                  li.refreshListOfOwners();
                   Navigator.pop(context);
                 },
                 icon: const Icon(

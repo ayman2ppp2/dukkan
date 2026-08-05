@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 class OwnerProvider extends ChangeNotifier {
   late DB db;
+  List<Owner>? _testOwners;
 
   OwnerProvider() {
     init();
@@ -12,11 +13,17 @@ class OwnerProvider extends ChangeNotifier {
   @visibleForTesting
   OwnerProvider.forTesting(this.db);
 
+  @visibleForTesting
+  OwnerProvider.detachedForTesting({List<Owner> owners = const []}) {
+    _testOwners = owners;
+  }
+
   Future<void> init() async {
     db = await DB.getInstance();
   }
 
   Future<List<Owner>> refreshListOfOwners() async {
+    if (_testOwners != null) return _testOwners!;
     return db.getOwnersList();
   }
 

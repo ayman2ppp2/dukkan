@@ -2,6 +2,7 @@
 
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/share_provider.dart';
 import 'package:dukkan/pages/inventory/inventory_page.dart';
 
@@ -127,10 +128,13 @@ class _HomePageState extends State<HomePage> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => ChangeNotifierProvider.value(
-                            value: li,
+                            value: context.read<OwnerProvider>(),
                             child: ChangeNotifierProvider.value(
-                              value: sa,
-                              child: const InvPage(),
+                              value: li,
+                              child: ChangeNotifierProvider.value(
+                                value: sa,
+                                child: const InvPage(),
+                              ),
                             ),
                           ),
                         ),

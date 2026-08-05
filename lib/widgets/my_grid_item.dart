@@ -1,11 +1,11 @@
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/sales_provider.dart';
+import 'package:dukkan/providers/owner_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/pages/inventory/insert_page.dart';
 
 class GridItem extends StatelessWidget {
@@ -16,7 +16,7 @@ class GridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var li = Provider.of<SalesProvider>(context, listen: false);
-    var sa = Provider.of<Lists>(context, listen: false);
+    var owner = Provider.of<OwnerProvider>(context, listen: false);
 
     return Padding(
       padding: const EdgeInsets.all(10),
@@ -90,7 +90,7 @@ class GridItem extends StatelessWidget {
                                 pageBuilder:
                                     (context, animation, secondaryAnimation) {
                                   return ChangeNotifierProvider.value(
-                                    value: sa,
+                                    value: owner,
                                     child: ChangeNotifierProvider.value(
                                       value: li,
                                       child: Padding(

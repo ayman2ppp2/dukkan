@@ -6,7 +6,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/models/Product.dart';
 import 'package:dukkan/utils/unit_conversion.dart';
 
@@ -161,7 +161,7 @@ class _InPageState extends State<InPage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: FutureBuilder(
-                    future: Provider.of<Lists>(context, listen: false)
+                    future: Provider.of<OwnerProvider>(context, listen: false)
                         .refreshListOfOwners(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
