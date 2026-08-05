@@ -34,12 +34,6 @@ class ExpenseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Map Amap = {
-    30: 1,
-    7: 4,
-    1: 30,
-  };
-
   Stream<Expense?> watchExpense({required int id}) {
     return db.watchExpense(id: id);
   }
