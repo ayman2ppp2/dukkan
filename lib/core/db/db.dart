@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/core/network/postgres_client.dart';
 import 'package:dukkan/data/backup/backup_service.dart';
 import 'package:dukkan/models/Expense.dart';
 import 'package:dukkan/models/Log.dart';
@@ -790,39 +789,6 @@ class DB {
   Future<IsolatePool> reOpenPool() => backupService.reOpenPool();
 
   Future<void> useLocalBacup() => backupService.useLocalBacup();
-
-  void insertInPostgres(
-      {required String name,
-      required String ownerName,
-      required double buyPrice,
-      required double sellPrice,
-      required String barcode,
-      required int count,
-      required bool weightable,
-      required String wholeUnit,
-      required bool offer,
-      required double offerCount,
-      required double offerPrice,
-      required DateTime? endDate,
-      required bool hot}) {
-    var postgresConnection = PostgresConnection();
-    postgresConnection.connect();
-    postgresConnection.insertProduct(
-      name: name,
-      ownerName: ownerName,
-      buyPrice: buyPrice,
-      sellPrice: sellPrice,
-      barcode: barcode,
-      count: count,
-      weightable: weightable,
-      wholeUnit: wholeUnit,
-      offer: offer,
-      offerCount: offerCount,
-      offerPrice: offerPrice,
-      endDate: endDate,
-      hot: hot,
-    );
-  }
 
   Future<void> windows() => backupService.windows();
 
