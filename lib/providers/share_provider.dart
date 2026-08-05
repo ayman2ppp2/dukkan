@@ -12,7 +12,6 @@ import 'package:restart_app/restart_app.dart';
 
 class ShareProvider extends ChangeNotifier with LanSyncState {
   late DB db;
-  List<Widget> shareList = [];
   CancelToken? _syncCancelToken;
   HttpServer? _syncServer;
   bool get canCancelSync => _syncCancelToken != null || _syncServer != null;
@@ -26,11 +25,6 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
 
   Future<void> init() async {
     db = await DB.getInstance();
-  }
-
-  void clearShareList() {
-    shareList.clear();
-    notifyListeners();
   }
 
   Future<void> runServer() async {

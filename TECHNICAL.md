@@ -113,8 +113,7 @@ Key members:
 - Write helpers: `insertProducts`, `updateProducts`, `deleteProduct`, `checkOut`,
   `cancelReceiptAtomically`, `inboundReceipt`, loaner ops, expense ops.
 - Stream/watch helpers: `getExpenses`, `watchExpense`, `watchLoaner`, `watchProduct`,
-  `getTotalBuyPrice`, `getLoanersStream`, `getLogsStream`, `getPersonsLogs`,
-  `getLogsChunk`.
+  `getTotalBuyPrice`, `getLoanersStream`, `getLogsStream`, `getPersonsLogs`.
 
 ### Collections (the 5 Isar schemas)
 

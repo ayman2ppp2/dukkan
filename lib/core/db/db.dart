@@ -702,15 +702,6 @@ class DB {
     });
   }
 
-  getLogsChunk(int chunkSize, int currentLog) {
-    return isar!.logs
-        .where()
-        .sortByDateDesc()
-        .offset(currentLog)
-        .limit(chunkSize)
-        .findAll();
-  }
-
   Future<Map<String, dynamic>> getAccountStatementData(int loanerId) async {
     final loaner = await isar!.loaners.get(loanerId);
     if (loaner == null) throw Exception('Loaner with ID $loanerId not found');
