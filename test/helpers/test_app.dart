@@ -1,4 +1,5 @@
 import 'package:dukkan/core/db/db.dart';
+import 'package:dukkan/data/stats/stats_service.dart';
 import 'package:dukkan/pages/auth/login_page.dart';
 import 'package:dukkan/pages/home/home_page.dart';
 import 'package:dukkan/pages/onboarding/landing_page.dart';
@@ -69,6 +70,9 @@ class TestApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<ShareProvider>.value(
           value: ShareProvider.forTesting(db),
+        ),
+        ChangeNotifierProvider<StatsService>.value(
+          value: StatsService.forTesting(db),
         ),
         ChangeNotifierProvider<Lists>.value(
           value: Lists.forTesting(db),

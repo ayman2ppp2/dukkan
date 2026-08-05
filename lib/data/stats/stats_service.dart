@@ -3,6 +3,7 @@ import 'package:dukkan/core/pool/isolate_pool.dart';
 import 'package:dukkan/data/stats/jobs.dart';
 import 'package:dukkan/models/Product.dart';
 import 'package:dukkan/models/prodStats.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 
@@ -12,17 +13,17 @@ RootIsolateToken? _getRootIsolateToken() {
 
 /// Single owner of the pooled stats computations and their cache.
 ///
-/// The legacy `Lists` provider delegates here; the computation logic and
-/// cache semantics live in exactly one place.
-class StatsService {
-  final DB db;
+/// Registered at the app root so pages, the legacy `Lists` provider, and the
+/// receipt flow all share one cache instance.
+class StatsService extends ChangeNotifier {
+  late DB db;
   late IsolatePool pool;
 
   final Map<String, dynamic> _cache = {};
   int cacheVersion = 0;
   bool cacheIsValid = false;
 
-  StatsService(this.db) {
+  StatsService() {
     init();
   }
 
@@ -31,6 +32,7 @@ class StatsService {
   StatsService.forTesting(this.db);
 
   Future<void> init() async {
+    db = await DB.getInstance();
     pool = await Pool.init();
   }
 
@@ -47,10 +49,12 @@ class StatsService {
   void clearAllCache() {
     _cache.clear();
     cacheVersion++;
+    notifyListeners();
   }
 
   void clearCache(String cacheKey) {
     _cache.remove(cacheKey);
+    notifyListeners();
   }
 
   Map _jobMap({Object? arg}) {

@@ -12,6 +12,7 @@ import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/providers/share_provider.dart';
+import 'package:dukkan/data/stats/stats_service.dart';
 import 'package:dukkan/core/db/db.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
@@ -93,15 +94,18 @@ class MyApp extends StatelessWidget {
             ChangeNotifierProvider<ShareProvider>(
               create: (context) => ShareProvider(),
             ),
+            ChangeNotifierProvider<StatsService>(
+              create: (context) => StatsService(),
+            ),
             // Keep Lists for backward compatibility during migration
             ChangeNotifierProvider<Lists>(
-              create: (context) => Lists(),
+              create: (context) => Lists(stats: context.read<StatsService>()),
             ),
           ],
           builder: (context, child) {
             WidgetsBinding.instance.addObserver(context.read<SalesProvider>());
             context.read<SalesProvider>().onInventoryChanged =
-                context.read<Lists>().clearAllCache;
+                context.read<StatsService>().clearAllCache;
             var auth = context.watch<AuthAPI>();
             if (auth.status == AuthStatus.uninitialized) {
               return const Center(child: CircularProgressIndicator());

@@ -4,7 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/data/stats/stats_service.dart';
 import 'package:dukkan/widgets/charts/charts.dart';
 
 class StatsPage extends StatefulWidget {
@@ -37,7 +37,7 @@ class _StatsPageState extends State<StatsPage> {
 
   void _onTabChanged() {
     if (DefaultTabController.of(context).index != 1) return;
-    final li = context.read<Lists>();
+    final li = context.read<StatsService>();
     if (_lastCacheVersion == li.cacheVersion) return;
     _lastCacheVersion = li.cacheVersion;
     setState(() {});
@@ -45,7 +45,7 @@ class _StatsPageState extends State<StatsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final li = context.read<Lists>();
+    final li = context.read<StatsService>();
     if (_lastCacheVersion == -1) _lastCacheVersion = li.cacheVersion;
     return Scaffold(
       body: Flex(

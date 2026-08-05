@@ -35,7 +35,7 @@ class Lists extends ChangeNotifier with LanSyncState {
   // late Socket socket;
 
   // For self signed certificates, only use for development
-  Lists() {
+  Lists({StatsService? stats}) : _injectedStats = stats {
     init();
   }
 
@@ -49,9 +49,11 @@ class Lists extends ChangeNotifier with LanSyncState {
     _testOwners = owners;
   }
 
+  StatsService? _injectedStats;
+
   void init() async {
     db = await DB.getInstance();
-    stats = StatsService(db);
+    stats = _injectedStats ?? StatsService();
   }
 
   List<Widget> shareList = [];

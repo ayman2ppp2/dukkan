@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/data/stats/stats_service.dart';
 import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/models/Product.dart';
 
@@ -36,7 +36,7 @@ class _CircularChartState extends State<CircularChart>
                   firstDate: DateTime(2023),
                   lastDate: DateTime(2050))
               .then((value) {
-            Provider.of<Lists>(context, listen: false)
+            Provider.of<StatsService>(context, listen: false)
                 .clearCache('saledProductsByDate');
             setState(() {
               value == null ? time = time : time = value;
@@ -44,7 +44,7 @@ class _CircularChartState extends State<CircularChart>
           });
         },
         child: FutureBuilder(
-            future: context.read<Lists>().getSaledProductsByDate(time),
+            future: context.read<StatsService>().getSaledProductsByDate(time),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return const Text(UserSafeMessages.loadFailed);
@@ -129,7 +129,7 @@ class _LoanerChartState extends State<LoanerChart>
   Widget build(BuildContext context) {
     super.build(context);
     return FutureBuilder(
-      future: context.read<Lists>().getLoanerComparison(),
+      future: context.read<StatsService>().getLoanerComparison(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Text(UserSafeMessages.loadFailed);
@@ -286,9 +286,9 @@ class _LineChartState extends State<LineChart>
                 firstDate: DateTime(2023),
                 lastDate: DateTime(2050))
             .then((value) {
-          Provider.of<Lists>(context, listen: false)
+          Provider.of<StatsService>(context, listen: false)
               .clearCache('dailyProfitOfTheMonth');
-          Provider.of<Lists>(context, listen: false)
+          Provider.of<StatsService>(context, listen: false)
               .clearCache('dailySalesOfTheMonth');
           setState(() {
             value == null ? time = time : time = value;
@@ -297,7 +297,7 @@ class _LineChartState extends State<LineChart>
       },
       child: Builder(
         builder: (context) {
-          final li = context.read<Lists>();
+          final li = context.read<StatsService>();
           return FutureBuilder(
               future: Future.wait(
                 [
@@ -432,9 +432,9 @@ class _MOYState extends State<MOY>
                 firstDate: DateTime(2023),
                 lastDate: DateTime(2050))
             .then((value) {
-          Provider.of<Lists>(context, listen: false)
+          Provider.of<StatsService>(context, listen: false)
               .clearCache('monthlySalesOfTheYear');
-          Provider.of<Lists>(context, listen: false)
+          Provider.of<StatsService>(context, listen: false)
               .clearCache('monthlyProfitsOfTheYear');
           setState(() {
             value == null ? time = time : time = value;
@@ -443,7 +443,7 @@ class _MOYState extends State<MOY>
       },
       child: Builder(
         builder: (context) {
-          final li = context.read<Lists>();
+          final li = context.read<StatsService>();
           return FutureBuilder(
               future: Future.wait([
                 li.getMonthlySalesOfTheYear(time),
