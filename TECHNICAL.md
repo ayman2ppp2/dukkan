@@ -76,7 +76,7 @@ Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
   shared `StatsService` cache after any write.
 - **`SalesProvider`** — catalog search/refresh, sell list, loaners, weight precision.
 - **`ExpenseProvider`** — expenses.
-- **`InventoryProvider`** — inventory product writes and low-stock items.
+- **`InventoryProvider`** — low-stock items (`getLowStockItems`).
 - **`OwnerProvider`** — owners (`addOwner`, `refreshListOfOwners`).
 - **`ShareProvider`** — LAN sync (`runServer`, `syncFromServer`, `cancelSync`).
 - **`StatsService`** — single owner of pooled stats computations + cache (root).
