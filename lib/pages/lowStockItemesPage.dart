@@ -1,6 +1,6 @@
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
-import 'package:dukkan/util/models/LowStockProduct.dart';
+import 'package:dukkan/models/LowStockProduct.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -1,5 +1,5 @@
 import 'package:dukkan/core/db.dart';
-import 'package:dukkan/util/models/Owner.dart';
+import 'package:dukkan/models/Owner.dart';
 import 'package:flutter/material.dart';
 
 class OwnerProvider extends ChangeNotifier {

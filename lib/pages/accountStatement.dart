@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/util/models/Loaner.dart';
+import 'package:dukkan/models/Loaner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';

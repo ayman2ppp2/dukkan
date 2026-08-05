@@ -1,8 +1,8 @@
-// import 'package:dukkan/util/models/BcLog.dart';
+// import 'package:dukkan/models/BcLog.dart';
 import 'dart:math';
 
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/util/models/prodStats.dart';
+import 'package:dukkan/models/prodStats.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../providers/list.dart';
-import 'models/Product.dart';
+import '../models/Product.dart';
 
 class CircularChart extends StatefulWidget {
   const CircularChart({super.key});

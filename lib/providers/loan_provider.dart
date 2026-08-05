@@ -1,5 +1,5 @@
 import 'package:dukkan/core/db.dart';
-import 'package:dukkan/util/models/Loaner.dart';
+import 'package:dukkan/models/Loaner.dart';
 import 'package:flutter/material.dart';
 
 class LoanProvider extends ChangeNotifier {

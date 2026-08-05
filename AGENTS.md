@@ -31,6 +31,15 @@ A retail shop management app built with Flutter.
 
 ---
 
+## Technical Reference
+
+> Read `TECHNICAL.md` before starting any feature work. It covers the architecture,
+> Isar data layer and isolate-pool pattern, all providers and pages, key business
+> logic (checkout, profit recalculation, loaner ledger, unit conversion, LAN sync),
+> testing guide, and known bugs/gotchas.
+
+---
+
 ## Commit Workflow
 
 When told `"commit"` or `"commit changes"`:

@@ -3,7 +3,7 @@ import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loadingOverlay.dart';
-import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart';

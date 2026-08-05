@@ -1,5 +1,5 @@
-import 'package:dukkan/util/models/Emap.dart';
-import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/models/Emap.dart';
+import 'package:dukkan/models/Product.dart';
 
 class PendingCart {
   final String name;

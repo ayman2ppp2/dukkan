@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dukkan/core/db.dart' show recalculateProfit;
-import 'package:dukkan/util/models/Log.dart';
-import 'package:dukkan/util/models/Product.dart';
-import 'package:dukkan/util/models/Emap.dart';
+import 'package:dukkan/models/Log.dart';
+import 'package:dukkan/models/Product.dart';
+import 'package:dukkan/models/Emap.dart';
 
 Product _makeProduct({
   int id = 1,

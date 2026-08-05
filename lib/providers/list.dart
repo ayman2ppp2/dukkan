@@ -5,13 +5,13 @@ import 'package:restart_app/restart_app.dart';
 import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/core/lan_sync.dart';
 import 'package:dukkan/core/observability.dart';
-// import 'package:dukkan/util/models/Loaner.dart';
-import 'package:dukkan/util/models/Owner.dart';
+// import 'package:dukkan/models/Loaner.dart';
+import 'package:dukkan/models/Owner.dart';
 import 'package:dukkan/core/db.dart';
-import 'package:dukkan/util/models/prodStats.dart';
-import 'package:dukkan/util/models/Product.dart';
-import 'package:dukkan/util/models/searchQuery.dart';
-import 'package:dukkan/util/models/LowStockProduct.dart';
+import 'package:dukkan/models/prodStats.dart';
+import 'package:dukkan/models/Product.dart';
+import 'package:dukkan/models/searchQuery.dart';
+import 'package:dukkan/models/LowStockProduct.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,7 +21,7 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import '../util/models/Log.dart';
+import '../models/Log.dart';
 
 RootIsolateToken? _getRootIsolateToken() {
   return RootIsolateToken.instance;

@@ -1,5 +1,5 @@
 import 'package:dukkan/providers/salesProvider.dart';
-import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:provider/provider.dart';

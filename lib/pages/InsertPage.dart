@@ -1,13 +1,13 @@
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
-import 'package:dukkan/util/models/Emap.dart';
+import 'package:dukkan/models/Emap.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/list.dart';
-import '../util/models/Product.dart';
+import '../models/Product.dart';
 
 // ignore: must_be_immutable
 class InPage extends StatefulWidget {

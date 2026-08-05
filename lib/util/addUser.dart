@@ -1,4 +1,4 @@
-import 'package:dukkan/util/models/Owner.dart';
+import 'package:dukkan/models/Owner.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

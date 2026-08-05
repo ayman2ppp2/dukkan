@@ -13,7 +13,7 @@ import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/providers/share_provider.dart';
 import 'package:dukkan/providers/stats_provider.dart';
 import 'package:dukkan/providers/sync_provider.dart';
-import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';

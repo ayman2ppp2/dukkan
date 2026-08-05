@@ -1,4 +1,4 @@
-import 'package:dukkan/util/models/Emap.dart';
+import 'package:dukkan/models/Emap.dart';
 import 'package:isar_community/isar.dart';
 
 part 'Product.g.dart';

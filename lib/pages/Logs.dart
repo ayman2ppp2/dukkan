@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/salesProvider.dart';
-import 'package:dukkan/util/models/Loaner.dart';
-import 'package:dukkan/util/models/Log.dart';
-import 'package:dukkan/util/models/searchQuery.dart';
+import 'package:dukkan/models/Loaner.dart';
+import 'package:dukkan/models/Log.dart';
+import 'package:dukkan/models/searchQuery.dart';
 import 'package:dukkan/util/receipt.dart';
 
 class Logs extends StatefulWidget {

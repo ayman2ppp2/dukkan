@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/core/db.dart';
-import 'package:dukkan/util/models/Expense.dart';
+import 'package:dukkan/models/Expense.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';

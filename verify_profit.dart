@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:isar_community/isar.dart';
-import 'package:dukkan/util/models/Log.dart';
-import 'package:dukkan/util/models/Product.dart';
-import 'package:dukkan/util/models/Loaner.dart';
-import 'package:dukkan/util/models/Owner.dart';
-import 'package:dukkan/util/models/Expense.dart';
-import 'package:dukkan/util/models/Emap.dart';
+import 'package:dukkan/models/Log.dart';
+import 'package:dukkan/models/Product.dart';
+import 'package:dukkan/models/Loaner.dart';
+import 'package:dukkan/models/Owner.dart';
+import 'package:dukkan/models/Expense.dart';
+import 'package:dukkan/models/Emap.dart';
 
 const dbDir = '/home/ayman/Documents';
 

@@ -9,20 +9,20 @@ import 'dart:io';
 import 'package:dukkan/core/IsolatePool.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/core/postgres_connection.dart';
-import 'package:dukkan/util/models/Emap.dart';
-import 'package:dukkan/util/models/Expense.dart';
-import 'package:dukkan/util/models/Log.dart';
-import 'package:dukkan/util/models/Product.dart';
-import 'package:dukkan/util/models/prodStats.dart';
-import 'package:dukkan/util/models/searchQuery.dart';
+import 'package:dukkan/models/Emap.dart';
+import 'package:dukkan/models/Expense.dart';
+import 'package:dukkan/models/Log.dart';
+import 'package:dukkan/models/Product.dart';
+import 'package:dukkan/models/prodStats.dart';
+import 'package:dukkan/models/searchQuery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isar_community/isar.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../util/models/Loaner.dart';
-import '../util/models/Owner.dart';
+import '../models/Loaner.dart';
+import '../models/Owner.dart';
 
 RootIsolateToken? _getRootIsolateToken() {
   return RootIsolateToken.instance;

@@ -1,4 +1,4 @@
-import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/models/Product.dart';
 
 class LowStockProduct {
   final Product product;

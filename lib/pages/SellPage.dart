@@ -4,7 +4,7 @@ import 'package:dukkan/pages/CheckOutPage.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/myListItem.dart';
 import 'package:dukkan/util/parking_dialog.dart';
-import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/models/Product.dart';
 import 'package:dukkan/pages/searchPage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

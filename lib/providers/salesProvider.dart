@@ -3,10 +3,10 @@
 import 'dart:convert';
 
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/util/models/Loaner.dart';
+import 'package:dukkan/models/Loaner.dart';
 import 'package:dukkan/core/db.dart';
-import 'package:dukkan/util/models/PendingCart.dart';
-import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/models/PendingCart.dart';
+import 'package:dukkan/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:isar_community/isar.dart';

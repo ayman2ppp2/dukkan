@@ -1,8 +1,8 @@
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/salesProvider.dart';
 import 'package:dukkan/util/loadingOverlay.dart';
-import 'package:dukkan/util/models/Log.dart';
-import 'package:dukkan/util/models/Product.dart';
+import 'package:dukkan/models/Log.dart';
+import 'package:dukkan/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as intl;
