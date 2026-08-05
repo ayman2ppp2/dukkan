@@ -6,25 +6,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dukkan/core/pool/isolate_pool.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/core/network/postgres_client.dart';
+import 'package:dukkan/data/backup/backup_service.dart';
 import 'package:dukkan/models/Expense.dart';
 import 'package:dukkan/models/Log.dart';
 import 'package:dukkan/models/Product.dart';
 import 'package:dukkan/models/searchQuery.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:isar_community/isar.dart';
 import 'package:isolate_pool_2/isolate_pool_2.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../models/Loaner.dart';
 import '../../models/Owner.dart';
-
-RootIsolateToken? _getRootIsolateToken() {
-  return RootIsolateToken.instance;
-}
 
 class DB {
   static const isarName = 'isarInstance';
@@ -85,6 +80,17 @@ class DB {
     return _documentsDirectoryOverride ??
         await getApplicationDocumentsDirectory();
   }
+
+  Future<Directory> getDocumentsDirectory() => _documentsDirectory();
+
+  String get isarInstanceName => _isarName;
+
+  bool get usesOverriddenDocumentsDirectory =>
+      _documentsDirectoryOverride != null;
+
+  BackupService? _backup;
+
+  BackupService get backupService => _backup ??= BackupService(this);
 
   static Future<Isar> _openIsar(String directoryPath) async {
     final existing = await Isar.getInstance("isarInstance");
@@ -786,41 +792,13 @@ class DB {
     return monthlySums.toString();
   }
 
-  Future<void> createLocalBackup() async {
-    final backupFilePath = '${(await _documentsDirectory()).path}/backup.isar';
-    final backupFile = File(backupFilePath);
+  Future<void> createLocalBackup() => backupService.createLocalBackup();
 
-    if (await backupFile.exists()) {
-      await backupFile.delete();
-    }
+  Future<void> closeAllIsarInstances() => backupService.closeAllIsarInstances();
 
-    await isar!.copyToFile(backupFilePath);
-    AppLogger.info('Local backup created', data: {'area': 'backup.local'});
-  }
+  Future<IsolatePool> reOpenPool() => backupService.reOpenPool();
 
-  Future<void> closeAllIsarInstances() async {
-    IsolatePool pool = await Pool.init();
-    final token = _getRootIsolateToken();
-    if (token == null) {
-      AppLogger.warning('RootIsolateToken not available',
-          data: {'area': 'database.isolate'});
-      return;
-    }
-    List<Future> futures = [];
-    for (var i = 0; i < pool.numberOfIsolates; i++) {
-      futures.add(pool.scheduleJob(StopIsar(map: {'1': token})));
-    }
-    await Future.wait(futures);
-  }
-
-  Future<IsolatePool> reOpenPool() async {
-    return Pool.reInit();
-  }
-
-  Future<void> useLocalBacup() async {
-    final dir = await _documentsDirectory();
-    await _replaceLiveIsarWithFile('${dir.path}/backup.isar');
-  }
+  Future<void> useLocalBacup() => backupService.useLocalBacup();
 
   void insertInPostgres(
       {required String name,
@@ -855,94 +833,7 @@ class DB {
     );
   }
 
-  Future<void> windows() async {
-    final dir = await _documentsDirectory();
-    await _replaceLiveIsarWithFile('${dir.path}/backup.isar.received');
-  }
-
-  Future<void> _replaceLiveIsarWithFile(String sourcePath) async {
-    final dir = await _documentsDirectory();
-    final livePath = '${dir.path}/$_isarName.isar';
-    final sourceFile = File(sourcePath);
-    final liveFile = File(livePath);
-    final bakFile = File('$livePath.bak');
-
-    await _verifyIsarFile(sourcePath);
-    if (_documentsDirectoryOverride == null) {
-      await closeAllIsarInstances();
-    }
-    await isar!.close();
-
-    if (await bakFile.exists()) {
-      await bakFile.delete();
-    }
-    if (await liveFile.exists()) {
-      await liveFile.rename(bakFile.path);
-    }
-
-    try {
-      await sourceFile.copy(livePath);
-      isar = await Isar.open(
-        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-        directory: dir.path,
-        name: _isarName,
-      );
-      if (await bakFile.exists()) {
-        await bakFile.delete();
-      }
-    } catch (e) {
-      if (await liveFile.exists()) {
-        await liveFile.delete();
-      }
-      if (await bakFile.exists()) {
-        await bakFile.rename(livePath);
-        isar = await Isar.open(
-          [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-          directory: dir.path,
-          name: _isarName,
-        );
-      }
-      rethrow;
-    }
-  }
-
-  Future<void> _verifyIsarFile(String sourcePath) async {
-    final sourceFile = File(sourcePath);
-    if (!await sourceFile.exists()) {
-      throw Exception('Backup file not found at $sourcePath');
-    }
-    if (await sourceFile.length() < 4096) {
-      throw Exception('Backup file is too small to be a valid database');
-    }
-
-    final tempDir = await _documentsDirectory();
-    final verifyName = 'isar_verify_${DateTime.now().microsecondsSinceEpoch}';
-    final verifyPath = '${tempDir.path}/$verifyName.isar';
-    Isar? verifyIsar;
-
-    try {
-      await sourceFile.copy(verifyPath);
-      verifyIsar = await Isar.open(
-        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-        directory: tempDir.path,
-        name: verifyName,
-      );
-      await verifyIsar.close();
-      verifyIsar = null;
-    } catch (e) {
-      throw Exception('Backup file is corrupted or invalid: $e');
-    } finally {
-      if (verifyIsar != null) {
-        try {
-          await verifyIsar.close();
-        } catch (_) {}
-      }
-      final verifyFile = File(verifyPath);
-      if (await verifyFile.exists()) {
-        await verifyFile.delete();
-      }
-    }
-  }
+  Future<void> windows() => backupService.windows();
 
   inboundReceipt({required List<Product> lst, required double total}) async {
     await isar!.writeTxn(() async {
@@ -1020,29 +911,5 @@ class DB {
       }
       await isar!.logs.delete(log.id);
     });
-  }
-}
-
-class StopIsar extends PooledJob<bool> {
-  Map map;
-  StopIsar({required this.map});
-  @override
-  Future<bool> job() async {
-    BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
-    // 'C:/Users/hadow/Documents'
-
-    Isar isar;
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      isar = await Isar.open(
-        [LogSchema, ProductSchema, LoanerSchema, OwnerSchema, ExpenseSchema],
-        directory: dir.path,
-        name: 'isarInstance',
-      );
-    } catch (e) {
-      final fallbackDir = await getApplicationDocumentsDirectory();
-      isar = await DB.openIsarSafely(fallbackDir.path);
-    }
-    return isar.close();
   }
 }

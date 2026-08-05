@@ -60,8 +60,9 @@ Pages (lib/pages/, lib/widgets/)
 Providers (lib/providers/)  ── legacy Lists + focused providers
    │  delegate
    ▼
-DB (lib/core/db/db.dart)  +  PooledJob (Cget*) classes scheduled on isolate_pool_2
-   │
+DB (lib/core/db/db.dart)  +  data services
+   │                      (lib/data/stats/jobs.dart — PooledJob Cget* jobs,
+   │                       lib/data/backup/backup_service.dart — BackupService)
    ▼
 Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
 ```
@@ -89,7 +90,7 @@ adding a page that needs providers, follow this pattern.
 
 ## 3. Data Layer (Isar)
 
-### `DB` class (`lib/core/db/db.dart`, ~2265 lines)
+### `DB` class (`lib/core/db/db.dart`)
 
 Singleton (`DB.getInstance()`), lazy singleton init guarded against races. Holds the
 live `Isar` instance named `isarInstance` in the app documents directory.
@@ -100,10 +101,11 @@ Key members:
   used by all tests.
 - `_openIsar` / `openIsarSafely` — open with fallback to an existing instance; logs
   failures via `AppLogger`.
-- Backup/restore: `createLocalBackup()` (copies live `.isar` file), `useLocalBacup()`,
-  `windows()`, `_replaceLiveIsarWithFile` (verifies the incoming file, swaps with a
-  `.bak` fallback), `_verifyIsarFile` (opens a temp copy to validate), `exportData` /
-  `importData` (JSON logs).
+- Backup/restore delegated to `BackupService` (`lib/data/backup/backup_service.dart`):
+  `createLocalBackup()` (copies live `.isar` file), `useLocalBacup()`, `windows()`,
+  `_replaceLiveIsarWithFile` (verifies the incoming file, swaps with a `.bak` fallback),
+  `_verifyIsarFile` (opens a temp copy to validate). `exportData` / `importData` (JSON
+  logs) remain on `DB`.
 - `closeAllIsarInstances` / `reOpenPool` — stop/restart the isolate pool (used during
   DB file replacement).
 - Write helpers: `insertProducts`, `updateProducts`, `deleteProduct`, `checkOut`,
@@ -177,15 +179,15 @@ Used to track money owed to suppliers/owners for consigned products. (Note: `Lis
 
 Heavy read-only computations run on a pool of background isolates
 (`isolate_pool_2`), sized `(Platform.numberOfProcessors ~/ 2) - 1` (`Pool.init()` in
-`lib/core/IsolatePool.dart`).
+`lib/core/pool/isolate_pool.dart`).
 
-Every pooled job class (defined in `lib/core/db/db.dart`) follows this exact shape:
+Every pooled job class (defined in `lib/data/stats/jobs.dart`) follows this exact shape:
 
 1. Constructor takes a `Map` where `map['1']` is the `RootIsolateToken` (passed from the
    provider) and `map['2']` is often a date/query param.
 2. `job()` calls `BackgroundIsolateBinaryMessenger.ensureInitialized(map['1'])`.
-3. It (re)opens the `isarInstance` database in the worker isolate
-   (`Isar.open(...)` with a fallback to `DB.openIsarSafely` / existing instance).
+3. It (re)opens the `isarInstance` database in the worker isolate via the shared
+   `openPoolIsar()` helper (with a fallback to an existing instance).
 4. Computes and returns; on failure logs `AppLogger.warning(...)` (area `stats.*`) and
    returns a sentinel (`-1`, `[]`, `0`).
 
