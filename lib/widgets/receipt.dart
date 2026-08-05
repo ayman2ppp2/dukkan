@@ -1,4 +1,5 @@
 import 'package:dukkan/core/observability.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/loading_overlay.dart';
 import 'package:dukkan/models/Log.dart';
@@ -7,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:provider/provider.dart';
-import 'package:dukkan/providers/list.dart';
 
 class Receipt extends StatefulWidget {
   final Log log;
@@ -24,7 +24,7 @@ class _ReceiptState extends State<Receipt> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<SalesProvider, Lists>(builder: (context, sa, li, child) {
+    return Consumer2<SalesProvider, LogProvider>(builder: (context, sa, li, child) {
       return Padding(
           padding: const EdgeInsets.all(10.0),
           child: Stack(
@@ -304,7 +304,7 @@ class _ReceiptState extends State<Receipt> {
     });
   }
 
-  Future<dynamic> accounAlreadyZeroed(BuildContext context, Lists li) {
+  Future<dynamic> accounAlreadyZeroed(BuildContext context, LogProvider li) {
     /// Displays a dialog to inform the user that the account has already been zeroed.
     ///
     /// This dialog warns the user about the implications of canceling a receipt

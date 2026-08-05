@@ -1,5 +1,5 @@
 import 'package:dukkan/providers/expense_provider.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/pages/home/checkout_page.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/my_list_item.dart';
@@ -339,7 +339,7 @@ class _SellPageState extends State<SellPage> {
                   ),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
-                    child: Consumer<Lists>(
+                    child: Consumer<LogProvider>(
                       builder: (context, li, child) => IconButton.filled(
                         tooltip: 'فتح الفاتورة',
                         onPressed: () {

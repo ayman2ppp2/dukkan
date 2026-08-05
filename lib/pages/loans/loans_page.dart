@@ -7,7 +7,7 @@ import 'package:intl/intl.dart' as int;
 
 import 'package:provider/provider.dart';
 
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
 
 class Loans extends StatefulWidget {
   const Loans({super.key});
@@ -180,7 +180,8 @@ class _LoansState extends State<Loans> {
                         onTap: () {
                           var sa = Provider.of<SalesProvider>(context,
                               listen: false);
-                          var li = Provider.of<Lists>(context, listen: false);
+                          var li =
+                              Provider.of<LogProvider>(context, listen: false);
                           Navigator.push(
                             context,
                             MaterialPageRoute(

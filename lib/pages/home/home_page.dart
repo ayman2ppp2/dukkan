@@ -1,7 +1,8 @@
 // import 'dart:io';
 
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/data/stats/stats_service.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/share_provider.dart';
 import 'package:dukkan/pages/inventory/inventory_page.dart';
@@ -94,7 +95,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Consumer<SalesProvider>(
-                builder: (context, as, child) => Consumer<Lists>(
+                builder: (context, as, child) => Consumer<LogProvider>(
                   builder: (context, li, child) => IconButton(
                     tooltip: 'السجلات',
                     onPressed: () {
@@ -119,8 +120,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Consumer<SalesProvider>(
-                builder: (context, sa, child) => Consumer<Lists>(
-                  builder: (context, li, child) => IconButton(
+                builder: (context, sa, child) => Consumer<StatsService>(
+                  builder: (context, st, child) => IconButton(
                     tooltip: 'المخزن',
                     onPressed: () {
                       sa.refreshProductsList();
@@ -130,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                           builder: (context) => ChangeNotifierProvider.value(
                             value: context.read<OwnerProvider>(),
                             child: ChangeNotifierProvider.value(
-                              value: li,
+                              value: st,
                               child: ChangeNotifierProvider.value(
                                 value: sa,
                                 child: const InvPage(),

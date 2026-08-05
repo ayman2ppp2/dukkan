@@ -5,7 +5,7 @@ import 'package:dukkan/pages/settings/settings_page.dart';
 import 'package:dukkan/pages/expenses/spendings_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/pages/inbound/inbound_receipt_page.dart';
@@ -42,7 +42,7 @@ class drawerItems extends StatelessWidget {
             style: TextStyle(fontSize: 15),
           ),
           onTap: () {
-            var li = context.read<Lists>();
+            var li = context.read<LogProvider>();
             var as = context.read<SalesProvider>();
             var exp = context.read<ExpenseProvider>();
             Navigator.push(
@@ -69,17 +69,13 @@ class drawerItems extends StatelessWidget {
             style: TextStyle(fontSize: 15),
           ),
           onTap: () {
-            var li = Provider.of<Lists>(context, listen: false);
             var exp = Provider.of<ExpenseProvider>(context, listen: false);
             Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ChangeNotifierProvider.value(
-                    value: li,
-                    child: ChangeNotifierProvider.value(
-                      value: exp,
-                      child: Spendings(),
-                    ),
+                    value: exp,
+                    child: Spendings(),
                   ),
                 ));
           },
@@ -91,7 +87,7 @@ class drawerItems extends StatelessWidget {
             style: TextStyle(fontSize: 15),
           ),
           onTap: () {
-            var li = Provider.of<Lists>(context, listen: false);
+            var li = Provider.of<LogProvider>(context, listen: false);
             var exp = Provider.of<ExpenseProvider>(context, listen: false);
             var as = Provider.of<SalesProvider>(context, listen: false);
             Navigator.push(
@@ -168,9 +164,8 @@ class drawerItems extends StatelessWidget {
         ),
         ListTile(
           onTap: () async {
-            var li = Provider.of<Lists>(context, listen: false);
             try {
-              await li.db.useLocalBacup();
+              await context.read<LogProvider>().db.useLocalBacup();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                     content: Text('تم استخدام النسخة الاحتياطية المحلية')),
@@ -182,15 +177,6 @@ class drawerItems extends StatelessWidget {
                 const SnackBar(content: Text(UserSafeMessages.restoreFailed)),
               );
             }
-            // var li = Provider.of<Lists>(context, listen: false);
-            // await li.db.useBackup().then(
-            //       (value) => ScaffoldMessenger.of(context).showSnackBar(
-            //         SnackBar(
-            //           content: Text('done converting'),
-            //         ),
-            //       ),
-            //     );
-            // Navigator.pop(context);
           },
           leading: Icon(Icons.restart_alt_rounded),
           title: Text('إستخدام نسخة احتياطية محلية'),

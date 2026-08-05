@@ -1,6 +1,7 @@
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/expense_provider.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
+import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/loading_overlay.dart';
 import 'package:dukkan/models/Product.dart';
@@ -236,7 +237,7 @@ class _CheckOutState extends State<CheckOut> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                child: Consumer<Lists>(
+                child: Consumer<LogProvider>(
                   builder: (context, li, child) {
                     // debugPrint('77');
                     return Row(
@@ -437,7 +438,9 @@ class _CheckOutState extends State<CheckOut> {
                                               if (!widget.inbound) {
                                                 await sa.refreshProductsList();
                                                 await li.refresh();
-                                                li.refreshListOfOwners();
+                                                await context
+                                                    .read<OwnerProvider>()
+                                                    .refreshListOfOwners();
                                                 sa.defaultSellList();
 
                                                 Navigator.pop(context);

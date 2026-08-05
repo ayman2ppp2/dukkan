@@ -13,8 +13,8 @@ RootIsolateToken? _getRootIsolateToken() {
 
 /// Single owner of the pooled stats computations and their cache.
 ///
-/// Registered at the app root so pages, the legacy `Lists` provider, and the
-/// receipt flow all share one cache instance.
+/// Registered at the app root so pages and the receipt flow all share one
+/// cache instance.
 class StatsService extends ChangeNotifier {
   late DB db;
   late IsolatePool pool;

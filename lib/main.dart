@@ -5,7 +5,6 @@ import 'package:dukkan/pages/onboarding/landing_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
 import 'package:dukkan/providers/log_provider.dart';
-import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/loan_provider.dart';
 import 'package:dukkan/pages/home/home_page.dart';
 import 'package:dukkan/providers/auth_provider.dart';
@@ -86,7 +85,8 @@ class MyApp extends StatelessWidget {
               create: (context) => InventoryProvider(),
             ),
             ChangeNotifierProvider<LogProvider>(
-              create: (context) => LogProvider(),
+              create: (context) =>
+                  LogProvider(stats: context.read<StatsService>()),
             ),
             ChangeNotifierProvider<OwnerProvider>(
               create: (context) => OwnerProvider(),
@@ -96,10 +96,6 @@ class MyApp extends StatelessWidget {
             ),
             ChangeNotifierProvider<StatsService>(
               create: (context) => StatsService(),
-            ),
-            // Keep Lists for backward compatibility during migration
-            ChangeNotifierProvider<Lists>(
-              create: (context) => Lists(stats: context.read<StatsService>()),
             ),
           ],
           builder: (context, child) {

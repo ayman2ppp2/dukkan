@@ -35,10 +35,12 @@ class TestApp extends StatelessWidget {
 
 Automatically provides:
 - `SalesProvider.forTesting()` or `.detachedForTesting()`
-- `Lists.forTesting(db)` or `.detachedForTesting()`
+- `LogProvider.forTesting(db)` or `.detachedForTesting()`
 - `ExpenseProvider.forTesting(db)` or `.detachedForTesting()`
 - `LoanProvider.forTesting(db)`
 - `InventoryProvider.forTesting(db)`
+- `OwnerProvider.forTesting(db)` or `.detachedForTesting()`
+- `StatsService.forTesting(db)`
 - `AuthAPI.forTesting()`
 - Remaining providers with new `forTesting` constructors
 

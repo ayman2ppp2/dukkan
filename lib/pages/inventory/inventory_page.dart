@@ -1,4 +1,5 @@
 import 'package:dukkan/core/observability.dart';
+import 'package:dukkan/data/stats/stats_service.dart';
 import 'package:dukkan/pages/inventory/insert_page.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/add_user_dialog.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as ii;
 import 'package:provider/provider.dart';
 
-import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/owner_provider.dart';
 
 class InvPage extends StatefulWidget {
@@ -32,7 +32,6 @@ class _InvPageState extends State<InvPage> {
   @override
   Widget build(BuildContext context) {
     var as = Provider.of<SalesProvider>(context);
-    var li = Provider.of<Lists>(context);
     var owner = Provider.of<OwnerProvider>(context);
     void refresh() {
       setState(() {
@@ -73,7 +72,7 @@ class _InvPageState extends State<InvPage> {
                     fontWeight: FontWeight.bold),
               ),
               StreamBuilder(
-                stream: li.getTotalBuyPrice(),
+                stream: context.read<StatsService>().getTotalBuyPrice(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Text(
@@ -172,10 +171,8 @@ class _InvPageState extends State<InvPage> {
               return ChangeNotifierProvider.value(
                 value: owner,
                 child: ChangeNotifierProvider.value(
-                  value: li,
-                  child: ChangeNotifierProvider.value(
-                    value: as,
-                    child: Padding(
+                  value: as,
+                  child: Padding(
                       padding: const EdgeInsets.only(
                         left: 20,
                         right: 20,
@@ -200,7 +197,6 @@ class _InvPageState extends State<InvPage> {
                         priceHistory: [],
                       ),
                     ),
-                  ),
                 ),
               );
             },

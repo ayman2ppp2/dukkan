@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
 
 class inboundReceipt extends StatefulWidget {
   const inboundReceipt({super.key});
@@ -189,7 +189,7 @@ class _inboundReceiptState extends State<inboundReceipt> {
                     // 2nd button
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20, top: 10),
-                      child: Consumer<Lists>(
+                      child: Consumer<LogProvider>(
                         builder: (context, li, child) => IconButton.filled(
                           tooltip: 'فتح فاتورة الإدخال',
                           onPressed: () {

@@ -40,12 +40,12 @@ Work happens on branch `hot`; PRs go `hot` → `master`.
 4. Splash resolves to a `MultiProvider` tree registering **9 providers**:
    `AuthAPI`, `ExpenseProvider`, `SalesProvider`, `LoanProvider`,
    `InventoryProvider`, `LogProvider`, `OwnerProvider`, `ShareProvider`,
-   and legacy `Lists` (kept "for backward compatibility during migration").
+   and `StatsService`.
 5. The `builder` is the **auth gate**: `AuthStatus.uninitialized` → spinner;
    `authenticated` → `LandingPage` if no weight precision is set, else `HomePage`;
    otherwise `LoginPage`.
-6. `SalesProvider.onInventoryChanged` is wired to `Lists.clearAllCache` (any inventory
-   write invalidates the legacy stats cache).
+6. `SalesProvider.onInventoryChanged` is wired to `StatsService.clearAllCache` (any
+   inventory write invalidates the shared stats cache).
 
 ---
 
@@ -57,7 +57,7 @@ Work happens on branch `hot`; PRs go `hot` → `master`.
 Pages (lib/pages/, lib/widgets/)
    │  read/watch
    ▼
-Providers (lib/providers/)  ── legacy Lists + focused providers
+Providers (lib/providers/)
    │  delegate
    ▼
 DB (lib/core/db/db.dart)  +  data services
@@ -68,18 +68,19 @@ DB (lib/core/db/db.dart)  +  data services
 Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
 ```
 
-### The two provider generations (important!)
+### Provider responsibilities (which provider owns what)
 
-- **`Lists` (`lib/providers/list.dart`)** is the **legacy central provider**. It owns
-  checkout/cancel/edit of receipts, LAN sync (`runServer`/`client`/`cancelSync`),
-  owners, low-stock, and stream helpers. Stats computation and caching delegate to
-  `StatsService`. **Most pages still consume `Lists`.**
-- **Newer focused providers** exist and are registered in `main.dart`, but only
-  `SalesProvider`, `ExpenseProvider`, `InventoryProvider`, and `AuthAPI` are actually
-  consumed by pages today. `LoanProvider`, `LogProvider`, `OwnerProvider`,
-  `ShareProvider` are registered (and used by tests) but have **no page consumers** —
-  their logic is duplicated in `Lists` and `SalesProvider`. (`StatsProvider` and
-  `SyncProvider` were removed as dead code.) See §8 (Gotchas).
+- **`LogProvider`** (`lib/providers/log_provider.dart`) — receipt lifecycle and logs:
+  `checkOut`, `cancelReceipt`, `editReceipt`, `embeddedToProduct`, `getLogsStream`,
+  `getPersonsLogs`, plus the receipt-edit state (`editing`, `logID`). It clears the
+  shared `StatsService` cache after any write.
+- **`SalesProvider`** — catalog search/refresh, sell list, loaners, weight precision.
+- **`ExpenseProvider`** — expenses. **`LoanProvider`** — loaner ledger.
+- **`InventoryProvider`** — inventory product writes and low-stock items.
+- **`OwnerProvider`** — owners (`addOwner`, `refreshListOfOwners`).
+- **`ShareProvider`** — LAN sync (`runServer`, `syncFromServer`, `cancelSync`).
+- **`StatsService`** — single owner of pooled stats computations + cache (root).
+- **`AuthAPI`** — auth + cloud backup upload/download.
 
 ### Navigation idiom
 
@@ -166,8 +167,8 @@ All `.g.dart` files are build_runner generated — regenerate with
 #### `Owner`
 
 `ownerName` (indexed), `lastPaymentDate`, `lastPayment`, `totalPayed`, `dueMoney`.
-Used to track money owed to suppliers/owners for consigned products. (Note: `Lists` /
-`OwnerProvider` currently have no working `updateOwner`.)
+Used to track money owed to suppliers/owners for consigned products. (Note:
+`OwnerProvider.updateOwner` is currently an empty no-op.)
 
 #### `Expense`
 
@@ -195,9 +196,9 @@ Heavy read-only computations run on a pool of background isolates
 - `stats_service.dart` — `StatsService(db)`, the **single cache owner** for all stats
   (`_cache` + `cacheVersion` + `getCachedCalculation`/`clearCache`/`clearAllCache`).
   It owns the `IsolatePool`, schedules every `Cget*` job, and exposes the typed getters
-  (`getYearlyTotals`, `getDailySalesOfTheMonth`, ...). The legacy `Lists` provider
-  delegates to it and keeps `cacheVersion`/`clearAllCache` visible (and
-  `notifyListeners`) so `StatsPage` refreshes.
+  (`getYearlyTotals`, `getDailySalesOfTheMonth`, ...). Registered at the root so pages
+  and the receipt flow (`LogProvider`) share one cache and `StatsPage` refreshes on
+  `notifyListeners`.
 
 Examples: `CgetYearlyTotals`, `CgetProfitOfTheMonth`, `CgetDailySales`,
 `CgetMonthlyloans`, `getTotalExpenseNow`, `CgetSalesPerProduct` (has its own static
@@ -243,7 +244,7 @@ Consumed by: auth gate in `main.dart`, `LoginPage`, `register_page`, `verifyPage
 ### `SalesProvider` — `lib/providers/sales_provider.dart`
 
 The workhorse provider (cart, inventory, loaners, parking, prefs). `with
-ChangeNotifier, WidgetsBindingObserver`. Hooks `onInventoryChanged` → `Lists.clearAllCache`.
+ChangeNotifier, WidgetsBindingObserver`. Hooks `onInventoryChanged` → `StatsService.clearAllCache`.
 
 - **Cart**: `sellList` (sale cart), `inboundList` (inbound stock batch), `searchTemp`.
   `parkCurrentCart` / `restoreCart` / `deletePendingCart` (persist to SharedPreferences
@@ -284,34 +285,34 @@ Consumed by: `spendings`, `spending`, `addExpense`, `CheckOutPage`, `SellPage`,
 
 Consumed by: `lowStockItemesPage`, `widgets/drawer.dart`.
 
-### `Lists` (legacy central) — `lib/providers/list.dart`
+### `LogProvider` — `lib/providers/log_provider.dart`
 
-`ChangeNotifier with LanSyncState`. Holds owners/logs lists, LAN sync state, and
-delegates all stats computation/caching to `StatsService` (see `data/stats` below).
+`ChangeNotifier`. Owns the receipt lifecycle and logs streams; the replacement for
+the legacy `Lists` receipt/stats surface.
 
-- Stats (all pooled, delegated to `StatsService`): `getYearlyTotals`, `getAllProfit`,
-  `getAllSales`, `getAverageProfitPercent`, `getYearlyInflation`, `getProfitOfTheMonth`,
-  `getSalesOfTheMonth`, `getDailySales`, `getDailyProfits`, `getNumberOfSalesForAproduct`,
-  `getSaledProductsByDate`, `getSalesPerProduct`, `getLoanerComparison`,
-  `getDailySalesOfTheMonth`, `getDailyProfitOfTheMonth`, `getMonthlySalesOfTheYear`,
-  `getMonthlyProfitsOfTheYear`. `clearAllCache`/`clearCache`/`cacheVersion` also
-  delegate; they still `notifyListeners` so UI refreshes.
 - Receipts: `checkOut(...)`, `cancelReceipt(date, log)` (atomic), `editReceipt(date, log)`,
-  `getLogsStream`, `getLogsChunk`, `getPersonsLogs`.
-- Products/owners: `getTotalBuyPrice`, `embeddedToProduct`, `getLowStockItems`,
-  `addOwner`, `refreshListOfOwners`, `updateOwner` (**no-op**).
-- LAN sync: `runServer()`, `client(input)`, `cancelSync()` (see §5 LAN sync).
+  `embeddedToProduct`, `getLogsStream`, `getPersonsLogs`.
+- Receipt-edit state: `editing`, `logID` (set by `widgets/receipt.dart` before
+  reopening the invoice; read by `CheckOutPage`).
+- Every write clears the shared `StatsService` cache and `notifyListeners`s.
 
-Consumed by: `StatsPage`, `homePage`, `SellPage`, `CheckOutPage`, `InsertPage`,
-`inventoryPage`, `Logs`, `loans`, `landingPge`, `paymentVerficaion`, `widgets/share_dialog.dart`.
+Consumed by: `CheckOutPage`, `Logs`, `Receipt`, `Loan`, `inboundReceipt`,
+`widgets/drawer.dart` (Loans + inbound re-wrap, local backup restore).
 
-### Registered-but-unused by pages
+### `ShareProvider` — `lib/providers/share_provider.dart`
 
-`LoanProvider`, `LogProvider`, `OwnerProvider`, `ShareProvider` — registered in
-`main.dart` and used by tests, but no page consumes them; their logic is duplicated
-in `Lists`/`SalesProvider`. Do not assume they are "the" implementation for a feature —
-check where pages actually read state. (`StatsProvider` and `SyncProvider` were
-removed as dead code.)
+`ChangeNotifier with LanSyncState`. LAN sync: `runServer()`, `syncFromServer(input)`,
+`cancelSync()` (see §5 LAN sync). Consumed by: `widgets/share_dialog.dart`,
+`widgets/scanner.dart`, `homePage` share button.
+
+### Remaining providers
+
+- `LoanProvider` — loaner ledger (pay/withdraw/reset); consumed by tests.
+- `InventoryProvider` — inventory writes + low-stock; consumed by `lowStockItemsPage`.
+- `OwnerProvider` — owners; consumed by `AddUser`, `InsertPage`, `InvPage`, `Ownertile`,
+  and `CheckOutPage` (`refreshListOfOwners` after checkout).
+- `AuthAPI` — auth + cloud backup. (`StatsProvider` and `SyncProvider` were removed as
+  dead code, and the legacy `Lists` provider was deleted — see git history.)
 
 ---
 
@@ -348,8 +349,9 @@ back.
 
 Both go through `db.cancelReceiptAtomically` (single write txn):
 restore non-hot product counts, reverse loaner balance (with `cancel` ledger entry),
-delete the `Log`. Edit (`Lists.editReceipt`) additionally rebuilds the product list and
-reuses the original `Log.date` (unique) so re-checkout replaces the same receipt.
+delete the `Log`. Edit (`LogProvider.editReceipt`) additionally rebuilds the product
+list and reuses the original `Log.date` (unique) so re-checkout replaces the same
+receipt.
 
 ### Offer pricing formula
 
@@ -381,10 +383,10 @@ normal.
 Peer-to-peer DB transfer over HTTP on port `30000`. Version-gated:
 `LanSync.filesForVersion` requires major 2 + minor ≥ 3 → single `backup.isar`.
 
-- Sender (`Lists.runServer` / `ShareProvider.runServer`): creates local backup, binds
+- Sender (`ShareProvider.runServer`): creates local backup, binds
   `HttpServer`, serves `version`, `hash` (sha256), and the backup file; sets
   `shareAddress = host:port` (the QR payload).
-- Receiver (`Lists.client` / `syncFromServer`): parses endpoint, downloads via `dio`
+- Receiver (`ShareProvider.syncFromServer`): parses endpoint, downloads via `dio`
   with progress, **verifies sha256** against `hash`, asks peer to `shutdown`, restores
   (desktop: `db.windows()` swaps in `.received`; mobile: `db.useLocalBacup()` +
   `Restart.restartApp()`).
@@ -445,8 +447,9 @@ Do not re-enable.
   )` on first use and `DB.createForTesting`), close via `TestDbHandle.close()`.
 - Providers expose `@visibleForTesting` constructors (`X.forTesting(db)`,
   `detachedForTesting(...)`) instead of hitting the isolate pool / network.
-- `Lists.forTesting(db)` / `SalesProvider.detachedForTesting(pref, products)` bypass
-  the real init path.
+- `SalesProvider.detachedForTesting(pref, products)`,
+  `LogProvider.detachedForTesting()`, `OwnerProvider.detachedForTesting(owners:)`,
+  and the `forTesting(db)` variants bypass the real init path.
 - Integration tests need Isar's native library; CI pre-downloads `libisar.so`.
 
 ### Commands
@@ -466,13 +469,14 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 
 **Provider duplication / migration state**
 
-- `Lists`, `SalesProvider`, `LoanProvider`, `LogProvider`, `OwnerProvider`,
-  `ShareProvider` all carry **overlapping logic** (loaner ledger, stats, LAN sync).
-  Pages use `Lists` and `SalesProvider`; the newer providers are effectively dead in
-  the UI. Don't "deduplicate" blindly — confirm what the pages actually call first.
-  (`StatsProvider` and `SyncProvider` were removed as dead code.)
-- `Lists.updateOwner(...)` and `OwnerProvider.updateOwner(...)` are **empty no-ops**.
-  The owners tile in `widgets/charts/charts.dart` mutates `li.ownersList` in memory but never persists.
+- The legacy `Lists` provider was **deleted** (Phase 3). Receipt/logs live in
+  `LogProvider`, LAN sync in `ShareProvider`, owners in `OwnerProvider`, stats in
+  `StatsService`. Some duplication still exists between `SalesProvider`,
+  `LoanProvider`, and `ExpenseProvider` (loaner ledger, pooled expense/stats getters).
+  Don't "deduplicate" blindly — confirm what the pages actually call first.
+  (`StatsProvider` and `SyncProvider` were removed as dead code earlier.)
+- `OwnerProvider.updateOwner(...)` is an **empty no-op**. The owners tile in
+  `widgets/charts/charts.dart` mutates `OwnerProvider.ownersList` in memory but never persists.
 - `AuthAPI.uploadPaymentReceipt(...)` is an **empty stub** (called from
   `pages/auth/payment_verification_page.dart`).
 - `AccountPage` is **not referenced** by the navigation tree (dead-ish; the drawer has
@@ -512,7 +516,7 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 **Watch out when extending**
 
 - `Log.date` is a **unique indexed field** — receipt identity = timestamp. Checkout of
-  an edited receipt must reuse the original date (`li.logID`).
+  an edited receipt must reuse the original date (`LogProvider.logID`).
 - `Product.name` is unique — adding a product with an existing name replaces it.
 - Never schedule pooled `Cget*` jobs without passing a `RootIsolateToken` in `map['1']`.
 - Pooled jobs re-open `isarInstance` in the worker; the worker must not use the main

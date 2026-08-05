@@ -1,6 +1,4 @@
-// import 'package:dukkan/providers/list.dart';
 import 'dart:async';
-
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/models/Product.dart';

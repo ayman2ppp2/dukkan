@@ -5,7 +5,6 @@ import 'package:dukkan/pages/home/home_page.dart';
 import 'package:dukkan/pages/onboarding/landing_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
-import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/loan_provider.dart';
 import 'package:dukkan/providers/auth_provider.dart';
@@ -73,9 +72,6 @@ class TestApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<StatsService>.value(
           value: StatsService.forTesting(db),
-        ),
-        ChangeNotifierProvider<Lists>.value(
-          value: Lists.forTesting(db),
         ),
       ],
       child: _CartInjector(

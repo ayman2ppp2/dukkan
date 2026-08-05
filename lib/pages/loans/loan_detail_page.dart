@@ -1,10 +1,9 @@
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/loans/account_statement_page.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/loading_overlay.dart';
 import 'package:dukkan/models/Loaner.dart';
-import 'package:dukkan/models/Log.dart';
 import 'package:dukkan/widgets/receipt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,7 +21,6 @@ class Loan extends StatefulWidget {
 }
 
 class _LoanState extends State<Loan> {
-  List<Log> receipts = [];
   double payment = 0;
   TextEditingController payCon = TextEditingController();
   TextEditingController withdrawCon = TextEditingController();
@@ -50,7 +48,6 @@ class _LoanState extends State<Loan> {
 
   @override
   Widget build(BuildContext context) {
-    receipts = Provider.of<Lists>(context, listen: false).logsList;
     return Scaffold(
       backgroundColor: Colors.brown[50],
       appBar: AppBar(
@@ -531,7 +528,8 @@ class _LoanState extends State<Loan> {
                               height: 300,
                               child: StreamBuilder(
                                   stream:
-                                      Provider.of<Lists>(context, listen: false)
+                                      Provider.of<LogProvider>(context,
+                                              listen: false)
                                           .getPersonsLogs(snapshot.data!.ID),
                                   builder: (context, snapshot) {
                                     if (snapshot.hasData) {
@@ -562,24 +560,19 @@ class _LoanState extends State<Loan> {
                               width: double.infinity,
                               child: TextButton.icon(
                                 onPressed: () async {
-                                  var li = Provider.of<Lists>(context,
-                                      listen: false);
                                   try {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              ChangeNotifierProvider.value(
-                                                value: li,
-                                                child: BankStatementPage(
-                                                  accountNumber: snapshot
-                                                      .data!.ID
-                                                      .toString(),
-                                                  customerName: snapshot
-                                                      .data!.name
-                                                      .toString(),
-                                                  loaner: snapshot.data!,
-                                                ),
+                                              BankStatementPage(
+                                                accountNumber: snapshot
+                                                    .data!.ID
+                                                    .toString(),
+                                                customerName: snapshot
+                                                    .data!.name
+                                                    .toString(),
+                                                loaner: snapshot.data!,
                                               )),
                                     );
                                   } catch (e, st) {

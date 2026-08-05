@@ -1,6 +1,5 @@
 import 'package:dukkan/pages/auth/payment_verification_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
-import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/loading_overlay.dart';
@@ -28,7 +27,6 @@ class _LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
     var sa = Provider.of<SalesProvider>(context);
-    var li = Provider.of<Lists>(context);
     var exp = Provider.of<ExpenseProvider>(context);
     var auth = Provider.of<AuthAPI>(context);
 
@@ -243,13 +241,10 @@ class _LandingPageState extends State<LandingPage> {
                                   ChangeNotifierProvider.value(
                                 value: sa,
                                 child: ChangeNotifierProvider.value(
-                                  value: li,
+                                  value: exp,
                                   child: ChangeNotifierProvider.value(
-                                    value: exp,
-                                    child: ChangeNotifierProvider.value(
-                                      value: auth,
-                                      child: const PaymentVerificationPage(),
-                                    ),
+                                    value: auth,
+                                    child: const PaymentVerificationPage(),
                                   ),
                                 ),
                               ),

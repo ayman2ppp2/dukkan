@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
-import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 
 void main() {
@@ -13,7 +12,6 @@ void main() {
           home: MultiProvider(
             providers: [
               ChangeNotifierProvider(create: (_) => SalesProvider()),
-              ChangeNotifierProvider(create: (_) => Lists()),
               ChangeNotifierProvider(create: (_) => ExpenseProvider()),
             ],
             child: Builder(

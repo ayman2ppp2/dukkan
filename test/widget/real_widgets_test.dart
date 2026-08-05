@@ -4,7 +4,7 @@ import 'package:dukkan/pages/auth/login_page.dart';
 import 'package:dukkan/pages/onboarding/landing_page.dart';
 import 'package:dukkan/pages/home/search_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
@@ -32,8 +32,8 @@ void main() {
             products: products,
           ),
         ),
-        ChangeNotifierProvider<Lists>.value(
-          value: Lists.detachedForTesting(owners: [ownerFixture()]),
+        ChangeNotifierProvider<LogProvider>.value(
+          value: LogProvider.detachedForTesting(),
         ),
         ChangeNotifierProvider<OwnerProvider>.value(
           value: OwnerProvider.detachedForTesting(owners: [ownerFixture()]),

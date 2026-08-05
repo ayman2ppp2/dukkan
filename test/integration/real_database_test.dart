@@ -4,7 +4,7 @@ library;
 import 'dart:io';
 
 import 'package:dukkan/providers/loan_provider.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/models/Expense.dart';
 import 'package:dukkan/models/Log.dart';
@@ -302,7 +302,7 @@ void main() {
   group('Real receipt edit tests', () {
     test('hot products restored for editing carry non-null offer fields',
         () async {
-      final lists = Lists.forTesting(handle.db);
+      final lists = LogProvider.forTesting(handle.db);
       final ep = EmbeddedProduct()
         ..productId = 1
         ..name = 'Hot'
@@ -355,7 +355,7 @@ void main() {
         await handle.db.isar!.logs.put(log);
       });
 
-      final lists = Lists.forTesting(handle.db);
+      final lists = LogProvider.forTesting(handle.db);
       await lists.editReceipt(log.date, log);
 
       final loaner = await handle.db.isar!.loaners.get(loanerId);

@@ -1,5 +1,4 @@
 import 'package:dukkan/providers/expense_provider.dart';
-import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:flutter/material.dart';
@@ -72,7 +71,6 @@ class _PaymentVerificationPageState extends State<PaymentVerificationPage> {
     );
     // Navigate to the next page or perform other actions
     var sa = Provider.of<SalesProvider>(context, listen: false);
-    var li = Provider.of<Lists>(context, listen: false);
     var exp = Provider.of<ExpenseProvider>(context, listen: false);
     var auth = Provider.of<AuthAPI>(context, listen: false);
     Navigator.push(
@@ -81,13 +79,10 @@ class _PaymentVerificationPageState extends State<PaymentVerificationPage> {
         builder: (context) => ChangeNotifierProvider.value(
           value: sa,
           child: ChangeNotifierProvider.value(
-            value: li,
+            value: exp,
             child: ChangeNotifierProvider.value(
-              value: exp,
-              child: ChangeNotifierProvider.value(
-                value: auth,
-                child: const PaymentVerificationPage(),
-              ),
+              value: auth,
+              child: const PaymentVerificationPage(),
             ),
           ),
         ),

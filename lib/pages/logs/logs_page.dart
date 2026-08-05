@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/models/Loaner.dart';
 import 'package:dukkan/models/Log.dart';
@@ -73,7 +73,7 @@ class _LogsState extends State<Logs> {
   @override
   Widget build(BuildContext context) {
     var sa = Provider.of<SalesProvider>(context, listen: false);
-    var li = Provider.of<Lists>(context, listen: false);
+    var li = Provider.of<LogProvider>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
