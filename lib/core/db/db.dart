@@ -146,41 +146,6 @@ class DB {
     return isar!.writeTxn(() => isar!.loaners.delete(id));
   }
 
-  Future<List<int>> updateProducts(List<EmbeddedProduct> products) async {
-    var ids = products.map((e) => e.hot! ? 0 : (e.productId ?? 0)).toList();
-    var realProducts = embeddedToProduct(ids);
-    var updatedRealProducts = List<Product>.empty(growable: true);
-    for (var product in realProducts.nonNulls.toList()) {
-      // var num = await isar!.products.get(product.id);
-      var emCount = products
-          .firstWhere((element) => element.productId == product.id)
-          .count;
-      updatedRealProducts.add(Product.named2(
-          name: product.name,
-          ownerName: product.ownerName,
-          barcode: product.barcode,
-          buyprice: product.buyprice,
-          sellPrice: product.sellPrice,
-          count: product.count! + emCount!,
-          weightable: product.weightable,
-          wholeUnit: product.wholeUnit,
-          offer: product.offer,
-          offerCount: product.offerCount,
-          offerPrice: product.offerPrice,
-          priceHistory: product.priceHistory,
-          endDate: product.endDate,
-          hot: product.hot,
-          id: product.id));
-    }
-    return isar!
-        .writeTxn(() async => isar!.products.putAll(updatedRealProducts));
-  }
-
-  // Future<void> useBackup() async {
-  //   // DEPRECATED: Removed due to migration to isar_community
-  //   // This function depended on old Hive backup code (gg class)
-  // }
-
   Future<int> insertLoaner(Loaner loaner) {
     return isar!.writeTxn(() => isar!.loaners.put(loaner));
     // loaners.put(loaner.ID, loaner);
@@ -189,43 +154,6 @@ class DB {
   Future<List<Loaner>> getLoaners() {
     return isar!.loaners.where().anyID().sortByBalanceDesc().findAll();
     // return List<Loaner>.from(loaners.values);
-  }
-
-  Future<int> updateLoaner(Log log, double sum) async {
-    Loaner temp =
-        (await isar!.loaners.where().iDEqualTo(log.loanerID!).findFirst())!;
-    DateTime CalculateDate() {
-      if (temp.balance! == 0) {
-        return DateTime.parse(temp.lastPayment!.last.key!);
-      }
-      if (temp.balance! - (log.price + sum) == 0) {
-        return DateTime.now();
-      } else {
-        try {
-          return DateTime.parse(temp.lastPayment!.last.key!);
-        } catch (e) {
-          return DateTime(1900);
-        }
-      }
-    }
-
-    final newBalance = (temp.balance ?? 0) - (log.price + sum);
-    final payments =
-        List<EmbeddedMap>.from(temp.lastPayment ?? [], growable: true);
-    payments.add(EmbeddedMap()
-      ..key = DateTime.now().toIso8601String()
-      ..value = (log.price + sum).toString()
-      ..remaining = newBalance
-      ..type = 'cancel');
-    return isar!.writeTxn(() async => isar!.loaners.put(Loaner(
-          name: temp.name,
-          phoneNumber: temp.phoneNumber,
-          location: temp.location,
-          lastPayment: payments,
-          balance: newBalance,
-        )
-          ..ID = temp.ID
-          ..zeroingDate = CalculateDate()));
   }
 
   Future<List<Owner>> getOwnersList() {
@@ -304,10 +232,6 @@ class DB {
       return dateB.compareTo(dateA);
     });
     return results;
-  }
-
-  Future<void> deleteLog(Log log) {
-    return isar!.writeTxn(() async => isar!.logs.delete(log.id));
   }
 
   Future<void> insertProducts({required List<Product> products}) async {
