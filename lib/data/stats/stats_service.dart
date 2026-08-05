@@ -12,7 +12,7 @@ RootIsolateToken? _getRootIsolateToken() {
 
 /// Single owner of the pooled stats computations and their cache.
 ///
-/// Both `Lists` and `StatsProvider` delegate here; the computation logic and
+/// The legacy `Lists` provider delegates here; the computation logic and
 /// cache semantics live in exactly one place.
 class StatsService {
   final DB db;

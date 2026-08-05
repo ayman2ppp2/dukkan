@@ -69,11 +69,11 @@ tags:
 
 | Provider | Current | Needed |
 |----------|---------|--------|
-| `SyncProvider` | Hardcodes `Client()` | `SyncProvider.forTesting(DB db)` |
-| `StatsProvider` | Hardcodes `DB.getInstance()` | `StatsProvider.forTesting(DB db)` |
 | `LogProvider` | Hardcodes `DB.getInstance()` | `LogProvider.forTesting(DB db)` |
 | `OwnerProvider` | Hardcodes `DB.getInstance()` | `OwnerProvider.forTesting(DB db)` |
 | `ShareProvider` | Hardcodes `DB.getInstance()` | `ShareProvider.forTesting(DB db)` |
+
+> `SyncProvider` and `StatsProvider` were removed in Phase 3 (dead code; see TECHNICAL.md).
 
 ### 6. `.github/workflows/test.yml` — CI Pipeline
 

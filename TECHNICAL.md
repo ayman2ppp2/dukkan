@@ -37,9 +37,9 @@ Work happens on branch `hot`; PRs go `hot` → `master`.
 1. `main()` → `AppLogger.bootstrap(...)` (initializes Sentry + global error handlers).
 2. `DB.initialize()` — opens the local Isar database (singleton).
 3. `runApp(MyApp)` → `MaterialApp` (brown Material 3 theme) → `AnimatedSplashScreen`.
-4. Splash resolves to a `MultiProvider` tree registering **11 providers**:
-   `AuthAPI`, `ExpenseProvider`, `SalesProvider`, `LoanProvider`, `StatsProvider`,
-   `InventoryProvider`, `LogProvider`, `OwnerProvider`, `ShareProvider`, `SyncProvider`,
+4. Splash resolves to a `MultiProvider` tree registering **9 providers**:
+   `AuthAPI`, `ExpenseProvider`, `SalesProvider`, `LoanProvider`,
+   `InventoryProvider`, `LogProvider`, `OwnerProvider`, `ShareProvider`,
    and legacy `Lists` (kept "for backward compatibility during migration").
 5. The `builder` is the **auth gate**: `AuthStatus.uninitialized` → spinner;
    `authenticated` → `LandingPage` if no weight precision is set, else `HomePage`;
@@ -76,10 +76,10 @@ Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
   `StatsService`. **Most pages still consume `Lists`.**
 - **Newer focused providers** exist and are registered in `main.dart`, but only
   `SalesProvider`, `ExpenseProvider`, `InventoryProvider`, and `AuthAPI` are actually
-  consumed by pages today. `StatsProvider`, `LoanProvider`, `LogProvider`,
-  `OwnerProvider`, `ShareProvider`, `SyncProvider` are registered (and used by tests)
-  but have **no page consumers** — their logic is duplicated in `Lists` and
-  `SalesProvider`. See §8 (Gotchas).
+  consumed by pages today. `LoanProvider`, `LogProvider`, `OwnerProvider`,
+  `ShareProvider` are registered (and used by tests) but have **no page consumers** —
+  their logic is duplicated in `Lists` and `SalesProvider`. (`StatsProvider` and
+  `SyncProvider` were removed as dead code.) See §8 (Gotchas).
 
 ### Navigation idiom
 
@@ -195,9 +195,9 @@ Heavy read-only computations run on a pool of background isolates
 - `stats_service.dart` — `StatsService(db)`, the **single cache owner** for all stats
   (`_cache` + `cacheVersion` + `getCachedCalculation`/`clearCache`/`clearAllCache`).
   It owns the `IsolatePool`, schedules every `Cget*` job, and exposes the typed getters
-  (`getYearlyTotals`, `getDailySalesOfTheMonth`, ...). Both `Lists` and the legacy
-  `StatsProvider` delegate to it; `Lists` keeps `cacheVersion`/`clearAllCache`
-  visible (and `notifyListeners`) so `StatsPage` refreshes.
+  (`getYearlyTotals`, `getDailySalesOfTheMonth`, ...). The legacy `Lists` provider
+  delegates to it and keeps `cacheVersion`/`clearAllCache` visible (and
+  `notifyListeners`) so `StatsPage` refreshes.
 
 Examples: `CgetYearlyTotals`, `CgetProfitOfTheMonth`, `CgetDailySales`,
 `CgetMonthlyloans`, `getTotalExpenseNow`, `CgetSalesPerProduct` (has its own static
@@ -307,10 +307,11 @@ Consumed by: `StatsPage`, `homePage`, `SellPage`, `CheckOutPage`, `InsertPage`,
 
 ### Registered-but-unused by pages
 
-`StatsProvider`, `LoanProvider`, `LogProvider`, `OwnerProvider`, `ShareProvider`,
-`SyncProvider` — registered in `main.dart` and used by tests, but no page consumes
-them; their logic is duplicated in `Lists`/`SalesProvider`. Do not assume they are
-"the" implementation for a feature — check where pages actually read state.
+`LoanProvider`, `LogProvider`, `OwnerProvider`, `ShareProvider` — registered in
+`main.dart` and used by tests, but no page consumes them; their logic is duplicated
+in `Lists`/`SalesProvider`. Do not assume they are "the" implementation for a feature —
+check where pages actually read state. (`StatsProvider` and `SyncProvider` were
+removed as dead code.)
 
 ---
 
@@ -465,11 +466,11 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 
 **Provider duplication / migration state**
 
-- `Lists`, `SalesProvider`, `StatsProvider`, `LoanProvider`, `LogProvider`,
-  `OwnerProvider`, `ShareProvider`, `SyncProvider` all carry **overlapping logic**
-  (loaner ledger, stats, LAN sync). Pages use `Lists` and `SalesProvider`; the newer
-  providers are effectively dead in the UI. Don't "deduplicate" blindly — confirm what
-  the pages actually call first.
+- `Lists`, `SalesProvider`, `LoanProvider`, `LogProvider`, `OwnerProvider`,
+  `ShareProvider` all carry **overlapping logic** (loaner ledger, stats, LAN sync).
+  Pages use `Lists` and `SalesProvider`; the newer providers are effectively dead in
+  the UI. Don't "deduplicate" blindly — confirm what the pages actually call first.
+  (`StatsProvider` and `SyncProvider` were removed as dead code.)
 - `Lists.updateOwner(...)` and `OwnerProvider.updateOwner(...)` are **empty no-ops**.
   The owners tile in `widgets/charts/charts.dart` mutates `li.ownersList` in memory but never persists.
 - `AuthAPI.uploadPaymentReceipt(...)` is an **empty stub** (called from

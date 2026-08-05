@@ -11,8 +11,6 @@ import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/providers/share_provider.dart';
-import 'package:dukkan/providers/stats_provider.dart';
-import 'package:dukkan/providers/sync_provider.dart';
 import 'package:dukkan/models/Product.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -60,9 +58,6 @@ class TestApp extends StatelessWidget {
         ChangeNotifierProvider<LoanProvider>.value(
           value: LoanProvider.forTesting(db),
         ),
-        ChangeNotifierProvider<StatsProvider>.value(
-          value: StatsProvider.forTesting(db),
-        ),
         ChangeNotifierProvider<InventoryProvider>.value(
           value: InventoryProvider.forTesting(db),
         ),
@@ -74,9 +69,6 @@ class TestApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<ShareProvider>.value(
           value: ShareProvider.forTesting(db),
-        ),
-        ChangeNotifierProvider<SyncProvider>.value(
-          value: SyncProvider.forTesting(),
         ),
         ChangeNotifierProvider<Lists>.value(
           value: Lists.forTesting(db),

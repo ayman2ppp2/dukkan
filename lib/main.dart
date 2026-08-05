@@ -12,8 +12,6 @@ import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/providers/share_provider.dart';
-import 'package:dukkan/providers/stats_provider.dart';
-import 'package:dukkan/providers/sync_provider.dart';
 import 'package:dukkan/core/db/db.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
@@ -83,9 +81,6 @@ class MyApp extends StatelessWidget {
             ChangeNotifierProvider<LoanProvider>(
               create: (context) => LoanProvider(),
             ),
-            ChangeNotifierProvider<StatsProvider>(
-              create: (context) => StatsProvider(),
-            ),
             ChangeNotifierProvider<InventoryProvider>(
               create: (context) => InventoryProvider(),
             ),
@@ -97,9 +92,6 @@ class MyApp extends StatelessWidget {
             ),
             ChangeNotifierProvider<ShareProvider>(
               create: (context) => ShareProvider(),
-            ),
-            ChangeNotifierProvider<SyncProvider>(
-              create: (context) => SyncProvider(),
             ),
             // Keep Lists for backward compatibility during migration
             ChangeNotifierProvider<Lists>(
