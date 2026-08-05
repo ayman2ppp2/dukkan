@@ -33,10 +33,6 @@ class OwnerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateOwner(Owner owner) {
-    // db.owners.put(owner.ownerName, owner);
-  }
-
   Future<void> refresh() async {
     notifyListeners();
   }

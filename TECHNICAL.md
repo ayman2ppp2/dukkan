@@ -279,10 +279,12 @@ Consumed by: `spendings`, `spending`, `addExpense`, `CheckOutPage`, `SellPage`,
 
 ### `InventoryProvider` — `lib/providers/inventory_provider.dart`
 
-`search`, `searchByBarcode`, `embeddedToProduct`, `getAllProducts`,
-`watchProducts` (lazy watch), `getLowStockItems({thresholdPercent = 0.25})`.
+`getLowStockItems({thresholdPercent = 0.25})` — stock-level dashboard data.
 
 Consumed by: `lowStockItemesPage`, `widgets/drawer.dart`.
+
+> Phase 4 removed its dead `search`, `searchByBarcode`, `embeddedToProduct`,
+> `getAllProducts`, and `watchProducts` members (no consumers).
 
 ### `LogProvider` — `lib/providers/log_provider.dart`
 

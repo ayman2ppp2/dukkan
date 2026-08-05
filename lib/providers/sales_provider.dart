@@ -460,15 +460,6 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     _pref.setString('productList', jsonEncode(productListJson));
   }
 
-  Future<List<Product>> loadProductsFromSharedPreferences() async {
-    var _productListJson = _pref.getString('productList');
-    if (_productListJson != null) {
-      final List<dynamic> jsonList = jsonDecode(_productListJson);
-      return jsonList.map((json) => Product.fromJson(map: json)).toList();
-    }
-    return [];
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||

@@ -219,10 +219,6 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  Future<Session> anonymosSignIn() async {
-    return await account.createAnonymousSession();
-  }
-
   Future<Session> createEmailSession({
     required String email,
     required String password,
@@ -339,14 +335,6 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  Future<Preferences> getUserPreferences() async {
-    return await account.getPrefs();
-  }
-
-  updatePreferences({required String bio}) async {
-    return account.updatePrefs(prefs: {'bio': bio});
-  }
-
   Future<void> uploadBackup() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -414,11 +402,5 @@ class AuthAPI extends ChangeNotifier {
       'subscriptionExpiry':
           DateTime.now().add(Duration(days: s)).toIso8601String(),
     });
-  }
-
-  Future<String> getSubscriptionStatus() {
-    return account
-        .getPrefs()
-        .then((value) => value.data['subscriptionPlan'] ?? '');
   }
 }
