@@ -2,12 +2,12 @@ import 'dart:async';
 // import 'package:mime';
 import 'package:dio/dio.dart';
 import 'package:restart_app/restart_app.dart';
-import 'package:dukkan/core/IsolatePool.dart';
-import 'package:dukkan/core/lan_sync.dart';
+import 'package:dukkan/core/pool/isolate_pool.dart';
+import 'package:dukkan/core/sync/lan_sync.dart';
 import 'package:dukkan/core/observability.dart';
 // import 'package:dukkan/models/Loaner.dart';
 import 'package:dukkan/models/Owner.dart';
-import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/db/db.dart';
 import 'package:dukkan/models/prodStats.dart';
 import 'package:dukkan/models/Product.dart';
 import 'package:dukkan/models/searchQuery.dart';
@@ -21,7 +21,7 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 // import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import '../models/Log.dart';
+import 'package:dukkan/models/Log.dart';
 
 RootIsolateToken? _getRootIsolateToken() {
   return RootIsolateToken.instance;

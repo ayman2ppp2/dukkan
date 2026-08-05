@@ -1,4 +1,4 @@
-import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/db/db.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

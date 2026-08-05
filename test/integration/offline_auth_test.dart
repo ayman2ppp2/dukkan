@@ -2,7 +2,7 @@
 library;
 
 import 'package:appwrite/enums.dart';
-import 'package:dukkan/providers/onlineProvider.dart';
+import 'package:dukkan/providers/auth_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';

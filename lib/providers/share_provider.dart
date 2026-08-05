@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:dukkan/core/db.dart';
-import 'package:dukkan/core/lan_sync.dart';
+import 'package:dukkan/core/db/db.dart';
+import 'package:dukkan/core/sync/lan_sync.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter/material.dart';
 import 'package:mime/mime.dart';

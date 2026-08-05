@@ -14,11 +14,12 @@ A retail shop management app built with Flutter.
 
 | Path | Purpose |
 |---|---|
-| `lib/core/db.dart` | DB class with all pooled jobs (`Cget*` methods) |
-| `lib/providers/list.dart` | Central `Lists` provider, delegates DB calls |
-| `lib/util/models/` | Data models (`Product`, `Log`, `Loaner`, `Emap`, `prodStats`) |
-| `lib/util/charts.dart` | Chart widgets |
-| `lib/pages/` | UI screens |
+| `lib/core/` | DB class with all pooled jobs (`Cget*`), isolate pool, config, network, LAN sync |
+| `lib/providers/` | ChangeNotifier providers (incl. legacy `Lists` in `list.dart`) |
+| `lib/models/` | Data models (`Product`, `Log`, `Loaner`, `Emap`, `prodStats`) |
+| `lib/pages/` | UI screens (feature subfolders) |
+| `lib/widgets/` | Reusable widgets (charts, dialogs, tiles) |
+| `lib/utils/` | Shared helpers (e.g. `unit_conversion.dart`) |
 | `test/unit/` | Unit tests |
 | `test/widget/` | Widget tests |
 

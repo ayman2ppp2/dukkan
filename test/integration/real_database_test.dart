@@ -5,7 +5,7 @@ import 'dart:io';
 
 import 'package:dukkan/providers/loan_provider.dart';
 import 'package:dukkan/providers/list.dart';
-import 'package:dukkan/providers/salesProvider.dart';
+import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/models/Expense.dart';
 import 'package:dukkan/models/Log.dart';
 import 'package:dukkan/models/Loaner.dart';

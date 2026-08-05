@@ -24,7 +24,7 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:io';
 
-import 'package:dukkan/core/db.dart'
+import 'package:dukkan/core/db/db.dart'
     show computeLoanerComparison, hotSellValue, logLoanedValue;
 import 'package:dukkan/models/Expense.dart';
 import 'package:dukkan/models/Log.dart';

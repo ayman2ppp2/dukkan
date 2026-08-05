@@ -1,7 +1,7 @@
 import 'dart:io' as IO;
 import 'package:appwrite/appwrite.dart';
-import 'package:dukkan/core/appwrite_config.dart';
-import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/config/appwrite_config.dart';
+import 'package:dukkan/core/db/db.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';

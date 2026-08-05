@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dukkan/core/db.dart' show recalculateProfit;
+import 'package:dukkan/core/db/db.dart' show recalculateProfit;
 import 'package:dukkan/models/Log.dart';
 import 'package:dukkan/models/Product.dart';
 import 'package:dukkan/models/Emap.dart';

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/db/db.dart';
 import 'package:isar_community/isar.dart';
 
 bool _isarCoreInitialized = false;

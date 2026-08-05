@@ -54,13 +54,13 @@ Work happens on branch `hot`; PRs go `hot` → `master`.
 ### Layers
 
 ```
-Pages (lib/pages/, lib/util/*.dart widgets)
+Pages (lib/pages/, lib/widgets/)
    │  read/watch
    ▼
 Providers (lib/providers/)  ── legacy Lists + focused providers
    │  delegate
    ▼
-DB (lib/core/db.dart)  +  PooledJob (Cget*) classes scheduled on isolate_pool_2
+DB (lib/core/db/db.dart)  +  PooledJob (Cget*) classes scheduled on isolate_pool_2
    │
    ▼
 Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
@@ -89,7 +89,7 @@ adding a page that needs providers, follow this pattern.
 
 ## 3. Data Layer (Isar)
 
-### `DB` class (`lib/core/db.dart`, ~2265 lines)
+### `DB` class (`lib/core/db/db.dart`, ~2265 lines)
 
 Singleton (`DB.getInstance()`), lazy singleton init guarded against races. Holds the
 live `Isar` instance named `isarInstance` in the app documents directory.
@@ -119,11 +119,11 @@ All `.g.dart` files are build_runner generated — regenerate with
 
 | Collection | File | Notes |
 |---|---|---|
-| `Product` | `lib/util/models/Product.dart` | catalog item + `hot` ad-hoc items |
-| `Log` | `lib/util/models/Log.dart` | sale/inbound receipt |
-| `Loaner` | `lib/util/models/Loaner.dart` | customer with balance |
-| `Owner` | `lib/util/models/Owner.dart` | supplier/owner due money |
-| `Expense` | `lib/util/models/Expense.dart` | fixed/recurring expense |
+| `Product` | `lib/models/Product.dart` | catalog item + `hot` ad-hoc items |
+| `Log` | `lib/models/Log.dart` | sale/inbound receipt |
+| `Loaner` | `lib/models/Loaner.dart` | customer with balance |
+| `Owner` | `lib/models/Owner.dart` | supplier/owner due money |
+| `Expense` | `lib/models/Expense.dart` | fixed/recurring expense |
 
 #### `Product`
 
@@ -179,7 +179,7 @@ Heavy read-only computations run on a pool of background isolates
 (`isolate_pool_2`), sized `(Platform.numberOfProcessors ~/ 2) - 1` (`Pool.init()` in
 `lib/core/IsolatePool.dart`).
 
-Every pooled job class (defined in `lib/core/db.dart`) follows this exact shape:
+Every pooled job class (defined in `lib/core/db/db.dart`) follows this exact shape:
 
 1. Constructor takes a `Map` where `map['1']` is the `RootIsolateToken` (passed from the
    provider) and `map['2']` is often a date/query param.
@@ -210,7 +210,7 @@ of buy price from start-of-year to current).
 
 ## 4. Providers
 
-### `AuthAPI` — `lib/providers/onlineProvider.dart`
+### `AuthAPI` — `lib/providers/auth_provider.dart`
 
 Appwrite auth + storage facade. `AuthStatus { uninitialized, authenticated,
 unauthenticated }`.
@@ -228,9 +228,9 @@ unauthenticated }`.
 - `uploadPaymentReceipt(...)` is an **empty no-op stub** (see Gotchas).
 
 Consumed by: auth gate in `main.dart`, `LoginPage`, `register_page`, `verifyPage`,
-`landingPge`, `AccountPage`, `util/drawer.dart`.
+`landingPge`, `AccountPage`, `widgets/drawer.dart`.
 
-### `SalesProvider` — `lib/providers/salesProvider.dart`
+### `SalesProvider` — `lib/providers/sales_provider.dart`
 
 The workhorse provider (cart, inventory, loaners, parking, prefs). `with
 ChangeNotifier, WidgetsBindingObserver`. Hooks `onInventoryChanged` → `Lists.clearAllCache`.
@@ -265,14 +265,14 @@ widgets.
 - `getRealProfit()` = monthly profit − monthly loans − total expenses.
 
 Consumed by: `spendings`, `spending`, `addExpense`, `CheckOutPage`, `SellPage`,
-`landingPge`, `paymentVerficaion`, `util/inboundReceipt.dart`, `util/drawer.dart`.
+`landingPge`, `paymentVerficaion`, `pages/inbound/inbound_receipt_page.dart`, `widgets/drawer.dart`.
 
 ### `InventoryProvider` — `lib/providers/inventory_provider.dart`
 
 `search`, `searchByBarcode`, `embeddedToProduct`, `getAllProducts`,
 `watchProducts` (lazy watch), `getLowStockItems({thresholdPercent = 0.25})`.
 
-Consumed by: `lowStockItemesPage`, `util/drawer.dart`.
+Consumed by: `lowStockItemesPage`, `widgets/drawer.dart`.
 
 ### `Lists` (legacy central) — `lib/providers/list.dart`
 
@@ -292,7 +292,7 @@ Consumed by: `lowStockItemesPage`, `util/drawer.dart`.
 - LAN sync: `runServer()`, `client(input)`, `cancelSync()` (see §5 LAN sync).
 
 Consumed by: `StatsPage`, `homePage`, `SellPage`, `CheckOutPage`, `InsertPage`,
-`inventoryPage`, `Logs`, `loans`, `landingPge`, `paymentVerficaion`, `util/share.dart`.
+`inventoryPage`, `Logs`, `loans`, `landingPge`, `paymentVerficaion`, `widgets/share_dialog.dart`.
 
 ### Registered-but-unused by pages
 
@@ -307,23 +307,23 @@ them; their logic is duplicated in `Lists`/`SalesProvider`. Do not assume they a
 
 | Page | File | Purpose |
 |---|---|---|
-| `LandingPage` | `pages/landingPge.dart` | First-run onboarding: store name, scale precision, subscription plan → `PaymentVerificationPage` |
-| `HomePage` | `pages/homePage.dart` | Auth shell: TabBar (Sell + Stats), drawer, barcode/logs/inventory/share actions |
-| `SellPage` | `pages/SellPage.dart` | Cart editor tab; grid/list, parking dialog, open invoice |
-| `CheckOut` | `pages/CheckOutPage.dart` | Invoice confirmation; cash / debt (loaner) / expense payment; discount |
-| `InPage` | `pages/InsertPage.dart` | Product create/edit form (whole-unit aware) |
-| `InvPage` | `pages/inventoryPage.dart` | Inventory grid, capital total, add owner/product |
-| `Loans` | `pages/loans.dart` | Debt overview + loaner list; FAB adds loaner |
-| `Loan` | `util/loan.dart` | Loaner detail: balance card, deposit/withdraw, invoices |
-| `BankStatementPage` | `pages/accountStatement.dart` | Per-loaner statement ledger + PDF/text export |
-| `StatsPage` | `pages/StatsPage.dart` | KPI cards + charts dashboard |
-| `Logs` | `pages/Logs.dart` | Invoice history with search/date/loaner filters, chunked infinite scroll |
-| `Spendings` / `Spending` | `pages/spendings.dart` / `spending.dart` | Expenses dashboard + expense detail |
-| `LowStockItemsPage` | `pages/lowStockItemesPage.dart` | Low-stock products with severity colors |
+| `LandingPage` | `pages/onboarding/landing_page.dart` | First-run onboarding: store name, scale precision, subscription plan → `PaymentVerificationPage` |
+| `HomePage` | `pages/home/home_page.dart` | Auth shell: TabBar (Sell + Stats), drawer, barcode/logs/inventory/share actions |
+| `SellPage` | `pages/home/sell_page.dart` | Cart editor tab; grid/list, parking dialog, open invoice |
+| `CheckOut` | `pages/home/checkout_page.dart` | Invoice confirmation; cash / debt (loaner) / expense payment; discount |
+| `InPage` | `pages/inventory/insert_page.dart` | Product create/edit form (whole-unit aware) |
+| `InvPage` | `pages/inventory/inventory_page.dart` | Inventory grid, capital total, add owner/product |
+| `Loans` | `pages/loans/loans_page.dart` | Debt overview + loaner list; FAB adds loaner |
+| `Loan` | `pages/loans/loan_detail_page.dart` | Loaner detail: balance card, deposit/withdraw, invoices |
+| `BankStatementPage` | `pages/loans/account_statement_page.dart` | Per-loaner statement ledger + PDF/text export |
+| `StatsPage` | `pages/stats/stats_page.dart` | KPI cards + charts dashboard |
+| `Logs` | `pages/logs/logs_page.dart` | Invoice history with search/date/loaner filters, chunked infinite scroll |
+| `Spendings` / `Spending` | `pages/expenses/spendings_page.dart` / `spending.dart` | Expenses dashboard + expense detail |
+| `LowStockItemsPage` | `pages/inventory/low_stock_page.dart` | Low-stock products with severity colors |
 | `LoginPage` / `RegisterPage` / `VerficationPage` | `pages/*` | Appwrite auth screens |
-| `PaymentVerificationPage` | `pages/paymentVerficaion.dart` | Subscription payment upload + PIN (partly stubbed) |
-| `SearchPage` | `pages/searchPage.dart` | Product picker for sale/inbound; hot-item fallback |
-| `SettingsPage` | `pages/settingsPage.dart` | Weight precision + store name |
+| `PaymentVerificationPage` | `pages/auth/payment_verification_page.dart` | Subscription payment upload + PIN (partly stubbed) |
+| `SearchPage` | `pages/home/search_page.dart` | Product picker for sale/inbound; hot-item fallback |
+| `SettingsPage` | `pages/settings/settings_page.dart` | Weight precision + store name |
 
 ### Sale flow (happy path)
 
@@ -460,9 +460,9 @@ These matter when touching code — verify before "fixing" and don't rely on bro
   providers are effectively dead in the UI. Don't "deduplicate" blindly — confirm what
   the pages actually call first.
 - `Lists.updateOwner(...)` and `OwnerProvider.updateOwner(...)` are **empty no-ops**.
-  The owners tile in `charts.dart` mutates `li.ownersList` in memory but never persists.
+  The owners tile in `widgets/charts/charts.dart` mutates `li.ownersList` in memory but never persists.
 - `AuthAPI.uploadPaymentReceipt(...)` is an **empty stub** (called from
-  `paymentVerficaion.dart`).
+  `pages/auth/payment_verification_page.dart`).
 - `AccountPage` is **not referenced** by the navigation tree (dead-ish; the drawer has
   its own logout).
 
@@ -470,20 +470,21 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 
 - `PaymentVerificationPage._verifyPin` navigates **to itself** (should go to the app
   home). The subscription payment flow is incomplete.
-- `util/inboundReceipt.dart` desktop branch uses `ValueKey(sa.sellList[index])` and
+- `pages/inbound/inbound_receipt_page.dart` desktop branch uses `ValueKey(sa.sellList[index])` and
   mutates `sa.sellList` instead of `inboundList` (mobile branch is correct).
-- `util/scanner.dart` `Scanner` snackbar prints an unset `ip` variable (cosmetic).
+- `widgets/scanner.dart` `Scanner` snackbar prints an unset `ip` variable (cosmetic).
 
 **Logic bugs**
 
 - `SalesProvider.isProductOutOFStock` has **inverted logic** (returns `true` when
   `count != 0`). `SearchPage` relies on this to disable out-of-stock tiles — be careful
   if you "fix" it.
-- `inboundListItem.dart` `unPadd` has an operator-precedence bug: the `?? 0` binds
-  looser than `*`, so the fallback multiplies `0 * wholeUnit`.
+- `inboundListItem.dart` `unPadd` had an operator-precedence bug (`?? 0` bound looser
+  than `*`, so the fallback never multiplied by the unit). Fixed in Phase 1 when the
+  helper was extracted to `lib/utils/unit_conversion.dart`.
 - `MyListTile` unit-selection switch lacks `break` in several cases (falls through to
   `weight = 0`).
-- `lowStockItemesPage.dart` displays price with the `₪` symbol while the rest of the
+- `pages/inventory/low_stock_page.dart` displays price with the `₪` symbol while the rest of the
   app uses SDG/`ج` (inconsistency).
 
 **Dead / deprecated code**

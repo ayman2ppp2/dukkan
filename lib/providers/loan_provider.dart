@@ -1,4 +1,4 @@
-import 'package:dukkan/core/db.dart';
+import 'package:dukkan/core/db/db.dart';
 import 'package:dukkan/models/Loaner.dart';
 import 'package:flutter/material.dart';
 
