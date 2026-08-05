@@ -667,34 +667,6 @@ class DB {
 
   Future<void> windows() => backupService.windows();
 
-  inboundReceipt({required List<Product> lst, required double total}) async {
-    await isar!.writeTxn(() async {
-      for (var element in lst) {
-        var num = await isar!.products.get(element.id);
-        if (num == null) continue;
-        await isar!.products.put(
-          Product.named2(
-            id: element.id,
-            name: element.name,
-            barcode: element.barcode,
-            buyprice: element.buyprice,
-            sellPrice: element.sellPrice,
-            count: (num.count!) + element.count!,
-            ownerName: element.ownerName,
-            weightable: element.weightable,
-            wholeUnit: element.wholeUnit,
-            offer: element.offer,
-            offerCount: element.offerCount,
-            offerPrice: element.offerPrice,
-            priceHistory: element.priceHistory,
-            endDate: element.endDate,
-            hot: false,
-          ),
-        );
-      }
-    });
-  }
-
   Future<void> cancelReceiptAtomically({
     required Log log,
     required double hotSum,
