@@ -2,6 +2,7 @@
 
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/share_provider.dart';
 import 'package:dukkan/pages/inventory/inventory_page.dart';
 
 import 'package:dukkan/providers/sales_provider.dart';
@@ -142,7 +143,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              Consumer<Lists>(
+              Consumer<ShareProvider>(
                 builder: (context, li, child) {
                   return IconButton(
                     tooltip: 'مشاركة البيانات',

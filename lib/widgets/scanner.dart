@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/providers/list.dart';
 import 'package:dukkan/providers/sales_provider.dart';
+import 'package:dukkan/providers/share_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
@@ -74,7 +74,7 @@ class _Scanner2State extends State<Scanner2> {
   var ip;
   @override
   Widget build(BuildContext context) {
-    return Consumer<Lists>(
+    return Consumer<ShareProvider>(
       builder: (context, li, child) => Material(
         child: Column(
           children: [
@@ -83,7 +83,7 @@ class _Scanner2State extends State<Scanner2> {
               child: Platform.isWindows
                   ? IconButton(
                       onPressed: () {
-                        li.client('192.168.8.103:30000');
+                        li.syncFromServer('192.168.8.103:30000');
                         Navigator.pop(context);
                         // con.stop();
                         // con.dispose();
@@ -102,7 +102,7 @@ class _Scanner2State extends State<Scanner2> {
                         }
                         ScaffoldMessenger.of(context)
                             .showSnackBar(SnackBar(content: Text(ip)));
-                        li.client(ip);
+                        li.syncFromServer(ip);
                         Navigator.pop(context);
                         con.stop();
                         con.dispose();

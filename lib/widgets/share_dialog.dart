@@ -5,7 +5,7 @@ import 'package:dukkan/widgets/scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:dukkan/providers/list.dart';
+import 'package:dukkan/providers/share_provider.dart';
 
 class Share extends StatefulWidget {
   const Share({super.key});
@@ -36,7 +36,7 @@ class _ShareState extends State<Share> {
           child: Column(
             children: [
               Expanded(
-                child: Consumer<Lists>(
+                child: Consumer<ShareProvider>(
                   builder: (context, li, child) => ListView(
                     padding:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -62,7 +62,7 @@ class _ShareState extends State<Share> {
                         IconButton(
                           tooltip: 'إرسال البيانات',
                           onPressed: () async {
-                            Provider.of<Lists>(context, listen: false)
+                            Provider.of<ShareProvider>(context, listen: false)
                                 .runServer();
                           },
                           icon: const Icon(Icons.send, color: Colors.white),
@@ -75,7 +75,7 @@ class _ShareState extends State<Share> {
                     ),
                     Column(
                       children: [
-                        Consumer<Lists>(
+                        Consumer<ShareProvider>(
                           builder: (context, li, child) => IconButton(
                             tooltip: 'استقبال البيانات',
                             onPressed: () async {
@@ -116,7 +116,7 @@ class _ShareState extends State<Share> {
     );
   }
 
-  void _showManualConnectDialog(BuildContext context, Lists li) {
+  void _showManualConnectDialog(BuildContext context, ShareProvider li) {
     var address = '';
     showDialog(
       context: context,
@@ -135,7 +135,7 @@ class _ShareState extends State<Share> {
         actions: [
           TextButton(
             onPressed: () {
-              li.client(address);
+              li.syncFromServer(address);
               Navigator.pop(context);
             },
             child: const Text('اتصال'),
@@ -151,7 +151,7 @@ class _ShareState extends State<Share> {
     );
   }
 
-  Widget _statusCard(Lists li) {
+  Widget _statusCard(ShareProvider li) {
     final isBusy = li.syncStatus == SyncStatus.connecting ||
         li.syncStatus == SyncStatus.downloading ||
         li.syncStatus == SyncStatus.verifying ||
@@ -200,7 +200,7 @@ class _ShareState extends State<Share> {
     );
   }
 
-  Widget _shareAddressCard(Lists li) {
+  Widget _shareAddressCard(ShareProvider li) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
