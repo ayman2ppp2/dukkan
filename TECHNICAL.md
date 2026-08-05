@@ -37,8 +37,8 @@ Work happens on branch `hot`; PRs go `hot` → `master`.
 1. `main()` → `AppLogger.bootstrap(...)` (initializes Sentry + global error handlers).
 2. `DB.initialize()` — opens the local Isar database (singleton).
 3. `runApp(MyApp)` → `MaterialApp` (brown Material 3 theme) → `AnimatedSplashScreen`.
-4. Splash resolves to a `MultiProvider` tree registering **9 providers**:
-   `AuthAPI`, `ExpenseProvider`, `SalesProvider`, `LoanProvider`,
+4. Splash resolves to a `MultiProvider` tree registering **8 providers**:
+   `AuthAPI`, `ExpenseProvider`, `SalesProvider`,
    `InventoryProvider`, `LogProvider`, `OwnerProvider`, `ShareProvider`,
    and `StatsService`.
 5. The `builder` is the **auth gate**: `AuthStatus.uninitialized` → spinner;
@@ -75,7 +75,7 @@ Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
   `getPersonsLogs`, plus the receipt-edit state (`editing`, `logID`). It clears the
   shared `StatsService` cache after any write.
 - **`SalesProvider`** — catalog search/refresh, sell list, loaners, weight precision.
-- **`ExpenseProvider`** — expenses. **`LoanProvider`** — loaner ledger.
+- **`ExpenseProvider`** — expenses.
 - **`InventoryProvider`** — inventory product writes and low-stock items.
 - **`OwnerProvider`** — owners (`addOwner`, `refreshListOfOwners`).
 - **`ShareProvider`** — LAN sync (`runServer`, `syncFromServer`, `cancelSync`).
@@ -307,12 +307,12 @@ Consumed by: `CheckOutPage`, `Logs`, `Receipt`, `Loan`, `inboundReceipt`,
 
 ### Remaining providers
 
-- `LoanProvider` — loaner ledger (pay/withdraw/reset); consumed by tests.
 - `InventoryProvider` — inventory writes + low-stock; consumed by `lowStockItemsPage`.
 - `OwnerProvider` — owners; consumed by `AddUser`, `InsertPage`, `InvPage`, `Ownertile`,
   and `CheckOutPage` (`refreshListOfOwners` after checkout).
-- `AuthAPI` — auth + cloud backup. (`StatsProvider` and `SyncProvider` were removed as
-  dead code, and the legacy `Lists` provider was deleted — see git history.)
+- `AuthAPI` — auth + cloud backup. (`StatsProvider`, `SyncProvider`, the legacy
+  `Lists` provider, and `LoanProvider` were removed as dead code — see git history.
+  The loaner ledger lives in `SalesProvider`.)
 
 ---
 
@@ -471,10 +471,9 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 
 - The legacy `Lists` provider was **deleted** (Phase 3). Receipt/logs live in
   `LogProvider`, LAN sync in `ShareProvider`, owners in `OwnerProvider`, stats in
-  `StatsService`. Some duplication still exists between `SalesProvider`,
-  `LoanProvider`, and `ExpenseProvider` (loaner ledger, pooled expense/stats getters).
-  Don't "deduplicate" blindly — confirm what the pages actually call first.
-  (`StatsProvider` and `SyncProvider` were removed as dead code earlier.)
+  `StatsService`; the loaner ledger lives in `SalesProvider`. Don't "deduplicate"
+  blindly — confirm what the pages actually call first.
+  (`StatsProvider`, `SyncProvider`, and `LoanProvider` were also removed as dead code.)
 - `OwnerProvider.updateOwner(...)` is an **empty no-op**. The owners tile in
   `widgets/charts/charts.dart` mutates `OwnerProvider.ownersList` in memory but never persists.
 - `AuthAPI.uploadPaymentReceipt(...)` is an **empty stub** (called from

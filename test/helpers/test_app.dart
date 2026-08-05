@@ -6,7 +6,6 @@ import 'package:dukkan/pages/onboarding/landing_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
 import 'package:dukkan/providers/log_provider.dart';
-import 'package:dukkan/providers/loan_provider.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/owner_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
@@ -54,9 +53,6 @@ class TestApp extends StatelessWidget {
                   db: db,
                   pref: prefs,
                 ),
-        ),
-        ChangeNotifierProvider<LoanProvider>.value(
-          value: LoanProvider.forTesting(db),
         ),
         ChangeNotifierProvider<InventoryProvider>.value(
           value: InventoryProvider.forTesting(db),

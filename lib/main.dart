@@ -5,7 +5,6 @@ import 'package:dukkan/pages/onboarding/landing_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
 import 'package:dukkan/providers/log_provider.dart';
-import 'package:dukkan/providers/loan_provider.dart';
 import 'package:dukkan/pages/home/home_page.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/owner_provider.dart';
@@ -77,9 +76,6 @@ class MyApp extends StatelessWidget {
             ),
             ChangeNotifierProvider<SalesProvider>(
               create: (context) => SalesProvider(),
-            ),
-            ChangeNotifierProvider<LoanProvider>(
-              create: (context) => LoanProvider(),
             ),
             ChangeNotifierProvider<InventoryProvider>(
               create: (context) => InventoryProvider(),

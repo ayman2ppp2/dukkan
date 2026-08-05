@@ -3,7 +3,6 @@ library;
 
 import 'dart:io';
 
-import 'package:dukkan/providers/loan_provider.dart';
 import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/models/Expense.dart';
@@ -210,9 +209,17 @@ void main() {
   });
 
   group('Real loan tests', () {
+    late SharedPreferences prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+    });
+
     test('loan payment reduces balance and appends history', () async {
       final loanerId = await handle.db.insertLoaner(loanerFixture(amount: 100));
-      final provider = LoanProvider.forTesting(handle.db);
+      final provider =
+          SalesProvider.forTesting(db: handle.db, pref: prefs);
 
       await provider.payLoaner(25, loanerId);
 
@@ -225,7 +232,8 @@ void main() {
     test('reset loan account zeroes balance and records reset marker',
         () async {
       final loanerId = await handle.db.insertLoaner(loanerFixture(amount: 100));
-      final provider = LoanProvider.forTesting(handle.db);
+      final provider =
+          SalesProvider.forTesting(db: handle.db, pref: prefs);
 
       await provider.resetLoanerAcount(loanerId);
 
@@ -244,7 +252,8 @@ void main() {
           loanerId: loanerId,
         ));
       });
-      final provider = LoanProvider.forTesting(handle.db);
+      final provider =
+          SalesProvider.forTesting(db: handle.db, pref: prefs);
       await provider.payLoaner(20, loanerId);
 
       final statement = await handle.db.getAccountStatementData(loanerId);
