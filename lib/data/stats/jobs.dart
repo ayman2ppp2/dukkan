@@ -182,29 +182,6 @@ class CgetDailySales extends PooledJob<double> {
   }
 }
 
-class CgetAllSales extends PooledJob<double> {
-  CgetAllSales({required this.map});
-  Map map;
-  @override
-  Future<double> job() async {
-    try {
-      BackgroundIsolateBinaryMessenger.ensureInitialized(map['1']);
-      final isar = await openPoolIsar();
-      List<Log> temp = await isar.logs.where().anyId().findAll();
-      double sales = 0;
-      for (var log in temp) {
-        sales += log.price;
-      }
-
-      return sales;
-    } catch (e) {
-      AppLogger.warning('All-sales calculation failed',
-          data: {'area': 'stats.all_sales'});
-      return -1;
-    }
-  }
-}
-
 class CgetSaledProductsByDate extends PooledJob<List<Product>> {
   Map map;
   CgetSaledProductsByDate({required this.map});
