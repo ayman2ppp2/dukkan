@@ -2,21 +2,18 @@ import 'dart:async';
 // import 'package:mime';
 import 'package:dio/dio.dart';
 import 'package:restart_app/restart_app.dart';
-import 'package:dukkan/core/pool/isolate_pool.dart';
 import 'package:dukkan/core/sync/lan_sync.dart';
 import 'package:dukkan/core/observability.dart';
 // import 'package:dukkan/models/Loaner.dart';
 import 'package:dukkan/models/Owner.dart';
 import 'package:dukkan/core/db/db.dart';
-import 'package:dukkan/data/stats/jobs.dart';
-import 'package:dukkan/models/prodStats.dart';
+import 'package:dukkan/data/stats/stats_service.dart';
 import 'package:dukkan/models/Product.dart';
+import 'package:dukkan/models/prodStats.dart';
 import 'package:dukkan/models/searchQuery.dart';
 import 'package:dukkan/models/LowStockProduct.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:isolate_pool_2/isolate_pool_2.dart';
 import 'package:mime/mime.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -24,14 +21,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dukkan/models/Log.dart';
 
-RootIsolateToken? _getRootIsolateToken() {
-  return RootIsolateToken.instance;
-}
-
 class Lists extends ChangeNotifier with LanSyncState {
   late DB db;
 
-  late IsolatePool pool;
+  late StatsService stats;
   List<Owner>? _testOwners;
   bool keepAlive = false;
   bool editing = false;
@@ -47,7 +40,9 @@ class Lists extends ChangeNotifier with LanSyncState {
   }
 
   @visibleForTesting
-  Lists.forTesting(this.db);
+  Lists.forTesting(this.db) {
+    stats = StatsService.forTesting(db);
+  }
 
   @visibleForTesting
   Lists.detachedForTesting({List<Owner> owners = const []}) {
@@ -56,7 +51,7 @@ class Lists extends ChangeNotifier with LanSyncState {
 
   void init() async {
     db = await DB.getInstance();
-    pool = await Pool.init();
+    stats = StatsService(db);
   }
 
   List<Widget> shareList = [];
@@ -66,34 +61,22 @@ class Lists extends ChangeNotifier with LanSyncState {
   // List<Product> sellList = [];
   List<Owner> ownersList = [];
   List<Log> logsList = [];
-  final Map<String, dynamic> _cache = {};
-  bool cacheIsValid = false;
+
+  bool get cacheIsValid => stats.cacheIsValid;
+
   Future<T> getCachedCalculation<T>(
-      String cacheKey, Future<T> Function() calculate) async {
-    // Check if the value is already in cache
-    if (_cache.containsKey(cacheKey)) {
-      return _cache[cacheKey] as T;
-    }
+          String cacheKey, Future<T> Function() calculate) =>
+      stats.getCachedCalculation(cacheKey, calculate);
 
-    // Perform the calculation if not cached
-    final result = await calculate();
-
-    // Store the result in cache
-    _cache[cacheKey] = result;
-
-    return result;
-  }
-
-  int cacheVersion = 0;
+  int get cacheVersion => stats.cacheVersion;
 
   void clearAllCache() {
-    _cache.clear();
-    cacheVersion++;
+    stats.clearAllCache();
     notifyListeners();
   }
 
   void clearCache(String cacheKey) {
-    _cache.remove(cacheKey);
+    stats.clearCache(cacheKey);
     notifyListeners();
   }
 
@@ -176,149 +159,47 @@ class Lists extends ChangeNotifier with LanSyncState {
     clearAllCache();
   }
 
-  Future<YearlyTotals> getYearlyTotals() {
-    return getCachedCalculation('yearlyTotals', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      return pool.scheduleJob(CgetYearlyTotals(map: map));
-    });
-  }
+  Future<YearlyTotals> getYearlyTotals() => stats.getYearlyTotals();
 
-  Future<double> getAverageProfitPercent() async {
-    return (await getYearlyTotals()).profitPercent;
-  }
+  Future<double> getAverageProfitPercent() => stats.getAverageProfitPercent();
 
-  Future<double> getYearlyInflation() async {
-    return (await getYearlyTotals()).yearlyInflation;
-  }
+  Future<double> getYearlyInflation() => stats.getYearlyInflation();
 
-  Future<double> getAllProfit() {
-    return getYearlyTotals().then((t) => t.yearlyProfit);
-  }
+  Future<double> getAllProfit() => stats.getAllProfit();
 
-  Future<double> getAllSales() {
-    return getYearlyTotals().then((t) => t.yearlySales);
-  }
+  Future<double> getAllSales() => stats.getAllSales();
 
-  Future<double> getProfitOfTheMonth() {
-    return getCachedCalculation('profitOfTheMonth', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
-    });
-  }
+  Future<double> getProfitOfTheMonth() => stats.getProfitOfTheMonth();
 
-  Future<double> getSalesOfTheMonth() {
-    return getCachedCalculation('salesOfTheMonth', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
+  Future<double> getSalesOfTheMonth() => stats.getSalesOfTheMonth();
 
-      return pool.scheduleJob(CgetSalesOfTheMonth(map: map));
-    });
-  }
+  Future<double> getDailySales(DateTime time) => stats.getDailySales(time);
 
-  Future<double> getDailySales(DateTime time) {
-    return getCachedCalculation('dailySales', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = time;
-      return pool.scheduleJob(CgetDailySales(map: map));
-    });
-  }
+  Future<double> getDailyProfits(DateTime time) => stats.getDailyProfits(time);
 
-  Future<double> getDailyProfits(DateTime time) {
-    return getCachedCalculation('dailyProfits', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = time;
-      return pool.scheduleJob(CgetDailyProfit(map: map));
-    });
-  }
+  Future<int> getNumberOfSalesForAproduct({required String key}) =>
+      stats.getNumberOfSalesForAproduct(key: key);
 
-  Future<int> getNumberOfSalesForAproduct({required String key}) {
-    return getCachedCalculation('numberOfSalesPerProduct', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = key;
-      return pool.scheduleJob(CgetNumberOfSalesForAproduct(map: map));
-    });
-  }
+  Future<List<Product>> getSaledProductsByDate(DateTime time) =>
+      stats.getSaledProductsByDate(time);
 
-  Future<List<Product>> getSaledProductsByDate(DateTime time) {
-    return getCachedCalculation('saledProductsByDate', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = time;
-      return pool.scheduleJob(CgetSaledProductsByDate(map: map));
-    });
-  }
+  Future<List<ProdStats>> getSalesPerProduct(int chunkSize) =>
+      stats.getSalesPerProduct(chunkSize);
 
-  Future<List<ProdStats>> getSalesPerProduct(int chunkSize) async {
-    return getCachedCalculation('salesPerProduct', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = chunkSize;
-      return pool
-          .scheduleJob(CgetSalesPerProduct(chunkSize: chunkSize, map: map));
-    });
-  }
+  Future<List<LoanerComparison>> getLoanerComparison() =>
+      stats.getLoanerComparison();
 
-  Future<List<LoanerComparison>> getLoanerComparison() async {
-    return getCachedCalculation('loanerComparison', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      return pool.scheduleJob(CgetLoanerComparison(map: map));
-    });
-  }
+  Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) =>
+      stats.getDailySalesOfTheMonth(month);
 
-  Future<List<SalesStats>> getDailySalesOfTheMonth(DateTime month) async {
-    return getCachedCalculation('dailySalesOfTheMonth', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = month;
-      return pool.scheduleJob(CgetDailySalesOfTheMonth(map: map));
-    });
-  }
+  Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) =>
+      stats.getDailyProfitOfTheMonth(month);
 
-  Future<List<SalesStats>> getDailyProfitOfTheMonth(DateTime month) async {
-    return getCachedCalculation('dailyProfitOfTheMonth', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = month;
-      return pool.scheduleJob(CgetDailyProfitOfTheMont(map: map));
-    });
-  }
+  Future<List<SalesStats>> getMonthlySalesOfTheYear(DateTime month) =>
+      stats.getMonthlySalesOfTheYear(month);
 
-  Future<List<SalesStats>> getMonthlySalesOfTheYear(DateTime month) async {
-    return getCachedCalculation('monthlySalesOfTheYear', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = month;
-      return pool.scheduleJob(CgetMonthlySalesOfTheyear(map: map));
-    });
-  }
-
-  Future<List<SalesStats>> getMonthlyProfitsOfTheYear(DateTime month) async {
-    return getCachedCalculation('monthlyProfitsOfTheYear', () {
-      Map map = Map();
-      map['1'] = _getRootIsolateToken() ??
-          (throw StateError('RootIsolateToken not available'));
-      map['2'] = month;
-      return pool.scheduleJob(CgetMonthlyProfitsOfTheyear(map: map));
-    });
-  }
+  Future<List<SalesStats>> getMonthlyProfitsOfTheYear(DateTime month) =>
+      stats.getMonthlyProfitsOfTheYear(month);
 
 //   import 'dart:io';
 // import 'package:path_provider/path_provider.dart';

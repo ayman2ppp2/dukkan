@@ -62,6 +62,7 @@ Providers (lib/providers/)  ── legacy Lists + focused providers
    ▼
 DB (lib/core/db/db.dart)  +  data services
    │                      (lib/data/stats/jobs.dart — PooledJob Cget* jobs,
+   │                       lib/data/stats/stats_service.dart — StatsService,
    │                       lib/data/backup/backup_service.dart — BackupService)
    ▼
 Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
@@ -70,9 +71,9 @@ Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
 ### The two provider generations (important!)
 
 - **`Lists` (`lib/providers/list.dart`)** is the **legacy central provider**. It owns
-  stats caching (`getCachedCalculation`, `cacheVersion`), checkout/cancel/edit of
-  receipts, LAN sync (`runServer`/`client`/`cancelSync`), owners, low-stock, and stream
-  helpers. **Most pages still consume `Lists`.**
+  checkout/cancel/edit of receipts, LAN sync (`runServer`/`client`/`cancelSync`),
+  owners, low-stock, and stream helpers. Stats computation and caching delegate to
+  `StatsService`. **Most pages still consume `Lists`.**
 - **Newer focused providers** exist and are registered in `main.dart`, but only
   `SalesProvider`, `ExpenseProvider`, `InventoryProvider`, and `AuthAPI` are actually
   consumed by pages today. `StatsProvider`, `LoanProvider`, `LogProvider`,
@@ -181,15 +182,22 @@ Heavy read-only computations run on a pool of background isolates
 (`isolate_pool_2`), sized `(Platform.numberOfProcessors ~/ 2) - 1` (`Pool.init()` in
 `lib/core/pool/isolate_pool.dart`).
 
-Every pooled job class (defined in `lib/data/stats/jobs.dart`) follows this exact shape:
+### Stats services (`lib/data/stats/`)
 
-1. Constructor takes a `Map` where `map['1']` is the `RootIsolateToken` (passed from the
-   provider) and `map['2']` is often a date/query param.
-2. `job()` calls `BackgroundIsolateBinaryMessenger.ensureInitialized(map['1'])`.
-3. It (re)opens the `isarInstance` database in the worker isolate via the shared
-   `openPoolIsar()` helper (with a fallback to an existing instance).
-4. Computes and returns; on failure logs `AppLogger.warning(...)` (area `stats.*`) and
-   returns a sentinel (`-1`, `[]`, `0`).
+- `jobs.dart` — every pooled job class. They follow this exact shape:
+  1. Constructor takes a `Map` where `map['1']` is the `RootIsolateToken` (passed from the
+     service) and `map['2']` is often a date/query param.
+  2. `job()` calls `BackgroundIsolateBinaryMessenger.ensureInitialized(map['1'])`.
+  3. It (re)opens the `isarInstance` database in the worker isolate via the shared
+     `openPoolIsar()` helper (with a fallback to an existing instance).
+  4. Computes and returns; on failure logs `AppLogger.warning(...)` (area `stats.*`) and
+     returns a sentinel (`-1`, `[]`, `0`).
+- `stats_service.dart` — `StatsService(db)`, the **single cache owner** for all stats
+  (`_cache` + `cacheVersion` + `getCachedCalculation`/`clearCache`/`clearAllCache`).
+  It owns the `IsolatePool`, schedules every `Cget*` job, and exposes the typed getters
+  (`getYearlyTotals`, `getDailySalesOfTheMonth`, ...). Both `Lists` and the legacy
+  `StatsProvider` delegate to it; `Lists` keeps `cacheVersion`/`clearAllCache`
+  visible (and `notifyListeners`) so `StatsPage` refreshes.
 
 Examples: `CgetYearlyTotals`, `CgetProfitOfTheMonth`, `CgetDailySales`,
 `CgetMonthlyloans`, `getTotalExpenseNow`, `CgetSalesPerProduct` (has its own static
@@ -197,7 +205,7 @@ Examples: `CgetYearlyTotals`, `CgetProfitOfTheMonth`, `CgetDailySales`,
 
 ### Profit model (`recalculateProfit`)
 
-`recalculateProfit(logs, productMap)` in `db.dart`:
+`recalculateProfit(logs, productMap)` in `lib/data/stats/jobs.dart`:
 
 - Skips `hot` products (no reliable buy price).
 - Resolves the historical buy price per sale line from the product's `priceHistory`:
@@ -278,15 +286,16 @@ Consumed by: `lowStockItemesPage`, `widgets/drawer.dart`.
 
 ### `Lists` (legacy central) — `lib/providers/list.dart`
 
-`ChangeNotifier with LanSyncState`. Holds owners/logs lists, the stats `_cache`
-(`getCachedCalculation` + `cacheVersion`), and LAN sync state.
+`ChangeNotifier with LanSyncState`. Holds owners/logs lists, LAN sync state, and
+delegates all stats computation/caching to `StatsService` (see `data/stats` below).
 
-- Stats (all pooled): `getYearlyTotals`, `getAllProfit`, `getAllSales`,
-  `getAverageProfitPercent`, `getYearlyInflation`, `getProfitOfTheMonth`,
+- Stats (all pooled, delegated to `StatsService`): `getYearlyTotals`, `getAllProfit`,
+  `getAllSales`, `getAverageProfitPercent`, `getYearlyInflation`, `getProfitOfTheMonth`,
   `getSalesOfTheMonth`, `getDailySales`, `getDailyProfits`, `getNumberOfSalesForAproduct`,
   `getSaledProductsByDate`, `getSalesPerProduct`, `getLoanerComparison`,
   `getDailySalesOfTheMonth`, `getDailyProfitOfTheMonth`, `getMonthlySalesOfTheYear`,
-  `getMonthlyProfitsOfTheYear`.
+  `getMonthlyProfitsOfTheYear`. `clearAllCache`/`clearCache`/`cacheVersion` also
+  delegate; they still `notifyListeners` so UI refreshes.
 - Receipts: `checkOut(...)`, `cancelReceipt(date, log)` (atomic), `editReceipt(date, log)`,
   `getLogsStream`, `getLogsChunk`, `getPersonsLogs`.
 - Products/owners: `getTotalBuyPrice`, `embeddedToProduct`, `getLowStockItems`,
@@ -494,7 +503,7 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 - `BcLog.dart` and `BC_product.dart` are fully commented out (legacy Hive-era).
 - `lib/firebase_options.dart` is commented out (migrated to Appwrite).
 - `ExpensesPieChart` in `charts.dart` is demo data and unused.
-- `CgetLowStockItemsPerMonth` exists in `db.dart` but is not used by
+- `CgetLowStockItemsPerMonth` exists in `jobs.dart` but is not used by
   `InventoryProvider` (which uses `getLowStockProductsWithPercent`).
 - `db.exportData` / `importData` (JSON logs) exist but are not surfaced in the UI.
 - `PostgresConnection` / `insertInPostgres` are wired only to a commented-out block.
@@ -523,7 +532,7 @@ These matter when touching code — verify before "fixing" and don't rely on bro
   never raw `print`. Surface user errors via `UserSafeMessages`.
 - **State**: providers are `ChangeNotifier`; heavy reads go through the isolate pool
   via `pool.scheduleJob(Cget*(map: {...}))`; wrap expensive/repeated results in
-  `getCachedCalculation`.
+  `getCachedCalculation` (owned by `StatsService`).
 - **Quality gate**: always finish with
   `flutter analyze --no-fatal-infos --no-fatal-warnings` and fix findings.
 - **Versioning**: bump patch only on push (see AGENTS.md); update `CHANGELOG.md`.
