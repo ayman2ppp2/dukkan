@@ -1,13 +1,11 @@
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/providers/sales_provider.dart';
-import 'package:dukkan/pages/loans/loan_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' as int;
 
 import 'package:provider/provider.dart';
-
-import 'package:dukkan/providers/log_provider.dart';
 
 class Loans extends StatefulWidget {
   const Loans({super.key});
@@ -178,25 +176,7 @@ class _LoansState extends State<Loans> {
                           ),
                         ),
                         onTap: () {
-                          var sa = Provider.of<SalesProvider>(context,
-                              listen: false);
-                          var li =
-                              Provider.of<LogProvider>(context, listen: false);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ChangeNotifierProvider.value(
-                                value: sa,
-                                child: ChangeNotifierProvider.value(
-                                  value: li,
-                                  child: Loan(
-                                    loaner: loaner,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
+                          context.push('/loans/${loaner.ID}', extra: loaner);
                         },
                       ),
                     );

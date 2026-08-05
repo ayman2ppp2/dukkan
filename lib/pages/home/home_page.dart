@@ -1,21 +1,15 @@
 // import 'dart:io';
 
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/data/stats/stats_service.dart';
-import 'package:dukkan/providers/log_provider.dart';
-import 'package:dukkan/providers/owner_provider.dart';
-import 'package:dukkan/providers/share_provider.dart';
-import 'package:dukkan/pages/inventory/inventory_page.dart';
-
 import 'package:dukkan/providers/sales_provider.dart';
 
 import 'package:dukkan/widgets/drawer.dart';
 import 'package:dukkan/widgets/share_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 // import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:dukkan/pages/logs/logs_page.dart';
 import 'package:dukkan/pages/home/sell_page.dart';
 import 'package:dukkan/pages/stats/stats_page.dart';
 // import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
@@ -95,85 +89,45 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Consumer<SalesProvider>(
-                builder: (context, as, child) => Consumer<LogProvider>(
-                  builder: (context, li, child) => IconButton(
-                    tooltip: 'السجلات',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChangeNotifierProvider.value(
-                            value: as,
-                            child: ChangeNotifierProvider.value(
-                              value: li,
-                              child: Logs(),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    icon: Icon(
-                      Icons.receipt_long_sharp,
-                      color: Colors.white,
-                    ),
+                builder: (context, as, child) => IconButton(
+                  tooltip: 'السجلات',
+                  onPressed: () => context.push('/logs'),
+                  icon: Icon(
+                    Icons.receipt_long_sharp,
+                    color: Colors.white,
                   ),
                 ),
               ),
-              Consumer<SalesProvider>(
-                builder: (context, sa, child) => Consumer<StatsService>(
-                  builder: (context, st, child) => IconButton(
-                    tooltip: 'المخزن',
-                    onPressed: () {
-                      sa.refreshProductsList();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChangeNotifierProvider.value(
-                            value: context.read<OwnerProvider>(),
-                            child: ChangeNotifierProvider.value(
-                              value: st,
-                              child: ChangeNotifierProvider.value(
-                                value: sa,
-                                child: const InvPage(),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.inventory_2_outlined,
-                      color: Colors.white,
-                    ),
-                  ),
+              IconButton(
+                tooltip: 'المخزن',
+                onPressed: () {
+                  context.read<SalesProvider>().refreshProductsList();
+                  context.push('/inventory');
+                },
+                icon: const Icon(
+                  Icons.inventory_2_outlined,
+                  color: Colors.white,
                 ),
               ),
-              Consumer<ShareProvider>(
-                builder: (context, li, child) {
-                  return IconButton(
-                    tooltip: 'مشاركة البيانات',
-                    onPressed: () {
-                      showGeneralDialog(
-                        useRootNavigator: true,
-                        barrierDismissible: true,
-                        barrierLabel: 'مشاركة البيانات',
-                        context: context,
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            ChangeNotifierProvider.value(
-                          value: li,
-                          child: const Padding(
-                            padding: EdgeInsets.fromLTRB(20, 130, 20, 20),
-                            child: Share(),
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.share,
-                      color: Colors.white,
+              IconButton(
+                tooltip: 'مشاركة البيانات',
+                onPressed: () {
+                  showGeneralDialog(
+                    useRootNavigator: true,
+                    barrierDismissible: true,
+                    barrierLabel: 'مشاركة البيانات',
+                    context: context,
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 130, 20, 20),
+                      child: Share(),
                     ),
                   );
                 },
+                icon: const Icon(
+                  Icons.share,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),

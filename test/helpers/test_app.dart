@@ -1,8 +1,6 @@
 import 'package:dukkan/core/db/db.dart';
+import 'package:dukkan/core/router/app_router.dart';
 import 'package:dukkan/data/stats/stats_service.dart';
-import 'package:dukkan/pages/auth/login_page.dart';
-import 'package:dukkan/pages/home/home_page.dart';
-import 'package:dukkan/pages/onboarding/landing_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/inventory_provider.dart';
 import 'package:dukkan/providers/log_provider.dart';
@@ -20,7 +18,6 @@ class TestApp extends StatelessWidget {
     super.key,
     required this.db,
     required this.prefs,
-    this.home,
     this.products = const [],
     this.cartProducts = const [],
     this.authenticated = false,
@@ -28,18 +25,19 @@ class TestApp extends StatelessWidget {
 
   final DB db;
   final SharedPreferences prefs;
-  final Widget? home;
   final List<Product> products;
   final List<Product> cartProducts;
   final bool authenticated;
 
   @override
   Widget build(BuildContext context) {
+    final auth = AuthAPI.forTesting();
+    auth.setStatusForTesting(
+      authenticated ? AuthStatus.authenticated : AuthStatus.unauthenticated,
+    );
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<AuthAPI>.value(
-          value: AuthAPI.forTesting(),
-        ),
+        ChangeNotifierProvider<AuthAPI>.value(value: auth),
         ChangeNotifierProvider<ExpenseProvider>.value(
           value: ExpenseProvider.forTesting(db),
         ),
@@ -72,23 +70,14 @@ class TestApp extends StatelessWidget {
       ],
       child: _CartInjector(
         cartProducts: cartProducts,
-        child: MaterialApp(
+        child: MaterialApp.router(
           title: 'دكان',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
             useMaterial3: true,
           ),
-          home: home ??
-              Builder(builder: (context) {
-                if (!authenticated) return const LoginPage();
-                return context
-                            .read<SalesProvider>()
-                            .getWeightPrececsion() ==
-                        null
-                    ? const LandingPage()
-                    : const HomePage();
-              }),
+          routerConfig: AppRouter.create(initialLocation: '/'),
         ),
       ),
     );

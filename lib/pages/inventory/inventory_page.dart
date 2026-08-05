@@ -10,8 +10,6 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:intl/intl.dart' as ii;
 import 'package:provider/provider.dart';
 
-import 'package:dukkan/providers/owner_provider.dart';
-
 class InvPage extends StatefulWidget {
   const InvPage({super.key});
 
@@ -32,7 +30,6 @@ class _InvPageState extends State<InvPage> {
   @override
   Widget build(BuildContext context) {
     var as = Provider.of<SalesProvider>(context);
-    var owner = Provider.of<OwnerProvider>(context);
     void refresh() {
       setState(() {
         searchFuture = as.search(controller.text.trim(), false, false);
@@ -48,12 +45,7 @@ class _InvPageState extends State<InvPage> {
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (context) {
-                  return ChangeNotifierProvider.value(
-                    value: owner,
-                    child: AddUser(),
-                  );
-                },
+                builder: (context) => AddUser(),
               );
             },
             icon: const Icon(Icons.person_add),
@@ -168,37 +160,31 @@ class _InvPageState extends State<InvPage> {
             barrierLabel: 'إضافة منتج',
             context: context,
             pageBuilder: (context, animation, secondaryAnimation) {
-              return ChangeNotifierProvider.value(
-                value: owner,
-                child: ChangeNotifierProvider.value(
-                  value: as,
-                  child: Padding(
-                      padding: const EdgeInsets.only(
-                        left: 20,
-                        right: 20,
-                        top: 100,
-                        bottom: 200,
-                      ),
-                      child: InPage(
-                        id: null,
-                        buyPrice: 0,
-                        count: 0,
-                        name: '',
-                        barcode: '',
-                        sellPrice: 0,
-                        owner: '',
-                        weightable: false,
-                        wholeUnit: '',
-                        index: -1,
-                        offer: false,
-                        offerCount: 0,
-                        offerPrice: 0,
-                        endDate: DateTime.now(),
-                        priceHistory: [],
-                      ),
-                    ),
-                ),
-              );
+              return Padding(
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 100,
+                    bottom: 200,
+                  ),
+                  child: InPage(
+                    id: null,
+                    buyPrice: 0,
+                    count: 0,
+                    name: '',
+                    barcode: '',
+                    sellPrice: 0,
+                    owner: '',
+                    weightable: false,
+                    wholeUnit: '',
+                    index: -1,
+                    offer: false,
+                    offerCount: 0,
+                    offerPrice: 0,
+                    endDate: DateTime.now(),
+                    priceHistory: [],
+                  ),
+                );
             },
           );
         },

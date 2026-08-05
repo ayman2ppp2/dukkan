@@ -1,9 +1,9 @@
 import 'package:dukkan/core/observability.dart';
 import 'package:dukkan/pages/expenses/add_expense_page.dart';
 import 'package:dukkan/providers/expense_provider.dart';
-import 'package:dukkan/pages/expenses/spending_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -263,18 +263,9 @@ class _SpendingsState extends State<Spendings> {
                                 borderRadius: BorderRadius.circular(15),
                                 color: Colors.orange[50],
                                 child: ListTile(
-                                  onTap: () async {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ChangeNotifierProvider.value(
-                                                value: ex,
-                                                child: Spending(
-                                                  id: snapshot.data![index].ID,
-                                                )),
-                                      ),
-                                    );
+                                  onTap: () {
+                                    context.push(
+                                        '/expenses/${snapshot.data![index].ID}');
                                   },
                                   title: Text(snapshot.data![index].name!),
                                   trailing: FittedBox(
@@ -313,12 +304,9 @@ class _SpendingsState extends State<Spendings> {
             barrierLabel: 'إضافة منصرف',
             context: context,
             pageBuilder: (context, animation, secondaryAnimation) {
-              return ChangeNotifierProvider.value(
-                value: ex,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 130, 20, 20),
-                  child: AddExpense(),
-                ),
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 130, 20, 20),
+                child: AddExpense(),
               );
             },
           );

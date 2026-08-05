@@ -1,8 +1,9 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/pages/auth/verify_page.dart';
+import 'package:dukkan/core/router/route_args.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -63,18 +64,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (!mounted) return;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChangeNotifierProvider.value(
-            value: appwrite,
-            child: VerficationPage(
-              userId: user.$id,
-              email: emailTextController.text.trim(),
-              password: passwordTextController.text.trim(),
-              name: nameTextController.text.trim(),
-            ),
-          ),
+      context.push(
+        '/verify',
+        extra: VerifyPageArgs(
+          userId: user.$id,
+          email: emailTextController.text.trim(),
+          password: passwordTextController.text.trim(),
+          name: nameTextController.text.trim(),
         ),
       );
     } on AppwriteException catch (e, st) {

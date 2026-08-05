@@ -1,8 +1,7 @@
-import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/auth_provider.dart';
-import 'package:dukkan/providers/sales_provider.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -69,25 +68,7 @@ class _PaymentVerificationPageState extends State<PaymentVerificationPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم التحقق من الدفع بنجاح')),
     );
-    // Navigate to the next page or perform other actions
-    var sa = Provider.of<SalesProvider>(context, listen: false);
-    var exp = Provider.of<ExpenseProvider>(context, listen: false);
-    var auth = Provider.of<AuthAPI>(context, listen: false);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChangeNotifierProvider.value(
-          value: sa,
-          child: ChangeNotifierProvider.value(
-            value: exp,
-            child: ChangeNotifierProvider.value(
-              value: auth,
-              child: const PaymentVerificationPage(),
-            ),
-          ),
-        ),
-      ),
-    );
+    context.push('/payment-verification');
   }
 
   @override

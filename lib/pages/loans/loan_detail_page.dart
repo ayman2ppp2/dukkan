@@ -1,5 +1,5 @@
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/pages/loans/account_statement_page.dart';
+import 'package:dukkan/core/router/route_args.dart';
 import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/loading_overlay.dart';
@@ -8,9 +8,9 @@ import 'package:dukkan/widgets/receipt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:provider/provider.dart';
-import 'package:dukkan/widgets/confirmation_page.dart';
 
 class Loan extends StatefulWidget {
   final Loaner loaner;
@@ -561,20 +561,8 @@ class _LoanState extends State<Loan> {
                               child: TextButton.icon(
                                 onPressed: () async {
                                   try {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              BankStatementPage(
-                                                accountNumber: snapshot
-                                                    .data!.ID
-                                                    .toString(),
-                                                customerName: snapshot
-                                                    .data!.name
-                                                    .toString(),
-                                                loaner: snapshot.data!,
-                                              )),
-                                    );
+                                    context.push('/bank-statement',
+                                        extra: snapshot.data!);
                                   } catch (e, st) {
                                     await AppLogger.captureException(e,
                                         stackTrace: st,
@@ -726,19 +714,18 @@ class _LoanState extends State<Loan> {
 
                             return GestureDetector(
                               onTap: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ConfirmationPage(
-                                          paied:
-                                              intl.NumberFormat.simpleCurrency()
-                                                  .format(value),
-                                          date: paymentDate,
-                                          name: name!,
-                                          remaining: remaining ?? 0,
-                                          clearField: () {},
-                                          type: type),
-                                    ));
+                                context.push(
+                                  '/confirmation',
+                                  extra: ConfirmationArgs(
+                                    paied: intl.NumberFormat.simpleCurrency()
+                                        .format(value),
+                                    date: paymentDate,
+                                    name: name!,
+                                    remaining: remaining ?? 0,
+                                    clearField: () {},
+                                    type: type,
+                                  ),
+                                );
                               },
                               child: Container(
                                 margin: const EdgeInsets.symmetric(
@@ -932,23 +919,21 @@ class _LoanState extends State<Loan> {
                             .parse(payCon.text)
                             .toDouble(),
                         snapshot.data!.ID)
-                    .then((value) => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ConfirmationPage(
-                            clearField: () {
-                              setState(() {
-                                payCon.text = '';
-                              });
-                            },
-                            paied: payCon.text,
-                            date: DateTime.now(),
-                            name: snapshot.data!.name!,
-                            remaining: snapshot.data!.balance! -
-                                (intl.NumberFormat.currency(name: '')
-                                    .parse(payCon.text)),
-                            type: 'payment',
-                          ),
+                    .then((value) => context.push(
+                        '/confirmation',
+                        extra: ConfirmationArgs(
+                          clearField: () {
+                            setState(() {
+                              payCon.text = '';
+                            });
+                          },
+                          paied: payCon.text,
+                          date: DateTime.now(),
+                          name: snapshot.data!.name!,
+                          remaining: snapshot.data!.balance! -
+                              (intl.NumberFormat.currency(name: '')
+                                  .parse(payCon.text)),
+                          type: 'payment',
                         )));
 
                 Navigator.pop(context);
@@ -998,23 +983,21 @@ class _LoanState extends State<Loan> {
                             .parse(withdrawCon.text)
                             .toDouble(),
                         snapshot.data!.ID)
-                    .then((value) => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ConfirmationPage(
-                            clearField: () {
-                              setState(() {
-                                withdrawCon.text = '';
-                              });
-                            },
-                            paied: withdrawCon.text,
-                            date: DateTime.now(),
-                            name: snapshot.data!.name!,
-                            remaining: snapshot.data!.balance! +
-                                (intl.NumberFormat.currency(name: '')
-                                    .parse(withdrawCon.text)),
-                            type: 'withdraw',
-                          ),
+                    .then((value) => context.push(
+                        '/confirmation',
+                        extra: ConfirmationArgs(
+                          clearField: () {
+                            setState(() {
+                              withdrawCon.text = '';
+                            });
+                          },
+                          paied: withdrawCon.text,
+                          date: DateTime.now(),
+                          name: snapshot.data!.name!,
+                          remaining: snapshot.data!.balance! +
+                              (intl.NumberFormat.currency(name: '')
+                                  .parse(withdrawCon.text)),
+                          type: 'withdraw',
                         )));
 
                 Navigator.pop(context);

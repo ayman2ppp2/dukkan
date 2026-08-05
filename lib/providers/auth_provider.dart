@@ -51,6 +51,9 @@ class AuthAPI extends ChangeNotifier {
   AuthAPI.forTesting();
 
   @visibleForTesting
+  void setStatusForTesting(AuthStatus status) => _status = status;
+
+  @visibleForTesting
   Future<void> clearSessionForTesting() => _clearSession();
 
   @visibleForTesting

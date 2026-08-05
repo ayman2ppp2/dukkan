@@ -1,8 +1,8 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/main.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class VerficationPage extends StatefulWidget {
@@ -91,11 +91,7 @@ class _VerficationPageState extends State<VerficationPage> {
         ),
       );
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const MyApp()),
-        (route) => false,
-      );
+      context.go('/');
     } on AppwriteException catch (e, st) {
       if (!mounted) return;
       await AppLogger.captureException(e,

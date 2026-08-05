@@ -1,5 +1,3 @@
-import 'package:dukkan/providers/expense_provider.dart';
-import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/pages/home/checkout_page.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/my_list_item.dart';
@@ -34,9 +32,7 @@ class _SellPageState extends State<SellPage> {
       barrierLabel: 'إدارة الفواتير المعلقة',
       context: context,
       pageBuilder: (context, animation, secondaryAnimation) {
-        return ChangeNotifierProvider.value(
-          value: sa,
-          child: Consumer<SalesProvider>(
+        return Consumer<SalesProvider>(
             builder: (context, sa, _) {
               final parkedData = sa.pendingCarts
                   .map((cart) => ParkedCartData(
@@ -132,15 +128,12 @@ class _SellPageState extends State<SellPage> {
                 onDismiss: () => Navigator.pop(context),
               );
             },
-          ),
-        );
-      },
-    );
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    var exp = Provider.of<ExpenseProvider>(context, listen: false);
     var sa = context.watch<SalesProvider>();
 
     return LayoutBuilder(builder: (context, constraints) {
@@ -250,16 +243,12 @@ class _SellPageState extends State<SellPage> {
                           barrierDismissible: true,
                           barrierLabel: 'بحث المنتجات',
                           context: context,
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  ChangeNotifierProvider.value(
-                            value: sa,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(40, 150, 40, 10),
-                              child: SearchPage(
-                                inbound: false,
-                              ),
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              Padding(
+                            padding:
+                                const EdgeInsets.fromLTRB(40, 150, 40, 10),
+                            child: SearchPage(
+                              inbound: false,
                             ),
                           ),
                         );
@@ -339,84 +328,71 @@ class _SellPageState extends State<SellPage> {
                   ),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 20, top: 10),
-                    child: Consumer<LogProvider>(
-                      builder: (context, li, child) => IconButton.filled(
-                        tooltip: 'فتح الفاتورة',
-                        onPressed: () {
-                          // sa.refreshLoanersList();
-                          if (sa.sellList.isNotEmpty) {
-                            showGeneralDialog(
-                              barrierLabel: 'الفاتورة',
-                              context: context,
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(
-                                    left: 20,
-                                    right: 20,
-                                    top: 60,
-                                  ),
-                                  child: ChangeNotifierProvider.value(
-                                    value: exp,
-                                    child: ChangeNotifierProvider.value(
-                                      value: sa,
-                                      child: ChangeNotifierProvider.value(
-                                        value: li,
-                                        child: CheckOut(
-                                          lst: sa.sellList,
-                                          total: (sa.sellList.fold(
-                                            00.0,
-                                            (previousValue, element) =>
-                                                previousValue +
-                                                ((element.offer! &&
-                                                        element.count! %
-                                                                element
-                                                                    .offerCount! ==
-                                                            0)
-                                                    ? (element.offerPrice! *
-                                                        element.count!)
-                                                    : (element.sellPrice! *
-                                                        element.count!)),
-                                          )),
-                                          inbound: false,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          } else {
-                            //sa.db.insertInPostgres(
-                            //    name: 'name',
-                            //    ownerName: 'ownerName',
-                            //    buyPrice: 50,
-                            //    sellPrice: 100,
-                            //    barcode: 'barcode',
-                            //    count: 90,
-                            //    weightable: false,
-                            //    wholeUnit: 'wholeUnit',
-                            //    offer: false,
-                            //    offerCount: 0,
-                            //    offerPrice: 0,
-                            //    endDate: DateTime.now(),
-                            //    hot: false);
+                    child: IconButton.filled(
+                      tooltip: 'فتح الفاتورة',
+                      onPressed: () {
+                        // sa.refreshLoanersList();
+                        if (sa.sellList.isNotEmpty) {
+                          showGeneralDialog(
+                            barrierLabel: 'الفاتورة',
+                            context: context,
+                            pageBuilder: (context, animation, secondaryAnimation) {
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 20,
+                                  right: 20,
+                                  top: 60,
+                                ),
+                                child: CheckOut(
+                                  lst: sa.sellList,
+                                  total: (sa.sellList.fold(
+                                    00.0,
+                                    (previousValue, element) =>
+                                        previousValue +
+                                        ((element.offer! &&
+                                                element.count! %
+                                                        element.offerCount! ==
+                                                    0)
+                                            ? (element.offerPrice! *
+                                                element.count!)
+                                            : (element.sellPrice! *
+                                                element.count!)),
+                                  )),
+                                  inbound: false,
+                                ),
+                              );
+                            },
+                          );
+                        } else {
+                          //sa.db.insertInPostgres(
+                          //    name: 'name',
+                          //    ownerName: 'ownerName',
+                          //    buyPrice: 50,
+                          //    sellPrice: 100,
+                          //    barcode: 'barcode',
+                          //    count: 90,
+                          //    weightable: false,
+                          //    wholeUnit: 'wholeUnit',
+                          //    offer: false,
+                          //    offerCount: 0,
+                          //    offerPrice: 0,
+                          //    endDate: DateTime.now(),
+                          //    hot: false);
 
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text('يجب تحديد منتجات أولاً')));
-                          }
-                        },
-                        icon: const Icon(
-                          Icons.price_check_outlined,
-                          color: Colors.white,
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('يجب تحديد منتجات أولاً')));
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.price_check_outlined,
+                        color: Colors.white,
+                      ),
+                      iconSize: 40,
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStatePropertyAll(
+                          Colors.brown[400],
                         ),
-                        iconSize: 40,
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStatePropertyAll(
-                            Colors.brown[400],
-                          ),
-                          elevation: const WidgetStatePropertyAll(20),
-                        ),
+                        elevation: const WidgetStatePropertyAll(20),
                       ),
                     ),
                   ),

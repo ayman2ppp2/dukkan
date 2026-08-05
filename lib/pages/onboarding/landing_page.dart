@@ -1,9 +1,8 @@
-import 'package:dukkan/pages/auth/payment_verification_page.dart';
-import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/loading_overlay.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class LandingPage extends StatefulWidget {
@@ -27,7 +26,6 @@ class _LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
     var sa = Provider.of<SalesProvider>(context);
-    var exp = Provider.of<ExpenseProvider>(context);
     var auth = Provider.of<AuthAPI>(context);
 
     return Scaffold(
@@ -234,22 +232,7 @@ class _LandingPageState extends State<LandingPage> {
 
                           // move those to next page and make it after payment verfication
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ChangeNotifierProvider.value(
-                                value: sa,
-                                child: ChangeNotifierProvider.value(
-                                  value: exp,
-                                  child: ChangeNotifierProvider.value(
-                                    value: auth,
-                                    child: const PaymentVerificationPage(),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
+                          context.push('/payment-verification');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.brown[300],

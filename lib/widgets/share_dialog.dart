@@ -87,10 +87,7 @@ class _ShareState extends State<Share> {
                                 context: context,
                                 pageBuilder:
                                     (context, animation, secondaryAnimation) =>
-                                        ChangeNotifierProvider.value(
-                                  value: li,
-                                  child: Scanner2(),
-                                ),
+                                        const Scanner2(),
                               );
                             },
                             onLongPress: () {

@@ -2,9 +2,9 @@ import 'package:appwrite/appwrite.dart';
 // import 'package:appwrite_app/pages/messages_page.dart';
 
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/pages/auth/register_page.dart';
 import 'package:dukkan/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:provider/provider.dart';
 
@@ -119,19 +119,11 @@ class _LoginPageState extends State<LoginPage> {
                 icon: const Icon(Icons.login),
                 label: const Text('تسجيل الدخول'),
               ),
-              Consumer<AuthAPI>(
-                builder: (context, AI, child) => TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => ChangeNotifierProvider.value(
-                                  value: AI,
-                                  child: const RegisterPage(),
-                                )));
-                  },
-                  child: const Text('إنشاء حساب'),
-                ),
+              TextButton(
+                onPressed: () {
+                  context.push('/register');
+                },
+                child: const Text('إنشاء حساب'),
               ),
               // TextButton(
               //   onPressed: () {

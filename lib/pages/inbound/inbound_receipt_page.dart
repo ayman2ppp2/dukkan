@@ -1,14 +1,11 @@
 import 'package:dukkan/pages/home/checkout_page.dart';
 import 'package:dukkan/pages/home/search_page.dart';
-import 'package:dukkan/providers/expense_provider.dart';
 import 'package:dukkan/providers/sales_provider.dart';
 import 'package:dukkan/widgets/inbound_list_item.dart';
 import 'package:dukkan/widgets/my_list_item.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
-import 'package:dukkan/providers/log_provider.dart';
 
 class inboundReceipt extends StatefulWidget {
   const inboundReceipt({super.key});
@@ -22,8 +19,6 @@ class _inboundReceiptState extends State<inboundReceipt> {
 
   @override
   Widget build(BuildContext context) {
-    var exp = Provider.of<ExpenseProvider>(context, listen: false);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('فاتورة واردة'),
@@ -147,14 +142,11 @@ class _inboundReceiptState extends State<inboundReceipt> {
                             context: context,
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
-                                    ChangeNotifierProvider.value(
-                              value: sa,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(40, 150, 40, 10),
-                                child: SearchPage(
-                                  inbound: true,
-                                ),
+                                    Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(40, 150, 40, 10),
+                              child: SearchPage(
+                                inbound: true,
                               ),
                             ),
                           );
@@ -189,62 +181,48 @@ class _inboundReceiptState extends State<inboundReceipt> {
                     // 2nd button
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20, top: 10),
-                      child: Consumer<LogProvider>(
-                        builder: (context, li, child) => IconButton.filled(
-                          tooltip: 'فتح فاتورة الإدخال',
-                          onPressed: () {
-                            // sa.refreshLoanersList();
-                            if (sa.inboundList.isNotEmpty) {
-                              showGeneralDialog(
-                                context: context,
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: 20,
-                                      right: 20,
-                                      top: 100,
-                                    ),
-                                    child: ChangeNotifierProvider.value(
-                                      value: exp,
-                                      child: ChangeNotifierProvider.value(
-                                        value: sa,
-                                        child: ChangeNotifierProvider.value(
-                                          value: li,
-                                          child: CheckOut(
-                                            total: (sa.inboundList.fold(
-                                              00.0,
-                                              (previousValue, element) =>
-                                                  previousValue +
-                                                  (element.buyprice! *
-                                                      element.count!),
-                                            )),
-                                            lst: sa.inboundList,
-                                            inbound: true,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text('يجب تحديد منتجات أولاً')));
-                            }
-                          },
-                          icon: const Icon(
-                            Icons.price_check_outlined,
-                            color: Colors.white,
+                      child: IconButton.filled(
+                        tooltip: 'فتح فاتورة الإدخال',
+                        onPressed: () {
+                          // sa.refreshLoanersList();
+                          if (sa.inboundList.isNotEmpty) {
+                            showGeneralDialog(
+                              context: context,
+                              pageBuilder: (context, animation, secondaryAnimation) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: 20,
+                                    right: 20,
+                                    top: 100,
+                                  ),
+                                  child: CheckOut(
+                                    total: (sa.inboundList.fold(
+                                      00.0,
+                                      (previousValue, element) =>
+                                          previousValue +
+                                          (element.buyprice! * element.count!),
+                                    )),
+                                    lst: sa.inboundList,
+                                    inbound: true,
+                                  ),
+                                );
+                              },
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('يجب تحديد منتجات أولاً')));
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.price_check_outlined,
+                          color: Colors.white,
+                        ),
+                        iconSize: 40,
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStatePropertyAll(
+                            Colors.brown[400],
                           ),
-                          iconSize: 40,
-                          style: ButtonStyle(
-                            backgroundColor: WidgetStatePropertyAll(
-                              Colors.brown[400],
-                            ),
-                            elevation: const WidgetStatePropertyAll(20),
-                          ),
+                          elevation: const WidgetStatePropertyAll(20),
                         ),
                       ),
                     ),

@@ -77,10 +77,7 @@ class _SearchPageState extends State<SearchPage> {
                             context: context,
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
-                                    ChangeNotifierProvider.value(
-                              value: li,
-                              child: Scanner(),
-                            ),
+                                    const Scanner(),
                           );
                         },
                         icon: const Icon(Icons.qr_code_scanner),

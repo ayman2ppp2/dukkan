@@ -84,9 +84,22 @@ Isar (isar_community)   ── 5 collections in a single file: isarInstance.isar
 
 ### Navigation idiom
 
-`MultiProvider` only wraps the root widget. Every pushed route re-wraps its child with
-`ChangeNotifierProvider.value(...)` to carry providers across `Navigator.push`. When
-adding a page that needs providers, follow this pattern.
+Navigation is **go_router** (`lib/core/router/app_router.dart`). Providers are
+registered **once** in `main.dart` above `MaterialApp.router`, so routes never
+re-wrap pages with `ChangeNotifierProvider.value(...)` — every page reaches its
+providers through the inherited tree.
+
+- `AppRouter.create({String initialLocation})` builds the route table; the entry
+  starts at `/splash` (`SplashScreen`), and `/` is an auth gate
+  (`lib/core/router/auth_gate.dart`) that picks `LandingPage` or `HomePage`
+  based on `AuthAPI.status`.
+- Pages navigate with `context.push('/path')`. Arguments cross routes either as
+  path params (`/loans/:id`, `/expenses/:id`) or via `state.extra` using the
+  typed args in `lib/core/router/route_args.dart`
+  (`VerifyPageArgs`, `ConfirmationArgs`, and the `Loaner` object for
+  `/loans/:id` + `/bank-statement`).
+- When adding a page, register a `GoRoute` and call `context.push(...)` — do not
+  use `Navigator.push` or provider re-wraps.
 
 ---
 
@@ -518,9 +531,9 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 - Never schedule pooled `Cget*` jobs without passing a `RootIsolateToken` in `map['1']`.
 - Pooled jobs re-open `isarInstance` in the worker; the worker must not use the main
   isolate's `db.isar` handle.
-- When a page needs providers, wrap the pushed route with
-  `ChangeNotifierProvider.value(...)` — the root `MultiProvider` does not extend into
-  new routes.
+- Pages navigate with `context.push`/`context.go` through the go_router table
+  (`lib/core/router/app_router.dart`); the root `MultiProvider` in `main.dart`
+  covers every route, so no `ChangeNotifierProvider.value` re-wraps are needed.
 
 ---
 

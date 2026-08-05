@@ -359,13 +359,11 @@ class _CheckOutState extends State<CheckOut> {
                                 showDialog(
                                   context: context,
                                   builder: (context) {
-                                    return ChangeNotifierProvider.value(
-                                      value: sa,
-                                      child: AlertDialog(
-                                        title: const Text(
-                                          'هل أنت متأكد؟',
-                                          style: TextStyle(fontSize: 20),
-                                        ),
+                                    return AlertDialog(
+                                      title: const Text(
+                                        'هل أنت متأكد؟',
+                                        style: TextStyle(fontSize: 20),
+                                      ),
                                         actions: [
                                           TextButton(
                                             onPressed: () async {
@@ -489,8 +487,7 @@ class _CheckOutState extends State<CheckOut> {
                                             ),
                                           ),
                                         ],
-                                      ),
-                                    );
+                                      );
                                   },
                                 );
                               },

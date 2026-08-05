@@ -1,15 +1,8 @@
 import 'package:dukkan/core/observability.dart';
-import 'package:dukkan/pages/loans/loans_page.dart';
-import 'package:dukkan/pages/inventory/low_stock_page.dart';
-import 'package:dukkan/pages/settings/settings_page.dart';
-import 'package:dukkan/pages/expenses/spendings_page.dart';
-import 'package:dukkan/providers/expense_provider.dart';
-import 'package:dukkan/providers/inventory_provider.dart';
-import 'package:dukkan/providers/log_provider.dart';
 import 'package:dukkan/providers/auth_provider.dart';
-import 'package:dukkan/providers/sales_provider.dart';
-import 'package:dukkan/pages/inbound/inbound_receipt_page.dart';
+import 'package:dukkan/providers/log_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class drawerItems extends StatelessWidget {
@@ -41,26 +34,7 @@ class drawerItems extends StatelessWidget {
             'الديون',
             style: TextStyle(fontSize: 15),
           ),
-          onTap: () {
-            var li = context.read<LogProvider>();
-            var as = context.read<SalesProvider>();
-            var exp = context.read<ExpenseProvider>();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChangeNotifierProvider.value(
-                  value: exp,
-                  child: ChangeNotifierProvider.value(
-                    value: li,
-                    child: ChangeNotifierProvider.value(
-                      value: as,
-                      child: Loans(),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+          onTap: () => context.push('/loans'),
         ),
         ListTile(
           leading: Icon(Icons.manage_accounts_rounded),
@@ -68,17 +42,7 @@ class drawerItems extends StatelessWidget {
             'المنصرفات',
             style: TextStyle(fontSize: 15),
           ),
-          onTap: () {
-            var exp = Provider.of<ExpenseProvider>(context, listen: false);
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChangeNotifierProvider.value(
-                    value: exp,
-                    child: Spendings(),
-                  ),
-                ));
-          },
+          onTap: () => context.push('/expenses'),
         ),
         ListTile(
           leading: Icon(Icons.manage_accounts_rounded),
@@ -86,40 +50,10 @@ class drawerItems extends StatelessWidget {
             'فاتورة داخل',
             style: TextStyle(fontSize: 15),
           ),
-          onTap: () {
-            var li = Provider.of<LogProvider>(context, listen: false);
-            var exp = Provider.of<ExpenseProvider>(context, listen: false);
-            var as = Provider.of<SalesProvider>(context, listen: false);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChangeNotifierProvider.value(
-                  value: exp,
-                  child: ChangeNotifierProvider.value(
-                    value: as,
-                    child: ChangeNotifierProvider.value(
-                      value: li,
-                      child: inboundReceipt(),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+          onTap: () => context.push('/inbound'),
         ),
         ListTile(
-          onTap: () async {
-            var inventory = context.read<InventoryProvider>();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChangeNotifierProvider.value(
-                  value: inventory,
-                  child: const LowStockItemsPage(),
-                ),
-              ),
-            );
-          },
+          onTap: () => context.push('/inventory/low-stock'),
           leading: Icon(Icons.warning_amber_rounded),
           title: Text('عناصر منخفضة المخزون'),
           enabled: true,
@@ -183,18 +117,7 @@ class drawerItems extends StatelessWidget {
           enabled: true,
         ),
         ListTile(
-          onTap: () async {
-            var sa = Provider.of<SalesProvider>(context, listen: false);
-
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChangeNotifierProvider.value(
-                    value: sa,
-                    child: SettingsPage(),
-                  ),
-                ));
-          },
+          onTap: () => context.push('/settings'),
           leading: Icon(Icons.settings),
           title: Text('الإعدادات'),
           enabled: true,
