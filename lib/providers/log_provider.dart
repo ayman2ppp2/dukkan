@@ -25,7 +25,7 @@ class LogProvider extends ChangeNotifier {
     double sum = 0;
     for (var product in log.products) {
       if (product.hot!) {
-        sum += product.buyPrice! * product.count!;
+        sum += product.sellPrice! * product.count!;
       }
     }
     if (log.loaned) {

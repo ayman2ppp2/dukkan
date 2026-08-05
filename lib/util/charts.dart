@@ -144,6 +144,10 @@ class _LoanerChartState extends State<LoanerChart>
             );
           }
           final chartHeight = max(300.0, data.length * 50.0);
+          final maxAbs = data.fold<double>(
+            0,
+            (m, d) => max(m, (d.loanedAmount - d.currentValue).abs()),
+          );
           return SizedBox(
             height: chartHeight,
             child: ExcludeSemantics(
@@ -151,41 +155,74 @@ class _LoanerChartState extends State<LoanerChart>
               child: RepaintBoundary(
                 child: SfCartesianChart(
                   title: ChartTitle(
-                    text: 'مقارنة القروض لهذا الشهر',
+                    text: 'ربح أو خسارة القروض',
                     alignment: ChartAlignment.near,
                   ),
-                  primaryXAxis: CategoryAxis(
-                    labelRotation: 45,
-                  ),
+                  primaryXAxis: CategoryAxis(),
                   primaryYAxis: NumericAxis(
                     numberFormat: NumberFormat.compact(),
                     isVisible: true,
+                    minimum: -(maxAbs <= 0 ? 1.0 : maxAbs * 1.15),
+                    maximum: maxAbs <= 0 ? 1.0 : maxAbs * 1.15,
                   ),
-                  tooltipBehavior: TooltipBehavior(enable: _tooltipReady),
+                  tooltipBehavior: TooltipBehavior(
+                    enable: _tooltipReady,
+                    builder: (dynamic data, dynamic point, dynamic series,
+                        int pointIndex, int seriesIndex) {
+                      final d = data as LoanerComparison;
+                      final diff = d.loanedAmount - d.currentValue;
+                      return Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.brown[700],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              d.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'بيع: ${NumberFormat.simpleCurrency().format(d.loanedAmount)}',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            Text(
+                              'شراء: ${NumberFormat.simpleCurrency().format(d.currentValue)}',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            Text(
+                              _formatGainLoss(diff),
+                              style: TextStyle(
+                                color: diff >= 0
+                                    ? Colors.greenAccent
+                                    : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   series: <CartesianSeries>[
                     ColumnSeries<LoanerComparison, String>(
-                      name: 'سعر البيع الأصلي',
+                      name: 'الربح أو الخسارة',
                       animationDuration: 0,
-                      color: Colors.brown,
+                      width: 0.5,
                       dataSource: data,
                       xValueMapper: (LoanerComparison d, _) => d.name,
-                      yValueMapper: (LoanerComparison d, _) => d.loanedAmount,
-                      dataLabelSettings: const DataLabelSettings(
-                        isVisible: true,
-                        labelAlignment: ChartDataLabelAlignment.top,
-                      ),
-                    ),
-                    ColumnSeries<LoanerComparison, String>(
-                      name: 'سعر الشراء الحالي',
-                      animationDuration: 0,
-                      color: Colors.red[400],
-                      dataSource: data,
-                      xValueMapper: (LoanerComparison d, _) => d.name,
-                      yValueMapper: (LoanerComparison d, _) => d.currentValue,
-                      dataLabelSettings: const DataLabelSettings(
-                        isVisible: true,
-                        labelAlignment: ChartDataLabelAlignment.top,
-                      ),
+                      yValueMapper: (LoanerComparison d, _) =>
+                          d.loanedAmount - d.currentValue,
+                      pointColorMapper: (LoanerComparison d, _) =>
+                          (d.loanedAmount - d.currentValue) >= 0
+                              ? Colors.green
+                              : Colors.red,
                     ),
                   ],
                 ),
@@ -201,6 +238,14 @@ class _LoanerChartState extends State<LoanerChart>
         }
       },
     );
+  }
+
+  String _formatGainLoss(double diff) {
+    final formatted = NumberFormat.simpleCurrency().format(diff.abs());
+    if (diff >= 0) {
+      return '▲ ربح $formatted';
+    }
+    return '▼ خسارة $formatted';
   }
 
   @override

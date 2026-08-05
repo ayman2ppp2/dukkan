@@ -2010,59 +2010,153 @@ class CgetLoanerComparison extends PooledJob<List<LoanerComparison>> {
         isar = existing;
       }
 
-      final now = DateTime.now();
-      final monthAgo = DateTime(now.year, now.month - 1, now.day);
       final loaners = await isar.loaners.where().findAll();
-      final allLoanedLogs = await isar.logs
-          .filter()
-          .loanedEqualTo(true)
-          .dateBetween(monthAgo, now)
-          .findAll();
+      final eligible = loaners.where((l) => (l.balance ?? 0) > 0).toList();
       final allProducts = await isar.products.where().findAll();
       final productMap = <int, Product>{};
       for (final p in allProducts) {
         productMap[p.id] = p;
       }
 
-      final List<LoanerComparison> results = [];
-
-      for (final loaner in loaners) {
-        final loanerLogs =
-            allLoanedLogs.where((l) => l.loanerID == loaner.ID).toList();
-        if (loanerLogs.isEmpty) continue;
-
-        double loanedAmount = 0;
-        double currentValue = 0;
-
-        for (final log in loanerLogs) {
-          for (final ep in log.products) {
-            final count = ep.count ?? 0;
-            loanedAmount += (ep.sellPrice ?? 0) * count;
-
-            final buyPrice = (ep.productId != null && ep.productId! > 0)
-                ? (productMap[ep.productId]?.buyprice ?? (ep.buyPrice ?? 0))
-                : (ep.buyPrice ?? 0);
-            currentValue += buyPrice * count;
-          }
-        }
-
-        if (loanedAmount == 0 && currentValue == 0) continue;
-
-        results.add(LoanerComparison(
-          name: loaner.name ?? 'Unknown',
-          loanedAmount: loanedAmount,
-          currentValue: currentValue,
-        ));
+      final allLoanedLogs = <Log>[];
+      for (final loaner in eligible) {
+        allLoanedLogs.addAll(await _loadLoanerDebtTail(isar, loaner));
       }
 
-      results.sort((a, b) => b.loanedAmount.compareTo(a.loanedAmount));
-      return results;
+      return computeLoanerComparison(
+        loaners: eligible,
+        loanedLogs: allLoanedLogs,
+        productMap: productMap,
+      );
     } catch (e) {
       AppLogger.warning('Loaner comparison calculation failed',
           data: {'area': 'stats.loaner_comparison'});
       return [];
     }
   }
+}
+
+Future<List<Log>> _loadLoanerDebtTail(Isar isar, Loaner loaner,
+    {int batch = 200}) async {
+  final balance = loaner.balance ?? 0;
+  final logs = <Log>[];
+  var offset = 0;
+  while (true) {
+    final chunk = await isar.logs
+        .filter()
+        .loanedEqualTo(true)
+        .loanerIDEqualTo(loaner.ID)
+        .sortByDateDesc()
+        .offset(offset)
+        .limit(batch)
+        .findAll();
+    if (chunk.isEmpty) break;
+    logs.addAll(chunk);
+    if (debtWindowStart(balance: balance, logsNewestFirst: logs) != null) {
+      break;
+    }
+    offset += batch;
+  }
+  return logs;
+}
+
+@visibleForTesting
+DateTime? debtWindowStart({
+  required double balance,
+  required List<Log> logsNewestFirst,
+}) {
+  if (balance <= 0 || logsNewestFirst.isEmpty) return null;
+  var remaining = balance;
+  for (final log in logsNewestFirst) {
+    final value = logLoanedValue(log);
+    if (value <= 0) continue;
+    remaining -= value;
+    if (remaining <= 0) return log.date;
+  }
+  return null;
+}
+
+/// The sell value of the hot products in a log. Hot products are not tracked
+/// in the product catalog (no reliable buy price), so this value is excluded
+/// from the loaner comparison chart but reconciles a loaner's balance with its
+/// tracked loaned amount.
+@visibleForTesting
+double hotSellValue(Log log) {
+  double value = 0;
+  for (final ep in log.products) {
+    if (ep.hot == true) {
+      value += (ep.sellPrice ?? 0) * (ep.count ?? 0);
+    }
+  }
+  return value;
+}
+
+/// The full sell value of a log, including hot products. A loaner's recorded
+/// balance is raised by this total on checkout, so the debt window must be
+/// sized with it even though the chart itself only shows tracked products.
+@visibleForTesting
+double logLoanedValue(Log log) => log.price + hotSellValue(log);
+
+@visibleForTesting
+List<LoanerComparison> computeLoanerComparison({
+  required Iterable<Loaner> loaners,
+  required Iterable<Log> loanedLogs,
+  required Map<int, Product> productMap,
+}) {
+  final logsByLoaner = <int, List<Log>>{};
+  for (final log in loanedLogs) {
+    final id = log.loanerID;
+    if (id == null) continue;
+    logsByLoaner.putIfAbsent(id, () => []).add(log);
+  }
+
+  final results = <LoanerComparison>[];
+  for (final loaner in loaners) {
+    if ((loaner.balance ?? 0) <= 0) continue;
+    final loanerLogs = logsByLoaner[loaner.ID];
+    if (loanerLogs == null || loanerLogs.isEmpty) continue;
+
+    double loanedAmount = 0;
+    double currentValue = 0;
+    var remaining = loaner.balance ?? 0;
+
+    final sorted = [...loanerLogs]..sort((a, b) => b.date.compareTo(a.date));
+    for (final log in sorted) {
+      final value = logLoanedValue(log);
+      if (value <= 0) continue;
+
+      double logCurrentValue = 0;
+      for (final ep in log.products) {
+        if (ep.hot == true) continue;
+        final count = ep.count ?? 0;
+        final buyPrice = (ep.productId != null && ep.productId! > 0)
+            ? (productMap[ep.productId]?.buyprice ?? (ep.buyPrice ?? 0))
+            : (ep.buyPrice ?? 0);
+        logCurrentValue += buyPrice * count;
+      }
+
+      if (remaining <= value) {
+        final fraction = remaining / value;
+        loanedAmount += log.price * fraction;
+        currentValue += logCurrentValue * fraction;
+        break;
+      }
+      loanedAmount += log.price;
+      currentValue += logCurrentValue;
+      remaining -= value;
+    }
+
+    if (loanedAmount == 0 && currentValue == 0) continue;
+
+    results.add(LoanerComparison(
+      name: loaner.name ?? 'Unknown',
+      loanedAmount: loanedAmount,
+      currentValue: currentValue,
+    ));
+  }
+
+  results.sort((a, b) => b.loanedAmount.compareTo(a.loanedAmount));
+  return results;
 }
 
 double recalculateProfit(Iterable<Log> logs, Map<int, Product> productMap) {

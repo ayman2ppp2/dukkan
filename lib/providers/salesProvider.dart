@@ -17,6 +17,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
   late SharedPreferences _pref;
   late DB db;
   List<Product>? _testProducts;
+  VoidCallback? onInventoryChanged;
   SalesProvider() {
     init();
   }
@@ -208,6 +209,7 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
       await db.isar!.writeTxn(() async {
         await db.isar!.products.putAll(inboundList);
       });
+      onInventoryChanged?.call();
     }
   }
 
@@ -310,10 +312,15 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     return await db.getAllProducts();
   }
 
-  void updateProduct(Product product) {
-    // product.priceHistory.add({DateTime.now(): product.buyprice});
-    db.isar!.writeTxn(() => db.isar!.products.put(product));
-    refreshProductsList();
+  Future<void> updateProduct(Product product) async {
+    await db.isar!.writeTxn(() => db.isar!.products.put(product));
+    await refreshProductsList();
+    onInventoryChanged?.call();
+  }
+
+  Future<void> insertProducts({required List<Product> products}) async {
+    await db.insertProducts(products: products);
+    onInventoryChanged?.call();
   }
 
   Future<List<Product>> search(String keyWord, bool sales, bool barcode) {

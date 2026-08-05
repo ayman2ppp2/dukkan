@@ -413,7 +413,7 @@ class _InPageState extends State<InPage> {
                 // submit
                 Consumer<SalesProvider>(
                   builder: (context, sa, child) => IconButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (widget.index == -1) {
                         if (_validateFields()) {
                           final buyPrice = double.tryParse(widget.buyCon.text);
@@ -485,7 +485,7 @@ class _InPageState extends State<InPage> {
                             return;
                           }
                           Navigator.pop(context);
-                          li.db.insertProducts(products: temp);
+                          li.insertProducts(products: temp);
                         } else {
                           _showErrorDialog(context, 'ادخل قيم صحيحة');
                         }
@@ -517,11 +517,37 @@ class _InPageState extends State<InPage> {
                               return;
                             }
                           }
-                          Emap emap = Emap()
-                            ..buyPrice = widget.buyPrice
-                            ..sellPrice = widget.sellPrice
-                            ..date = DateTime.now();
-                          widget.priceHistory.add(emap);
+                          final unitBuyPrice = widget.weightable
+                              ? buyPrice /
+                                  getWholeUnitNumber(widget.wholeUnitCon.text)
+                                      .toDouble()
+                              : buyPrice;
+                          final unitSellPrice = widget.weightable
+                              ? sellPrice /
+                                  getWholeUnitNumber(widget.wholeUnitCon.text)
+                                      .toDouble()
+                              : sellPrice;
+                          final now = DateTime.now();
+                          final todayIndex = widget.priceHistory.indexWhere(
+                            (e) {
+                              final d = e.date;
+                              return d != null &&
+                                  d.year == now.year &&
+                                  d.month == now.month &&
+                                  d.day == now.day;
+                            },
+                          );
+                          if (todayIndex != -1) {
+                            widget.priceHistory[todayIndex]
+                              ..buyPrice = unitBuyPrice
+                              ..sellPrice = unitSellPrice
+                              ..date = now;
+                          } else {
+                            widget.priceHistory.add(Emap()
+                              ..buyPrice = unitBuyPrice
+                              ..sellPrice = unitSellPrice
+                              ..date = now);
+                          }
                           Product temp2 = Product.named2(
                             id: widget.id!,
                             name: widget.nameCon.text,
@@ -563,7 +589,7 @@ class _InPageState extends State<InPage> {
                             _showErrorDialog(context, validationError);
                             return;
                           }
-                          sa.updateProduct(temp2);
+                          await sa.updateProduct(temp2);
                           Navigator.pop(context);
                         } else {
                           _showErrorDialog(context, 'ادخل قيم صحيحة');

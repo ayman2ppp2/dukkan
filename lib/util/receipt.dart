@@ -192,6 +192,7 @@ class _ReceiptState extends State<Receipt> {
                                           return;
                                         }
                                         sa.sellList = products;
+                                        sa.refresh();
                                         li.editing = true;
                                         li.logID = widget.log.date;
                                         if (outerContext.mounted) {

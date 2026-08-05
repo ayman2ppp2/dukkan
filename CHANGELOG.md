@@ -2,6 +2,19 @@
 
 All notable production-readiness changes are tracked here.
 
+## 2.4.18
+
+- Inventory page now refreshes deterministically after editing a product: the DB write is awaited before listeners are notified, removing the intermittent stale-tile race.
+- New products added from the inventory page now appear in the grid immediately (insert also notifies inventory listeners after persisting).
+
+## 2.4.17
+
+- Loaner debt window now counts hot products at sell price (`logLoanedValue`), so the window/current value step correctly.
+- Replaced the loaner comparison chart with a diverging profit/loss chart (green = loaner still owes tracked value, red = loaner overpaid).
+- Fixed null-offer crash when editing a receipt that contains hot products.
+- Fixed buy/sell mismatch: editing or canceling a receipt now subtracts hot products at sell price, matching checkout.
+- Sell page now refreshes immediately after a receipt edit restores products to the cart.
+
 ## 2.4.16
 
 - Fixed monthly loans calculation: credit sales no longer double-counted as payments in `_calculateTotalPayments`.
