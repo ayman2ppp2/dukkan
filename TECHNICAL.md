@@ -477,8 +477,8 @@ These matter when touching code — verify before "fixing" and don't rely on bro
   `widgets/charts/charts.dart` mutates `OwnerProvider.ownersList` in memory but never persists.
 - `AuthAPI.uploadPaymentReceipt(...)` is an **empty stub** (called from
   `pages/auth/payment_verification_page.dart`).
-- `AccountPage` is **not referenced** by the navigation tree (dead-ish; the drawer has
-  its own logout).
+- The orphaned `AccountPage` was removed in Phase 4 (was not referenced by the
+  navigation tree).
 
 **Navigation / flow bugs**
 
@@ -503,7 +503,6 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 
 **Dead / deprecated code**
 
-- `BcLog.dart` and `BC_product.dart` are fully commented out (legacy Hive-era).
 - `lib/firebase_options.dart` is commented out (migrated to Appwrite).
 - `ExpensesPieChart` in `charts.dart` is demo data and unused.
 - `CgetLowStockItemsPerMonth` exists in `jobs.dart` but is not used by
