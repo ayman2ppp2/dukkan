@@ -389,10 +389,6 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
-  int generateLoanerId() {
-    return DateTime.now().millisecondsSinceEpoch.remainder(10000);
-  }
-
   Stream<List<Loaner>> getLoanersStream() {
     return db.getLoanersStream();
     // refreshLoanersList();

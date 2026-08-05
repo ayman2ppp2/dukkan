@@ -302,8 +302,4 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
     // Keep restart after restore as a conservative safety measure.
     Restart.restartApp();
   }
-
-  Future<void> refresh() async {
-    notifyListeners();
-  }
 }

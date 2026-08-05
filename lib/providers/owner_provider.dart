@@ -32,8 +32,4 @@ class OwnerProvider extends ChangeNotifier {
     refreshListOfOwners();
     notifyListeners();
   }
-
-  Future<void> refresh() async {
-    notifyListeners();
-  }
 }
