@@ -8,6 +8,7 @@ import 'package:dukkan/core/observability.dart';
 // import 'package:dukkan/models/Loaner.dart';
 import 'package:dukkan/models/Owner.dart';
 import 'package:dukkan/core/db/db.dart';
+import 'package:dukkan/data/stats/jobs.dart';
 import 'package:dukkan/models/prodStats.dart';
 import 'package:dukkan/models/Product.dart';
 import 'package:dukkan/models/searchQuery.dart';

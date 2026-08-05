@@ -1,4 +1,5 @@
 import 'package:dukkan/core/db/db.dart';
+import 'package:dukkan/data/stats/jobs.dart';
 import 'package:dukkan/core/pool/isolate_pool.dart';
 import 'package:dukkan/models/prodStats.dart';
 import 'package:dukkan/models/Product.dart';
