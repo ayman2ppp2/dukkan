@@ -106,8 +106,7 @@ Key members:
 - Backup/restore delegated to `BackupService` (`lib/data/backup/backup_service.dart`):
   `createLocalBackup()` (copies live `.isar` file), `useLocalBacup()`, `windows()`,
   `_replaceLiveIsarWithFile` (verifies the incoming file, swaps with a `.bak` fallback),
-  `_verifyIsarFile` (opens a temp copy to validate). `exportData` / `importData` (JSON
-  logs) remain on `DB`.
+  `_verifyIsarFile` (opens a temp copy to validate).
 - `closeAllIsarInstances` / `reOpenPool` — stop/restart the isolate pool (used during
   DB file replacement).
 - Write helpers: `insertProducts`, `updateProducts`, `deleteProduct`, `checkOut`,
@@ -506,11 +505,10 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 **Dead / deprecated code**
 
 - `lib/firebase_options.dart` is commented out (migrated to Appwrite).
-- `ExpensesPieChart` in `charts.dart` is demo data and unused.
-- `CgetLowStockItemsPerMonth` exists in `jobs.dart` but is not used by
-  `InventoryProvider` (which uses `getLowStockProductsWithPercent`).
-- `db.exportData` / `importData` (JSON logs) exist but are not surfaced in the UI.
-- `PostgresConnection` / `insertInPostgres` are wired only to a commented-out block.
+
+> Phase 4 removed: `ExpensesPieChart` + `ChartData` (demo data), the unused
+> `CgetLowStockItemsPerMonth` pooled job, `db.hasna`, `db.exportData`/`importData`,
+> `PostgresConnection`/`insertInPostgres`, and the `postgres` dependency.
 
 **Watch out when extending**
 

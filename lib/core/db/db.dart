@@ -3,7 +3,6 @@
 // import 'package:device info_plus/device_info_plus.dart';
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:dukkan/core/observability.dart';
@@ -670,37 +669,6 @@ class DB {
   //   return pool.scheduleJob(CgetProfitOfTheMonth(map: map));
   // }
 
-  Future<void> exportData() async {
-    final jsonData = <String, dynamic>{};
-
-    // Read data outside transaction
-    final logs = await isar!.logs.where().findAll();
-    jsonData['logs'] = logs.map((e) => e.toMap()).toList();
-
-    // Convert to JSON string
-    final jsonString = jsonEncode(jsonData);
-
-    // Save jsonString to a file
-    var te = await _documentsDirectory();
-    var file = File('${te.path}/backup.txt');
-    await file.writeAsString(jsonString);
-  }
-
-  Future<void> importData() async {
-    var jsonFilePath = await _documentsDirectory();
-    final jsonString =
-        await File('${jsonFilePath.path}/backup.txt').readAsString();
-    final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
-
-    await isar!.writeTxn(() async {
-      // Reimport data into the collection
-      final myCollectionData = (jsonData['logs'] as List)
-          .map((e) => Log.fromMap(e as Map<String, dynamic>))
-          .toList();
-      await isar!.logs.putAll(myCollectionData);
-    });
-  }
-
   Future<Map<String, dynamic>> getAccountStatementData(int loanerId) async {
     final loaner = await isar!.loaners.get(loanerId);
     if (loaner == null) throw Exception('Loaner with ID $loanerId not found');
@@ -763,23 +731,6 @@ class DB {
       'transactionHistory': transactions,
       'zeroingDateDisplay': loaner.lastPayment!.last.key ?? 'not yet'
     };
-  }
-
-  String hasna({required int id}) {
-    final logs =
-        isar!.logs.filter().loanerIDEqualTo(id).sortByDate().findAllSync();
-
-    // Group logs by year and month
-    Map<String, double> monthlySums = {};
-
-    for (var log in logs) {
-      String monthKey =
-          "${log.date.year}-${log.date.month.toString().padLeft(2, '0')}";
-
-      monthlySums[monthKey] = (monthlySums[monthKey] ?? 0) + log.price;
-    }
-
-    return monthlySums.toString();
   }
 
   Future<void> createLocalBackup() => backupService.createLocalBackup();
