@@ -202,15 +202,6 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> saveAllChanges() async {
-    if (inboundList.isNotEmpty) {
-      await db.isar!.writeTxn(() async {
-        await db.isar!.products.putAll(inboundList);
-      });
-      onInventoryChanged?.call();
-    }
-  }
-
   Future<int> resetLoanerAcount(int ID) async {
     var loaner = await db.isar!.loaners.get(ID);
     loaner!.balance = 0;
