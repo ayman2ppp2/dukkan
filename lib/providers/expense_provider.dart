@@ -20,12 +20,20 @@ class ExpenseProvider extends ChangeNotifier {
   }
 
   @visibleForTesting
-  ExpenseProvider.forTesting(this.db);
+  ExpenseProvider.forTesting(this.db) {
+    pool = IsolatePool(0);
+  }
 
   @visibleForTesting
   ExpenseProvider.detachedForTesting();
 
-  Future<void> init() async {
+  Future<void>? _initFuture;
+
+  /// Initializes the provider's backing resources. Safe to call more than
+  /// once: only the first invocation runs the initialization.
+  Future<void> init() => _initFuture ??= _doInit();
+
+  Future<void> _doInit() async {
     db = await DB.getInstance();
     pool = await Pool.init();
   }

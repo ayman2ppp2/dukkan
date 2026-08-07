@@ -36,14 +36,21 @@ Work happens on branch `hot`; PRs go `hot` → `master`.
 
 1. `main()` → `AppLogger.bootstrap(...)` (initializes Sentry + global error handlers).
 2. `DB.initialize()` — opens the local Isar database (singleton).
-3. `runApp(MyApp)` → `MaterialApp` (brown Material 3 theme) → `AnimatedSplashScreen`.
-4. Splash resolves to a `MultiProvider` tree registering **8 providers**:
-   `AuthAPI`, `ExpenseProvider`, `SalesProvider`,
-   `InventoryProvider`, `LogProvider`, `OwnerProvider`, `ShareProvider`,
-   and `StatsService`.
-5. The `builder` is the **auth gate**: `AuthStatus.uninitialized` → spinner;
-   `authenticated` → `LandingPage` if no weight precision is set, else `HomePage`;
-   otherwise `LoginPage`.
+3. **Providers are bootstrapped before the first frame**: each of the 8 root
+   providers (`AuthAPI`, `ExpenseProvider`, `SalesProvider`, `InventoryProvider`,
+   `LogProvider`, `OwnerProvider`, `ShareProvider`, `StatsService`) is constructed
+   and its (idempotent) `init()` is `await`ed (`Future.wait`). This guarantees
+   `db`, `pool`, `_pref` and `stats` are initialized before any page reads them,
+   so pages never race a provider's async init (`LateInitializationError`).
+4. `runApp(DukkanApp(...))` registers those **instances** via
+   `ChangeNotifierProvider.value(...)` through `appProviderList(...)`. Instances
+   are injected rather than `create:`-constructed so no provider ever reads
+   another via `context.read` during creation (which previously threw
+   `ProviderNotFoundException` for `StatsService`).
+5. `MaterialApp.router` (`routerConfig: AppRouter.create()`) — brown Material 3
+   theme; the `/` route is the **auth gate** (`lib/core/router/auth_gate.dart`):
+   `AuthStatus.uninitialized` → spinner; `authenticated` → `LandingPage` if no
+   weight precision is set, else `HomePage`; otherwise `LoginPage`.
 6. `SalesProvider.onInventoryChanged` is wired to `StatsService.clearAllCache` (any
    inventory write invalidates the shared stats cache).
 
@@ -534,6 +541,10 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 - Pages navigate with `context.push`/`context.go` through the go_router table
   (`lib/core/router/app_router.dart`); the root `MultiProvider` in `main.dart`
   covers every route, so no `ChangeNotifierProvider.value` re-wraps are needed.
+- Never re-introduce `context.read` inside a provider `create:` callback for a
+  provider registered later in the `MultiProvider` list — `MultiProvider` nests
+  first-listed providers **outermost**, so later ones are descendants and unreadable.
+  Inject cross-provider dependencies as constructor args (see `main()` bootstrap).
 
 ---
 
@@ -548,6 +559,9 @@ These matter when touching code — verify before "fixing" and don't rely on bro
 - **State**: providers are `ChangeNotifier`; heavy reads go through the isolate pool
   via `pool.scheduleJob(Cget*(map: {...}))`; wrap expensive/repeated results in
   `getCachedCalculation` (owned by `StatsService`).
+- **Provider init**: every provider whose constructor fires an async `init()` must
+  memoize it (`Future<void> init() => _initFuture ??= _doInit();`) and bootstrap
+  from `main()` by `await`-ing it — never let pages race `late` fields.
 - **Quality gate**: always finish with
   `flutter analyze --no-fatal-infos --no-fatal-warnings` and fix findings.
 - **Versioning**: bump patch only on push (see AGENTS.md); update `CHANGELOG.md`.

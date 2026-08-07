@@ -53,6 +53,15 @@ class AuthAPI extends ChangeNotifier {
   @visibleForTesting
   void setStatusForTesting(AuthStatus status) => _status = status;
 
+  /// Test-only hook to complete a login without hitting Appwrite. When set,
+  /// [createEmailSession] awaits it, marks the session authenticated, notifies
+  /// listeners, and returns its result.
+  @visibleForTesting
+  Future<Session> Function({
+    required String email,
+    required String password,
+  })? loginOverrideForTesting;
+
   @visibleForTesting
   Future<void> clearSessionForTesting() => _clearSession();
 
@@ -226,6 +235,14 @@ class AuthAPI extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
+    final override = loginOverrideForTesting;
+    if (override != null) {
+      final session = await override(email: email, password: password);
+      _status = AuthStatus.authenticated;
+      _isOffline = false;
+      notifyListeners();
+      return session;
+    }
     try {
       final session = await account.createEmailPasswordSession(
         email: email,

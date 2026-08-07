@@ -35,7 +35,13 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     _testProducts = products;
   }
 
-  Future<void> init() async {
+  Future<void>? _initFuture;
+
+  /// Initializes the provider's backing resources. Safe to call more than
+  /// once: only the first invocation runs the initialization.
+  Future<void> init() => _initFuture ??= _doInit();
+
+  Future<void> _doInit() async {
     _pref = await SharedPreferences.getInstance();
     db = await DB.getInstance();
     await _loadPendingCarts();

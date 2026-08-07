@@ -34,7 +34,10 @@ class drawerItems extends StatelessWidget {
             'الديون',
             style: TextStyle(fontSize: 15),
           ),
-          onTap: () => context.push('/loans'),
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/loans');
+          },
         ),
         ListTile(
           leading: Icon(Icons.manage_accounts_rounded),
@@ -42,7 +45,10 @@ class drawerItems extends StatelessWidget {
             'المنصرفات',
             style: TextStyle(fontSize: 15),
           ),
-          onTap: () => context.push('/expenses'),
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/expenses');
+          },
         ),
         ListTile(
           leading: Icon(Icons.manage_accounts_rounded),
@@ -50,10 +56,16 @@ class drawerItems extends StatelessWidget {
             'فاتورة داخل',
             style: TextStyle(fontSize: 15),
           ),
-          onTap: () => context.push('/inbound'),
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/inbound');
+          },
         ),
         ListTile(
-          onTap: () => context.push('/inventory/low-stock'),
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/inventory/low-stock');
+          },
           leading: Icon(Icons.warning_amber_rounded),
           title: Text('عناصر منخفضة المخزون'),
           enabled: true,
@@ -117,7 +129,10 @@ class drawerItems extends StatelessWidget {
           enabled: true,
         ),
         ListTile(
-          onTap: () => context.push('/settings'),
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/settings');
+          },
           leading: Icon(Icons.settings),
           title: Text('الإعدادات'),
           enabled: true,

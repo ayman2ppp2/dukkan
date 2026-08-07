@@ -18,6 +18,7 @@ class TestApp extends StatelessWidget {
     super.key,
     required this.db,
     required this.prefs,
+    this.auth,
     this.products = const [],
     this.cartProducts = const [],
     this.authenticated = false,
@@ -25,13 +26,16 @@ class TestApp extends StatelessWidget {
 
   final DB db;
   final SharedPreferences prefs;
+
+  /// Injected [AuthAPI]; when null a fresh `AuthAPI.forTesting()` is created.
+  final AuthAPI? auth;
   final List<Product> products;
   final List<Product> cartProducts;
   final bool authenticated;
 
   @override
   Widget build(BuildContext context) {
-    final auth = AuthAPI.forTesting();
+    final auth = this.auth ?? AuthAPI.forTesting();
     auth.setStatusForTesting(
       authenticated ? AuthStatus.authenticated : AuthStatus.unauthenticated,
     );

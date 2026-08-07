@@ -18,7 +18,13 @@ class OwnerProvider extends ChangeNotifier {
     _testOwners = owners;
   }
 
-  Future<void> init() async {
+  Future<void>? _initFuture;
+
+  /// Initializes the provider's backing resources. Safe to call more than
+  /// once: only the first invocation runs the initialization.
+  Future<void> init() => _initFuture ??= _doInit();
+
+  Future<void> _doInit() async {
     db = await DB.getInstance();
   }
 
