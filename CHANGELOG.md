@@ -2,6 +2,15 @@
 
 All notable production-readiness changes are tracked here.
 
+## 2.4.19
+
+- Fixed missing-provider crashes on checkout, receipts, and expenses by bootstrapping all root providers in `main()` before `runApp` (providers are now injected via `ChangeNotifierProvider.value` with memoized `init()`).
+- Migrated navigation from provider re-wraps to go_router.
+- Reorganized `lib` into feature folders; moved data models to `lib/models`.
+- Replaced the legacy `Lists` provider with dedicated `LogProvider`, `OwnerProvider`, and `ShareProvider`; removed duplicate/dead providers (`LoanProvider`, `StatsProvider`, `SyncProvider`).
+- Extracted stats cache, stats pooled jobs, and backup/restore into `data/stats` and `data/backup` services.
+- Removed dead code: Postgres sync client, legacy Hive-era models, unused provider members, dead DB methods, and unused dependencies (`percent_indicator`, `postgres`).
+
 ## 2.4.18
 
 - Inventory page now refreshes deterministically after editing a product: the DB write is awaited before listeners are notified, removing the intermittent stale-tile race.
