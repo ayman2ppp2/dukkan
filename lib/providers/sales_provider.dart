@@ -394,6 +394,28 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     //     0.0, (previousValue, element) => previousValue + element.balance!);
   }
 
+  Future<void> renameLoaner(
+    int ID, {
+    String? name,
+    String? phoneNumber,
+    String? location,
+  }) async {
+    var temp = await db.isar!.loaners.get(ID);
+    if (temp == null) throw Exception('Loaner not found');
+    var updated = Loaner(
+      name: name ?? temp.name,
+      phoneNumber: phoneNumber ?? temp.phoneNumber,
+      location: location ?? temp.location,
+      lastPayment: temp.lastPayment,
+      balance: temp.balance,
+    )
+      ..ID = ID
+      ..zeroingDate = temp.zeroingDate;
+    await db.insertLoaner(updated);
+    loanersList = await db.getLoaners();
+    notifyListeners();
+  }
+
   Future<void> deleteLoaner(int id) {
     return db.deleteLoaner(id).then((value) => refresh());
   }

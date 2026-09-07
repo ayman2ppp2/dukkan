@@ -12,6 +12,13 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   exclude:
     - '**/*.g.dart'
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
   errors:
     # Legacy SDK/API usage is tracked separately; do not block initial CI rollout.
     deprecated_member_use: ignore

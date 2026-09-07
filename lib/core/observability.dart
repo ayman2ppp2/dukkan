@@ -26,6 +26,17 @@ class AppLogger {
         _sentryStarted = true;
       }
       _installGlobalErrorHandlers();
+      await _breadcrumb('App started', level: SentryLevel.info, data: {
+        'environment': ObservabilityConfig.environment,
+        'release': ObservabilityConfig.release.isEmpty
+            ? 'unknown'
+            : ObservabilityConfig.release,
+        'mode': kReleaseMode
+            ? 'release'
+            : kDebugMode
+                ? 'debug'
+                : 'profile',
+      });
       await appRunner();
     });
   }
@@ -39,7 +50,8 @@ class AppLogger {
     options.debug = kDebugMode;
     options.sendDefaultPii = false;
     options.attachStacktrace = true;
-    options.tracesSampleRate = 0;
+    options.maxBreadcrumbs = 100;
+    options.tracesSampleRate = 1.0;
   }
 
   static Future<void> _runGuarded(Future<void> Function() appRunner) async {
@@ -95,9 +107,17 @@ class AppLogger {
     _breadcrumb(message, level: SentryLevel.info, data: data);
   }
 
-  static void warning(String message, {Map<String, Object?>? data}) {
+  static Future<void> warning(String message,
+      {Map<String, Object?>? data}) async {
     _localLog('warning', message, data: data);
-    _breadcrumb(message, level: SentryLevel.warning, data: data);
+    final safeData = sanitizeMap(data);
+    if (!ObservabilityConfig.crashReportingEnabled || !_sentryStarted) return;
+
+    await _breadcrumb(message, level: SentryLevel.warning, data: safeData);
+    await Sentry.captureMessage(
+      sanitizeText(message),
+      level: SentryLevel.warning,
+    );
   }
 
   static Future<void> captureException(

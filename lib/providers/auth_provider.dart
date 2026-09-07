@@ -1,10 +1,16 @@
+import 'dart:async';
 import 'dart:io' as IO;
 
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/client_io.dart' as appwrite_io;
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
+<<<<<<< Updated upstream:lib/providers/auth_provider.dart
 import 'package:dukkan/core/db/db.dart';
+=======
+import 'package:crypto/crypto.dart';
+import 'package:dukkan/core/db.dart';
+>>>>>>> Stashed changes:lib/providers/onlineProvider.dart
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -18,7 +24,7 @@ enum AuthStatus {
   unauthenticated,
 }
 
-class AuthAPI extends ChangeNotifier {
+class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
   late final Client client;
   late final Account account;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -27,8 +33,10 @@ class AuthAPI extends ChangeNotifier {
   static const String KEY_USER_EMAIL = 'user_email';
   static const String KEY_USER_ID = 'user_id';
   static const String KEY_USER_NAME = 'user_name';
+  static const String KEY_LAST_BACKUP_HASH = 'last_backup_hash';
   static const Duration offlineSessionDuration = Duration(days: 3);
   static const Duration revalidationInterval = Duration(minutes: 5);
+  static const Duration heartbeatInterval = Duration(minutes: 30);
 
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
@@ -70,6 +78,10 @@ class AuthAPI extends ChangeNotifier {
       _oauthProvider(provider);
 
   void init() {
+    if (!AppwriteConfig.isConfigured) {
+      AppLogger.warning('Appwrite is not configured; add --dart-define values',
+          data: {'area': 'appwrite.config'});
+    }
     client = Client();
     client
         .setEndpoint(AppwriteConfig.endpoint)
@@ -79,6 +91,7 @@ class AuthAPI extends ChangeNotifier {
     }
     account = Account(client);
     storage = Storage(client);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   Future<void> _initialize() async {
@@ -86,21 +99,36 @@ class AuthAPI extends ChangeNotifier {
     _startRevalidationTimer();
   }
 
-// just a test
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _status == AuthStatus.authenticated) {
+      unawaited(_pingServer(area: 'auth.lifecycle'));
+    }
+  }
+
+  Future<void> _pingServer({required String area}) async {
+    try {
+      final user = await account.get();
+      _isOffline = false;
+      _currentUser = user;
+      await _saveSession(user);
+      notifyListeners();
+      AppLogger.debug('Heartbeat ok', data: {'area': area});
+    } catch (_) {
+      // Expected while offline; keep the project quiet instead of spamming.
+      AppLogger.debug('Heartbeat ping failed (offline?)',
+          data: {'area': area});
+    }
+  }
+
+  // keep-alive so Appwrite does not flag the project as inactive
   void _startRevalidationTimer() {
-    Future.delayed(revalidationInterval, () async {
-      if (_status == AuthStatus.authenticated && _isOffline) {
-        try {
-          await account.get();
-          _isOffline = false;
-          await _saveSession(_currentUser!);
-          notifyListeners();
-        } catch (e, st) {
-          await AppLogger.captureException(e,
-              stackTrace: st, area: 'auth.revalidate');
-        }
-        _startRevalidationTimer();
-      }
+    Future.delayed(
+        _isOffline ? revalidationInterval : heartbeatInterval, () async {
+      if (_status != AuthStatus.authenticated) return;
+      unawaited(_pingServer(area: 'auth.heartbeat'));
+      _startRevalidationTimer();
     });
   }
 
@@ -355,13 +383,46 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
+<<<<<<< Updated upstream:lib/providers/auth_provider.dart
+=======
+  Future<Preferences> getUserPreferences() async {
+    return await account.getPrefs();
+  }
+
+  updatePreferences({required String bio}) async {
+    return account.updatePrefs(prefs: {'bio': bio});
+  }
+
+  @visibleForTesting
+  static List<int> compressBackup(List<int> bytes) => IO.gzip.encode(bytes);
+
+  @visibleForTesting
+  static List<int> decompressBackup(List<int> bytes) => IO.gzip.decode(bytes);
+
+  @visibleForTesting
+  static String backupHash(List<int> bytes) =>
+      sha256.convert(bytes).toString();
+
+>>>>>>> Stashed changes:lib/providers/onlineProvider.dart
   Future<void> uploadBackup() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = IO.File('${dir.path}/${DB.liveDatabaseFileName}');
-      final fileId = 'backup_${_currentUser!.$id}.isar';
-
       if (!await file.exists()) return;
+
+      final fileId = 'backup_${_currentUser!.$id}.isar.gz';
+      final fileBytes = await file.readAsBytes();
+
+      // Skip re-uploading when the local DB has not changed since last time.
+      final hash = sha256.convert(fileBytes).toString();
+      final lastHash = await _secureStorage.read(key: KEY_LAST_BACKUP_HASH);
+      if (lastHash == hash) {
+        AppLogger.debug('Backup unchanged, skipping upload',
+            data: {'area': 'backup.upload'});
+        return;
+      }
+
+      final compressed = IO.gzip.encode(fileBytes);
 
       try {
         await storage!.getFile(
@@ -380,12 +441,14 @@ class AuthAPI extends ChangeNotifier {
       await storage!.createFile(
         bucketId: AppwriteConfig.bucketId,
         fileId: fileId,
-        file: InputFile.fromPath(
-          path: file.path,
-          filename: 'backup_${_currentUser!.$id}.isar',
+        file: InputFile.fromBytes(
+          bytes: compressed,
+          filename: 'backup_${_currentUser!.$id}.isar.gz',
         ),
       );
-      AppLogger.info('Backup uploaded', data: {'area': 'backup.upload'});
+      await _secureStorage.write(key: KEY_LAST_BACKUP_HASH, value: hash);
+      AppLogger.info('Backup uploaded',
+          data: {'area': 'backup.upload', 'sizeBytes': fileBytes.length});
     } catch (e, st) {
       await AppLogger.captureException(e,
           stackTrace: st, area: 'backup.upload');
@@ -397,15 +460,18 @@ class AuthAPI extends ChangeNotifier {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final filePath = '${dir.path}/${DB.liveDatabaseFileName}';
-      final fileId = 'backup_${_currentUser!.$id}.isar';
+      final fileId = 'backup_${_currentUser!.$id}.isar.gz';
 
       final response = await storage!.getFileDownload(
         bucketId: AppwriteConfig.bucketId,
         fileId: fileId,
       );
 
+      final decompressed = IO.gzip.decode(response);
       final file = IO.File(filePath);
-      await file.writeAsBytes(response);
+      await file.writeAsBytes(decompressed);
+      // Invalidate the skip marker so the next upload is not skipped.
+      await _secureStorage.delete(key: KEY_LAST_BACKUP_HASH);
       AppLogger.info('Backup downloaded', data: {'area': 'backup.download'});
     } catch (e, st) {
       await AppLogger.captureException(e,

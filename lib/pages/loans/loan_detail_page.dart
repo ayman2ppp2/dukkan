@@ -53,6 +53,9 @@ class _LoanState extends State<Loan> {
       appBar: AppBar(
         actions: [
           IconButton(
+              onPressed: () => _showEditLoanerDialog(context),
+              icon: const Icon(Icons.edit)),
+          IconButton(
               onPressed: () async {
                 var sa = Provider.of<SalesProvider>(context, listen: false);
                 var temp =
@@ -586,6 +589,73 @@ class _LoanState extends State<Loan> {
                 );
               }),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showEditLoanerDialog(BuildContext context) async {
+    final nameCon = TextEditingController(text: widget.loaner.name ?? '');
+    final phoneCon =
+        TextEditingController(text: widget.loaner.phoneNumber ?? '');
+    final locCon = TextEditingController(text: widget.loaner.location ?? '');
+    final sa = Provider.of<SalesProvider>(context, listen: false);
+
+    Widget field(TextEditingController con, String label, String hint) {
+      return TextFormField(
+        controller: con,
+        textDirection: TextDirection.rtl,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+
+    return showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تعديل بيانات العميل'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            field(nameCon, 'الاسم', ''),
+            const SizedBox(height: 12),
+            field(phoneCon, 'رقم الهاتف', ''),
+            const SizedBox(height: 12),
+            field(locCon, 'المكان', ''),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newName = nameCon.text.trim();
+              if (newName.isEmpty) return;
+              final newPhone = phoneCon.text.trim();
+              final newLoc = locCon.text.trim();
+              await sa.renameLoaner(
+                widget.loaner.ID,
+                name: newName,
+                phoneNumber: newPhone,
+                location: newLoc,
+              );
+              if (!mounted) return;
+              setState(() {
+                widget.loaner.name = newName;
+                widget.loaner.phoneNumber = newPhone;
+                widget.loaner.location = newLoc;
+              });
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
       ),
     );
   }
