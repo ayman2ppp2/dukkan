@@ -1,4 +1,4 @@
-import 'package:dukkan/providers/onlineProvider.dart';
+import 'package:dukkan/providers/auth_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

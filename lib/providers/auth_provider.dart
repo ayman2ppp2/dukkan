@@ -5,12 +5,8 @@ import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/client_io.dart' as appwrite_io;
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
-<<<<<<< Updated upstream:lib/providers/auth_provider.dart
-import 'package:dukkan/core/db/db.dart';
-=======
 import 'package:crypto/crypto.dart';
-import 'package:dukkan/core/db.dart';
->>>>>>> Stashed changes:lib/providers/onlineProvider.dart
+import 'package:dukkan/core/db/db.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -383,8 +379,6 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-<<<<<<< Updated upstream:lib/providers/auth_provider.dart
-=======
   Future<Preferences> getUserPreferences() async {
     return await account.getPrefs();
   }
@@ -402,8 +396,6 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
   @visibleForTesting
   static String backupHash(List<int> bytes) =>
       sha256.convert(bytes).toString();
-
->>>>>>> Stashed changes:lib/providers/onlineProvider.dart
   Future<void> uploadBackup() async {
     try {
       final dir = await getApplicationDocumentsDirectory();

@@ -1,11 +1,11 @@
 @Tags(['integration'])
 library;
 
-import 'package:dukkan/providers/salesProvider.dart';
-import 'package:dukkan/util/loan.dart';
-import 'package:dukkan/util/models/Loaner.dart';
+import 'package:dukkan/providers/sales_provider.dart';
+import 'package:dukkan/models/Loaner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_app.dart';
@@ -80,8 +80,12 @@ void main() {
       db: handle.db,
       prefs: prefs,
       authenticated: true,
-      home: Builder(builder: (context) => Loan(loaner: stored)),
     ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final router = GoRouter.of(tester.element(find.byType(MaterialApp).first));
+    router.go('/loans/${stored.ID}', extra: stored);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

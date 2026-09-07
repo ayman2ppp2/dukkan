@@ -1,5 +1,5 @@
 import 'package:appwrite/appwrite.dart';
-import 'package:dukkan/core/appwrite_config.dart';
+import 'package:dukkan/core/config/appwrite_config.dart';
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter/widgets.dart';
 
