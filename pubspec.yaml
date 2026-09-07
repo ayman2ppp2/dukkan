@@ -4,8 +4,7 @@ description: a retail shop management app.
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-
-version: 2.4.19+1
+version: 2.4.20+1
 
 environment:
   sdk: ">=3.0.5 <4.0.0"
