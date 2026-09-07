@@ -37,6 +37,8 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
   User? _currentUser;
   AuthStatus _status = AuthStatus.uninitialized;
   bool _isOffline = false;
+  Timer? _revalidationTimer;
+  bool _isPinging = false;
   Storage? storage;
 
   User? get currentUser => _currentUser;
@@ -97,35 +99,63 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed &&
+    if (state == AppLifecycleState.paused) {
+      _revalidationTimer?.cancel();
+      _revalidationTimer = null;
+    } else if (state == AppLifecycleState.resumed &&
         _status == AuthStatus.authenticated) {
-      unawaited(_pingServer(area: 'auth.lifecycle'));
+      _startRevalidationTimer();
     }
   }
 
+  @override
+  void dispose() {
+    _revalidationTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
   Future<void> _pingServer({required String area}) async {
+    if (_isPinging) return;
+    _isPinging = true;
     try {
       final user = await account.get();
       _isOffline = false;
       _currentUser = user;
-      await _saveSession(user);
-      notifyListeners();
+      await _updateLastPingTime();
       AppLogger.debug('Heartbeat ok', data: {'area': area});
     } catch (_) {
-      // Expected while offline; keep the project quiet instead of spamming.
+      _isOffline = true;
       AppLogger.debug('Heartbeat ping failed (offline?)',
           data: {'area': area});
+    } finally {
+      _isPinging = false;
+      _startRevalidationTimer();
+    }
+  }
+
+  Future<void> _updateLastPingTime() async {
+    try {
+      await _secureStorage.write(
+        key: KEY_SESSION_TIME,
+        value: DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+    } catch (e) {
+      AppLogger.debug('Failed to update session time',
+          data: {'area': 'auth.ping_time', 'error': e.toString()});
     }
   }
 
   // keep-alive so Appwrite does not flag the project as inactive
   void _startRevalidationTimer() {
-    Future.delayed(
-        _isOffline ? revalidationInterval : heartbeatInterval, () async {
-      if (_status != AuthStatus.authenticated) return;
-      unawaited(_pingServer(area: 'auth.heartbeat'));
-      _startRevalidationTimer();
-    });
+    _revalidationTimer?.cancel();
+    _revalidationTimer = Timer(
+      _isOffline ? revalidationInterval : heartbeatInterval,
+      () async {
+        if (_status != AuthStatus.authenticated) return;
+        await _pingServer(area: 'auth.heartbeat');
+      },
+    );
   }
 
   Future<bool> checkOfflineSession() async {
@@ -212,6 +242,7 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
       _isOffline = false;
       _currentUser = user;
       await _saveSession(user);
+      AppLogger.setUser(user.$id, email: user.email, username: user.name);
     } catch (_) {
       if (await checkOfflineSession()) {
         AppLogger.info('Using offline auth session', data: {'area': 'auth'});
@@ -276,6 +307,8 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
       _status = AuthStatus.authenticated;
       _isOffline = false;
       await _saveSession(_currentUser!);
+      AppLogger.setUser(_currentUser!.$id,
+          email: _currentUser!.email, username: _currentUser!.name);
       return session;
     } finally {
       notifyListeners();
@@ -294,6 +327,8 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
       _status = AuthStatus.authenticated;
       _isOffline = false;
       await _saveSession(_currentUser!);
+      AppLogger.setUser(_currentUser!.$id,
+          email: _currentUser!.email, username: _currentUser!.name);
       notifyListeners();
     } catch (e, st) {
       await AppLogger.captureException(e, stackTrace: st, area: 'auth.oauth');
@@ -369,6 +404,9 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
 ''';
 
   signOut() async {
+    _revalidationTimer?.cancel();
+    _revalidationTimer = null;
+    AppLogger.clearUser();
     try {
       await account.deleteSession(sessionId: 'current');
     } finally {
@@ -397,79 +435,84 @@ class AuthAPI extends ChangeNotifier with WidgetsBindingObserver {
   static String backupHash(List<int> bytes) =>
       sha256.convert(bytes).toString();
   Future<void> uploadBackup() async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = IO.File('${dir.path}/${DB.liveDatabaseFileName}');
-      if (!await file.exists()) return;
-
-      final fileId = 'backup_${_currentUser!.$id}.isar.gz';
-      final fileBytes = await file.readAsBytes();
-
-      // Skip re-uploading when the local DB has not changed since last time.
-      final hash = sha256.convert(fileBytes).toString();
-      final lastHash = await _secureStorage.read(key: KEY_LAST_BACKUP_HASH);
-      if (lastHash == hash) {
-        AppLogger.debug('Backup unchanged, skipping upload',
-            data: {'area': 'backup.upload'});
-        return;
-      }
-
-      final compressed = IO.gzip.encode(fileBytes);
-
+    return AppLogger.trace<void>('backup.upload', 'backup', () async {
       try {
-        await storage!.getFile(
+        final dir = await getApplicationDocumentsDirectory();
+        final file = IO.File('${dir.path}/${DB.liveDatabaseFileName}');
+        if (!await file.exists()) return;
+
+        final fileId = 'backup_${_currentUser!.$id}.isar.gz';
+        final fileBytes = await file.readAsBytes();
+
+        // Skip re-uploading when the local DB has not changed since last time.
+        final hash = sha256.convert(fileBytes).toString();
+        final lastHash = await _secureStorage.read(key: KEY_LAST_BACKUP_HASH);
+        if (lastHash == hash) {
+          AppLogger.debug('Backup unchanged, skipping upload',
+              data: {'area': 'backup.upload'});
+          return;
+        }
+
+        final compressed = IO.gzip.encode(fileBytes);
+
+        try {
+          await storage!.getFile(
+            bucketId: AppwriteConfig.bucketId,
+            fileId: fileId,
+          );
+          await storage!.deleteFile(
+            bucketId: AppwriteConfig.bucketId,
+            fileId: fileId,
+          );
+        } catch (e, st) {
+          await AppLogger.captureException(e,
+              stackTrace: st, area: 'backup.upload.delete_existing');
+        }
+
+        await storage!.createFile(
           bucketId: AppwriteConfig.bucketId,
           fileId: fileId,
+          file: InputFile.fromBytes(
+            bytes: compressed,
+            filename: 'backup_${_currentUser!.$id}.isar.gz',
+          ),
         );
-        await storage!.deleteFile(
-          bucketId: AppwriteConfig.bucketId,
-          fileId: fileId,
-        );
+        await _secureStorage.write(key: KEY_LAST_BACKUP_HASH, value: hash);
+        AppLogger.info('Backup uploaded',
+            data: {'area': 'backup.upload', 'sizeBytes': fileBytes.length});
       } catch (e, st) {
         await AppLogger.captureException(e,
-            stackTrace: st, area: 'backup.upload.delete_existing');
+            stackTrace: st, area: 'backup.upload');
+        rethrow;
       }
-
-      await storage!.createFile(
-        bucketId: AppwriteConfig.bucketId,
-        fileId: fileId,
-        file: InputFile.fromBytes(
-          bytes: compressed,
-          filename: 'backup_${_currentUser!.$id}.isar.gz',
-        ),
-      );
-      await _secureStorage.write(key: KEY_LAST_BACKUP_HASH, value: hash);
-      AppLogger.info('Backup uploaded',
-          data: {'area': 'backup.upload', 'sizeBytes': fileBytes.length});
-    } catch (e, st) {
-      await AppLogger.captureException(e,
-          stackTrace: st, area: 'backup.upload');
-      rethrow;
-    }
+    }, data: {'userId': _currentUser?.$id});
   }
 
   Future<void> downloadBackup() async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final filePath = '${dir.path}/${DB.liveDatabaseFileName}';
-      final fileId = 'backup_${_currentUser!.$id}.isar.gz';
+    return AppLogger.trace<void>('backup.download', 'backup', () async {
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        final filePath = '${dir.path}/${DB.liveDatabaseFileName}';
+        final fileId = 'backup_${_currentUser!.$id}.isar.gz';
 
-      final response = await storage!.getFileDownload(
-        bucketId: AppwriteConfig.bucketId,
-        fileId: fileId,
-      );
+        final response = await storage!.getFileDownload(
+          bucketId: AppwriteConfig.bucketId,
+          fileId: fileId,
+        );
 
-      final decompressed = IO.gzip.decode(response);
-      final file = IO.File(filePath);
-      await file.writeAsBytes(decompressed);
-      // Invalidate the skip marker so the next upload is not skipped.
-      await _secureStorage.delete(key: KEY_LAST_BACKUP_HASH);
-      AppLogger.info('Backup downloaded', data: {'area': 'backup.download'});
-    } catch (e, st) {
-      await AppLogger.captureException(e,
-          stackTrace: st, area: 'backup.download');
-      rethrow;
-    }
+        final decompressed = IO.gzip.decode(response);
+        final file = IO.File(filePath);
+        await file.writeAsBytes(decompressed);
+        // Invalidate the skip marker so the next upload is not skipped.
+        await _secureStorage.delete(key: KEY_LAST_BACKUP_HASH);
+        AppLogger.info('Backup downloaded',
+            data: {'area': 'backup.download'});
+      } catch (e, st) {
+        await AppLogger.captureException(e,
+            stackTrace: st, area: 'backup.download');
+        rethrow;
+      }
+    }, data: {'userId': _currentUser?.$id});
   }
 
   void uploadPaymentReceipt({required IO.File receipt}) {}

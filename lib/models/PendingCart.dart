@@ -63,7 +63,7 @@ class PendingCart {
       p.priceHistory = history.map((e) {
         final em = e as Map<String, dynamic>;
         return Emap()
-          ..date = em['date']
+          ..date = em['date'] != null ? DateTime.parse(em['date'] as String) : null
           ..buyPrice = em['buyPrice']
           ..sellPrice = em['sellPrice'];
       }).toList();

@@ -128,7 +128,7 @@ class Product {
     offerPrice = double.parse(map['offerPrice'].toString());
     priceHistory = (map['priceHistory'] as List<Map<String, dynamic>>)
         .map((e) => Emap()
-          ..date = e['date']
+          ..date = e['date'] != null ? DateTime.parse(e['date'] as String) : null
           ..buyPrice = e['buyPrice']
           ..sellPrice = e['sellPrice'])
         .toList();

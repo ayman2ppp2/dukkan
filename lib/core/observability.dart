@@ -52,6 +52,25 @@ class AppLogger {
     options.attachStacktrace = true;
     options.maxBreadcrumbs = 100;
     options.tracesSampleRate = 1.0;
+
+    // Filter out known validation errors that are not bugs.
+    options.beforeSend = (event, hint) {
+      final msg = event.exceptions?.firstOrNull?.value ?? '';
+      if (_isValidationError(msg)) return null;
+      return event;
+    };
+  }
+
+  /// Known validation messages that should not be reported to Sentry.
+  static final _validationErrors = RegExp(
+    r'Discount must be non-negative|'
+    r'Discount cannot exceed checkout total|'
+    r'Insufficient stock',
+    caseSensitive: false,
+  );
+
+  static bool _isValidationError(String message) {
+    return _validationErrors.hasMatch(message);
   }
 
   static Future<void> _runGuarded(Future<void> Function() appRunner) async {
@@ -175,6 +194,105 @@ class AppLogger {
     ));
   }
 
+  // ── User context ──────────────────────────────────────────────────────
+
+  /// Associates the current Sentry session with a user.
+  /// Call after successful login; PII is stripped by [sanitizeText].
+  static void setUser(String? userId, {String? email, String? username}) {
+    if (!ObservabilityConfig.crashReportingEnabled || !_sentryStarted) return;
+    Sentry.configureScope((scope) {
+      scope.setUser(SentryUser(
+        id: userId,
+        email: email != null ? sanitizeText(email) : null,
+        username: username != null ? sanitizeText(username) : null,
+      ));
+    });
+  }
+
+  /// Clears the user from the Sentry scope. Call on sign-out.
+  static void clearUser() {
+    if (!ObservabilityConfig.crashReportingEnabled || !_sentryStarted) return;
+    Sentry.configureScope((scope) {
+      scope.setUser(null);
+    });
+  }
+
+  // ── Tags ──────────────────────────────────────────────────────────────
+
+  /// Sets a tag on the current Sentry scope. Tags are indexed and
+  /// searchable in the Sentry UI (e.g. `area`, `feature`).
+  static void setTag(String key, String value) {
+    if (!ObservabilityConfig.crashReportingEnabled || !_sentryStarted) return;
+    Sentry.configureScope((scope) {
+      scope.setTag(key, value);
+    });
+  }
+
+  // ── Performance monitoring ────────────────────────────────────────────
+
+  /// Starts a Sentry transaction for performance monitoring.
+  /// Returns the [SentrySpan] which must be passed to [finishTransaction].
+  ///
+  /// Example:
+  /// ```dart
+  /// final txn = AppLogger.startTransaction('checkout', 'checkout');
+  /// try {
+  ///   await _doCheckout();
+  ///   txn.finish(status: SpanStatus.ok());
+  /// } catch (e) {
+  ///   txn.finish(status: SpanStatus.internalError());
+  ///   rethrow;
+  /// }
+  /// ```
+  static Future<ISentrySpan> startTransaction(
+    String name,
+    String operation, {
+    Map<String, Object?>? data,
+  }) async {
+    if (!ObservabilityConfig.crashReportingEnabled || !_sentryStarted) {
+      return _NoopSpan();
+    }
+    final transaction = Sentry.startTransaction(
+      name,
+      operation,
+      bindToScope: true,
+    );
+    if (data != null) {
+      for (final entry in sanitizeMap(data).entries) {
+        transaction.setData(entry.key, entry.value);
+      }
+    }
+    return transaction;
+  }
+
+  /// Convenience wrapper: runs [fn] inside a Sentry transaction,
+  /// automatically finishing with [SpanStatus.ok] on success or
+  /// [SpanStatus.internalError] on exception.
+  ///
+  /// Example:
+  /// ```dart
+  /// await AppLogger.trace('checkout', 'checkout', () async {
+  ///   await _performCheckout();
+  /// }, data: {'productCount': items.length});
+  /// ```
+  static Future<T> trace<T>(
+    String name,
+    String operation,
+    Future<T> Function() fn, {
+    Map<String, Object?>? data,
+  }) async {
+    final span = await startTransaction(name, operation, data: data);
+    try {
+      final result = await fn();
+      span.finish(status: SpanStatus.ok());
+      return result;
+    } catch (e) {
+      span.throwable = e;
+      span.finish(status: SpanStatus.internalError());
+      rethrow;
+    }
+  }
+
   @visibleForTesting
   static Map<String, dynamic> sanitizeMap(Map<String, Object?>? data) {
     if (data == null || data.isEmpty) return {};
@@ -248,4 +366,14 @@ class UserSafeMessages {
   static const syncFailed =
       'فشلت المزامنة. تحقق من الشبكة وعنوان المشاركة ثم حاول مرة أخرى.';
   static const pdfFailed = 'تعذر إنشاء ملف PDF. حاول مرة أخرى.';
+}
+
+/// A no-op span returned when Sentry is not enabled, so callers
+/// don't need null-checks.
+class _NoopSpan implements ISentrySpan {
+  @override
+  Future<void> finish({SpanStatus? status, DateTime? endTimestamp, dynamic hint}) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {}
 }
