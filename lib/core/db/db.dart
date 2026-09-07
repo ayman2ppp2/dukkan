@@ -247,7 +247,7 @@ class DB {
     bool expense = false,
     int? expenseId,
   }) async {
-    try {
+    return AppLogger.trace<bool>('checkout', 'checkout', () async {
       if (discount < 0) {
         throw Exception('Discount must be non-negative');
       }
@@ -474,10 +474,7 @@ class DB {
         }
       }
       return success;
-    } catch (e, st) {
-      await AppLogger.captureException(e, stackTrace: st, area: 'checkout');
-      rethrow;
-    }
+    }, data: {'productCount': products.length, 'total': total});
   }
 
   Stream<List<Expense>> getExpenses({required bool fixed}) {

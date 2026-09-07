@@ -34,13 +34,14 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
   }
 
   Future<void> runServer() async {
-    await _syncServer?.close(force: true);
-    _syncServer = null;
-    setSyncState(
-      SyncStatus.connecting,
-      message: 'جار تجهيز خادم المزامنة المحلية...',
-      progress: 0,
-    );
+    return AppLogger.trace<void>('sync.server', 'sync', () async {
+      await _syncServer?.close(force: true);
+      _syncServer = null;
+      setSyncState(
+        SyncStatus.connecting,
+        message: 'جار تجهيز خادم المزامنة المحلية...',
+        progress: 0,
+      );
 
     try {
       final packageInfo = await PackageInfo.fromPlatform();
@@ -95,18 +96,20 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
       _syncServer = null;
       notifyListeners();
     }
+    });
   }
 
   Future<void> syncFromServer(String input) async {
-    final endpoint = LanSyncEndpoint.tryParse(input);
-    if (endpoint == null) {
-      setSyncState(
-        SyncStatus.error,
-        message: 'عنوان المشاركة غير صحيح',
-        error: 'استخدم IP أو IP:PORT من جهاز الإرسال.',
-      );
-      return;
-    }
+    return AppLogger.trace<void>('sync.client', 'sync', () async {
+      final endpoint = LanSyncEndpoint.tryParse(input);
+      if (endpoint == null) {
+        setSyncState(
+          SyncStatus.error,
+          message: 'عنوان المشاركة غير صحيح',
+          error: 'استخدم IP أو IP:PORT من جهاز الإرسال.',
+        );
+        return;
+      }
 
     final dir = await getApplicationDocumentsDirectory();
     final downloadPath = _downloadedBackupPath(dir.path);
@@ -205,6 +208,7 @@ class ShareProvider extends ChangeNotifier with LanSyncState {
       _syncCancelToken = null;
       notifyListeners();
     }
+    });
   }
 
   void cancelSync() {
