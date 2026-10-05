@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dukkan/core/observability.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,6 +21,28 @@ void main() {
       expect(safe['filePath'], '<redacted>');
       expect(safe['itemCount'], 3);
       expect(safe['productCount'], 2);
+    });
+
+    test('never lets raw objects or DateTimes reach Sentry data', () {
+      final when = DateTime(2026, 10, 4, 13, 3);
+      final safe = AppLogger.sanitizeMap({
+        'when': when,
+        'nested': {'since': when},
+        'product': Object(),
+        'nothing': null,
+        'price': 12.5,
+        'flag': true,
+      });
+
+      expect(safe['when'], isA<String>());
+      expect(safe['when'], when.toIso8601String());
+      expect((safe['nested'] as Map)['since'], when.toIso8601String());
+      expect(safe['product'], isA<String>());
+      expect(safe['nothing'], isNull);
+      expect(safe['price'], 12.5);
+      expect(safe['flag'], true);
+      // The payload Sentry serializes must be plain JSON.
+      expect(() => jsonEncode(safe), returnsNormally);
     });
 
     test('redacts emails, pairing addresses, and backup filenames in text', () {

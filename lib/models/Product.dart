@@ -1,4 +1,5 @@
 import 'package:dukkan/models/Emap.dart';
+import 'package:dukkan/utils/json_values.dart';
 import 'package:isar_community/isar.dart';
 
 part 'Product.g.dart';
@@ -115,25 +116,24 @@ class Product {
   // }
 
   Product.fromJson({required map}) {
-    name = map['name'] as String;
-    ownerName = map['ownerName'] as String;
-    barcode = map['barcode'] as String;
-    weightable = map['weightable'] as bool;
-    wholeUnit = map['wholeUnit'] as String;
-    buyprice = double.parse(map['buyprice'].toString());
-    sellPrice = double.parse(map['sellPrice'].toString());
-    count = int.parse(map['count'].toString());
-    offer = map['offer'] as bool;
-    offerCount = double.parse(map['offerCount'].toString());
-    offerPrice = double.parse(map['offerPrice'].toString());
-    priceHistory = (map['priceHistory'] as List<Map<String, dynamic>>)
-        .map((e) => Emap()
-          ..date = e['date'] != null ? DateTime.parse(e['date'] as String) : null
-          ..buyPrice = e['buyPrice']
-          ..sellPrice = e['sellPrice'])
+    final rawId = map['id'];
+    if (rawId is num) id = rawId.toInt();
+    name = map['name'] as String?;
+    ownerName = map['ownerName'] as String?;
+    barcode = map['barcode'] as String?;
+    weightable = map['weightable'] as bool?;
+    wholeUnit = map['wholeUnit'] as String?;
+    buyprice = doubleOrNull(map['buyprice']);
+    sellPrice = doubleOrNull(map['sellPrice']);
+    count = intValueOrNull(map['count']);
+    offer = map['offer'] as bool?;
+    offerCount = doubleOrNull(map['offerCount']);
+    offerPrice = doubleOrNull(map['offerPrice']);
+    priceHistory = ((map['priceHistory'] as List?) ?? const [])
+        .map((e) => Emap.fromMap(map: e as Map))
         .toList();
-    endDate = map['endDate'] as DateTime;
-    hot = map['hot'];
+    endDate = dateTimeOrNull(map['endDate']);
+    hot = map['hot'] as bool?;
   }
 
   Map<String, Object?> toJson() {
@@ -152,7 +152,7 @@ class Product {
       'offerPrice': offerPrice,
       'priceHistory': List.generate(priceHistory.length,
           (index) => priceHistory.elementAt(index).toMap()),
-      'endDate': endDate,
+      'endDate': endDate?.toIso8601String(),
       'hot': hot,
     };
   }
@@ -213,16 +213,16 @@ class EmbeddedProduct {
 
   EmbeddedProduct.fromJson({required map}) {
     // return EmbeddedProduct()
-    name = map['name'];
-    productId = map['productId'];
-    buyPrice = map['buyPrice'];
-    sellPrice = map['sellPrice'];
-    count = map['count'];
-    hot = map['hot'];
+    name = map['name'] as String?;
+    productId = intValueOrNull(map['productId']);
+    buyPrice = doubleOrNull(map['buyPrice']);
+    sellPrice = doubleOrNull(map['sellPrice']);
+    count = intValueOrNull(map['count']);
+    hot = map['hot'] as bool?;
     // offer = map['offer'];
     // offerCount = map['offerCount'];
     // offerPrice = map['offerPrice'];
-    endDate = map['endDate'];
+    endDate = dateTimeOrNull(map['endDate']);
   }
   Map<String, dynamic> toJson() {
     return {
@@ -235,7 +235,7 @@ class EmbeddedProduct {
       // 'offer': offer,
       // 'offerCount': offerCount,
       // 'offerPrice': offerPrice,
-      'endDate': endDate,
+      'endDate': endDate?.toIso8601String(),
     };
   }
 }

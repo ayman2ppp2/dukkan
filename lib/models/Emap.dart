@@ -1,3 +1,4 @@
+import 'package:dukkan/utils/json_values.dart';
 import 'package:isar_community/isar.dart';
 part 'Emap.g.dart';
 
@@ -10,9 +11,9 @@ class Emap {
   Emap();
 
   Emap.fromMap({required Map map}) {
-    buyPrice = map['buyPrice'];
-    sellPrice = map['sellPrice'];
-    date = map['date'] != null ? DateTime.parse(map['date'] as String) : null;
+    buyPrice = doubleOrNull(map['buyPrice']);
+    sellPrice = doubleOrNull(map['sellPrice']);
+    date = dateTimeOrNull(map['date']);
   }
 
   Map<String, dynamic> toMap() {

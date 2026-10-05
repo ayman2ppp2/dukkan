@@ -11,7 +11,7 @@ import 'package:isar_community/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:provider/provider.dart';
 
-class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
+class SalesProvider with ChangeNotifier {
   late SharedPreferences _pref;
   late DB db;
   List<Product>? _testProducts;
@@ -469,34 +469,10 @@ class SalesProvider with ChangeNotifier, WidgetsBindingObserver {
     return db.watchProduct(id);
   }
 
-  Future<void> saveProductsToSharedPreferences(List<Product> products) async {
-    final productListJson =
-        products.map((product) => product.toJson()).toList();
-    _pref.setString('productList', jsonEncode(productListJson));
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      AppLogger.debug('Persisting cart on lifecycle change',
-          data: {'itemCount': sellList.length});
-      saveProductsToSharedPreferences(sellList);
-    }
-  }
-
   @override
   void dispose() {
-    var sellListMap;
-    if (sellList.isNotEmpty) {
-      sellListMap = sellList
-          .map(
-            (e) => e.toJson(),
-          )
-          .toList();
-    }
     AppLogger.debug('Disposing sales provider',
-        data: {'itemCount': sellListMap?.length ?? 0});
+        data: {'itemCount': sellList.length});
     super.dispose();
   }
 }

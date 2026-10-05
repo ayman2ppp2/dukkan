@@ -262,12 +262,14 @@ Consumed by: auth gate in `main.dart`, `LoginPage`, `register_page`, `verifyPage
 ### `SalesProvider` — `lib/providers/sales_provider.dart`
 
 The workhorse provider (cart, inventory, loaners, parking, prefs). `with
-ChangeNotifier, WidgetsBindingObserver`. Hooks `onInventoryChanged` → `StatsService.clearAllCache`.
+ChangeNotifier`. Hooks `onInventoryChanged` → `StatsService.clearAllCache`.
 
 - **Cart**: `sellList` (sale cart), `inboundList` (inbound stock batch), `searchTemp`.
   `parkCurrentCart` / `restoreCart` / `deletePendingCart` (persist to SharedPreferences
-  key `pendingCarts` as JSON, capped at `maxPendingCarts = 5`). The current `sellList`
-  is persisted to prefs on app pause/detach.
+  key `pendingCarts` as JSON, capped at `maxPendingCarts = 5`). Parking is the
+  only way to keep a cart across sessions — `sellList` is *not* written to prefs
+  on pause (the old lifecycle write to key `productList` had no reader and was
+  removed; it crashed on `DateTime` serialization, Sentry FLUTTER-8).
 - **Products**: `refreshProductsList`, `updateProduct`, `insertProducts`,
   `removeProduct`, `getProductCount(id)` (sync; returns `999` when missing),
   `isProductOutOFStock` (**inverted logic**), `isProductOutOfDate`.

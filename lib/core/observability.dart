@@ -293,6 +293,12 @@ class AppLogger {
     }
   }
 
+  /// Converts a log/breadcrumb data map into values that are safe to hand to
+  /// Sentry's serializer: text is scrubbed, nested maps recursed, iterables
+  /// collapsed, [DateTime]s become ISO-8601 strings, and anything else that
+  /// isn't a JSON primitive falls back to `toString()` — a raw object here
+  /// would make Sentry's `jsonEncode` throw
+  /// `Converting object to an encodable object failed`.
   @visibleForTesting
   static Map<String, dynamic> sanitizeMap(Map<String, Object?>? data) {
     if (data == null || data.isEmpty) return {};
@@ -305,7 +311,11 @@ class AppLogger {
       if (value is Iterable) {
         return MapEntry(key, '<list:${value.length}>');
       }
-      return MapEntry(key, value);
+      if (value is DateTime) return MapEntry(key, value.toIso8601String());
+      if (value == null || value is num || value is bool) {
+        return MapEntry(key, value);
+      }
+      return MapEntry(key, value.toString());
     });
   }
 
@@ -372,7 +382,8 @@ class UserSafeMessages {
 /// don't need null-checks.
 class _NoopSpan implements ISentrySpan {
   @override
-  Future<void> finish({SpanStatus? status, DateTime? endTimestamp, dynamic hint}) async {}
+  Future<void> finish(
+      {SpanStatus? status, DateTime? endTimestamp, dynamic hint}) async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) {}
