@@ -143,7 +143,6 @@ class _AppScopeState extends State<_AppScope> {
   void initState() {
     super.initState();
     final sa = context.read<SalesProvider>();
-    WidgetsBinding.instance.addObserver(sa);
     sa.onInventoryChanged = context.read<StatsService>().clearAllCache;
   }
 

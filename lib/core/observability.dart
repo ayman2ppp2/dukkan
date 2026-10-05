@@ -22,7 +22,7 @@ class AppLogger {
     await _runGuarded(() async {
       WidgetsFlutterBinding.ensureInitialized();
       if (ObservabilityConfig.crashReportingEnabled) {
-        await SentryFlutter.init(_configureSentry);
+        await SentryFlutter.init(configureSentry);
         _sentryStarted = true;
       }
       _installGlobalErrorHandlers();
@@ -41,7 +41,12 @@ class AppLogger {
     });
   }
 
-  static void _configureSentry(SentryFlutterOptions options) {
+  /// Builds the options used at bootstrap. Takes the base [SentryOptions] so
+  /// the same configuration is used by `SentryFlutter.init` and by tests that
+  /// boot the pure-Dart SDK, and is kept public (and exercised by tests) so
+  /// that signals like `enableLogs` cannot be dropped without a failing test.
+  @visibleForTesting
+  static void configureSentry(SentryOptions options) {
     options.dsn = ObservabilityConfig.dsn;
     options.environment = ObservabilityConfig.environment;
     if (ObservabilityConfig.release.isNotEmpty) {
@@ -53,12 +58,46 @@ class AppLogger {
     options.maxBreadcrumbs = 100;
     options.tracesSampleRate = 1.0;
 
+    // Sentry Logs: a queryable stream of structured log lines, independent of
+    // error events. `enableLogs` defaults to false (it is not read by the
+    // 9.29.x SDK, which wires the logger unconditionally, but newer SDKs do
+    // gate on it), so opt in explicitly. The actual log traffic comes from
+    // AppLogger._sendLog calling Sentry.logger — without that, the Logs tab
+    // stays empty no matter what this flag says.
+    options.enableLogs = true;
+    options.beforeSendLog = filterLog;
+
     // Filter out known validation errors that are not bugs.
     options.beforeSend = (event, hint) {
       final msg = event.exceptions?.firstOrNull?.value ?? '';
       if (_isValidationError(msg)) return null;
       return event;
     };
+  }
+
+  /// Last line of defense for a log before it leaves the device: drops the
+  /// same non-bug validation messages [beforeSend] drops, then re-scrubs body
+  /// and attributes so nothing sensitive reaches Sentry even when a call site
+  /// hand-rolled its data instead of going through [sanitizeMap].
+  ///
+  /// [SentryAttribute.value] is immutable, so redacted entries are replaced
+  /// rather than mutated. Runs after the SDK has attached its default
+  /// attributes (environment, release, trace), which are left untouched.
+  @visibleForTesting
+  static SentryLog? filterLog(SentryLog log) {
+    if (_isValidationError(log.body)) return null;
+    log.body = sanitizeText(log.body);
+    log.attributes = log.attributes.map((key, value) {
+      if (_isSensitiveKey(key)) {
+        return MapEntry(key, SentryAttribute.string('<redacted>'));
+      }
+      final raw = value.value;
+      if (raw is String) {
+        return MapEntry(key, SentryAttribute.string(sanitizeText(raw)));
+      }
+      return MapEntry(key, value);
+    });
+    return log;
   }
 
   /// Known validation messages that should not be reported to Sentry.
@@ -115,9 +154,7 @@ class AppLogger {
   }
 
   static void debug(String message, {Map<String, Object?>? data}) {
-    if (!kReleaseMode) {
-      _localLog('debug', message, data: data);
-    }
+    _localLog('debug', message, data: data);
     _breadcrumb(message, level: SentryLevel.debug, data: data);
   }
 
@@ -129,10 +166,9 @@ class AppLogger {
   static Future<void> warning(String message,
       {Map<String, Object?>? data}) async {
     _localLog('warning', message, data: data);
-    final safeData = sanitizeMap(data);
     if (!ObservabilityConfig.crashReportingEnabled || !_sentryStarted) return;
 
-    await _breadcrumb(message, level: SentryLevel.warning, data: safeData);
+    await _breadcrumb(message, level: SentryLevel.warning, data: data);
     await Sentry.captureMessage(
       sanitizeText(message),
       level: SentryLevel.warning,
@@ -146,38 +182,115 @@ class AppLogger {
     Map<String, Object?>? data,
     bool fatal = false,
   }) async {
-    final safeData = sanitizeMap({
-      if (area != null) 'area': area,
-      if (fatal) 'fatal': true,
-      ...?data,
-    });
     final summary = sanitizeText(error.toString());
 
-    _localLog('error', summary, data: safeData, stackTrace: stackTrace);
+    _localLog(
+      fatal ? 'fatal' : 'error',
+      summary,
+      data: {
+        if (area != null) 'area': area,
+        if (fatal) 'fatal': true,
+        ...?data,
+      },
+      stackTrace: stackTrace,
+    );
 
     if (!ObservabilityConfig.crashReportingEnabled || !_sentryStarted) return;
 
     await _breadcrumb(
       summary,
       level: fatal ? SentryLevel.fatal : SentryLevel.error,
-      data: safeData,
+      data: {
+        if (area != null) 'area': area,
+        if (fatal) 'fatal': true,
+        ...?data,
+      },
     );
     await Sentry.captureException(Exception(summary), stackTrace: stackTrace);
   }
 
+  /// Emits [message] to the console and to Sentry Logs.
+  ///
+  /// Both sinks share one sanitization pass so the console and Sentry always
+  /// show the same (scrubbed) text.
   static void _localLog(
     String level,
     String message, {
     Map<String, Object?>? data,
     StackTrace? stackTrace,
   }) {
-    if (kReleaseMode && level != 'error' && level != 'warning') return;
     final safeMessage = sanitizeText(message);
     final safeData = sanitizeMap(data);
+    _printToConsole(level, safeMessage, safeData, stackTrace);
+    _sendLog(level, safeMessage, safeData);
+  }
+
+  static void _printToConsole(
+    String level,
+    String safeMessage,
+    Map<String, dynamic> safeData,
+    StackTrace? stackTrace,
+  ) {
+    // Debug chatter is dev-only; warnings and above always print.
+    if (kReleaseMode && !_alwaysPrintedLevels.contains(level)) return;
     final dataText = safeData.isEmpty ? '' : ' $safeData';
     final stackText =
         !kReleaseMode && stackTrace != null ? '\n$stackTrace' : '';
     debugPrint('[${level.toUpperCase()}] $safeMessage$dataText$stackText');
+  }
+
+  static const _alwaysPrintedLevels = {'warning', 'error', 'fatal'};
+
+  /// Forwards a message to Sentry Logs — the queryable log stream in the
+  /// Sentry UI, as opposed to breadcrumbs which only ride along on errors.
+  ///
+  /// Level policy: `info`/`warning`/`error`/`fatal` always ship; `debug` only
+  /// ships outside release, because in production debug lines are already
+  /// captured as breadcrumbs and would otherwise double the volume.
+  static void _sendLog(
+    String level,
+    String safeMessage,
+    Map<String, dynamic> safeData,
+  ) {
+    // The hub reports whether the SDK is actually live (DSN present and init
+    // completed), which is a stricter and more honest check than the bootstrap
+    // flag — and lets tests exercise this path with a fake transport.
+    if (!Sentry.isEnabled) return;
+    if (level == 'debug' && kReleaseMode) return;
+
+    final emit = switch (level) {
+      'debug' => Sentry.logger.debug,
+      'info' => Sentry.logger.info,
+      'warning' => Sentry.logger.warn,
+      'fatal' => Sentry.logger.fatal,
+      _ => Sentry.logger.error,
+    };
+    emit(safeMessage, attributes: toLogAttributes(safeData));
+  }
+
+  /// Converts a sanitized data map into typed Sentry log attributes so values
+  /// stay queryable (`total:>1000`) instead of being flattened into the
+  /// message string. Nulls are dropped — Sentry has no null attribute type.
+  @visibleForTesting
+  static Map<String, SentryAttribute> toLogAttributes(
+    Map<String, dynamic> data,
+  ) {
+    final attributes = <String, SentryAttribute>{};
+    data.forEach((key, value) {
+      if (value == null) return;
+      if (value is String) {
+        attributes[key] = SentryAttribute.string(value);
+      } else if (value is bool) {
+        attributes[key] = SentryAttribute.bool(value);
+      } else if (value is int) {
+        attributes[key] = SentryAttribute.int(value);
+      } else if (value is double) {
+        attributes[key] = SentryAttribute.double(value);
+      } else {
+        attributes[key] = SentryAttribute.string(value.toString());
+      }
+    });
+    return attributes;
   }
 
   static Future<void> _breadcrumb(
@@ -293,6 +406,12 @@ class AppLogger {
     }
   }
 
+  /// Converts a log/breadcrumb data map into values that are safe to hand to
+  /// Sentry's serializer: text is scrubbed, nested maps recursed, iterables
+  /// collapsed, [DateTime]s become ISO-8601 strings, and anything else that
+  /// isn't a JSON primitive falls back to `toString()` — a raw object here
+  /// would make Sentry's `jsonEncode` throw
+  /// `Converting object to an encodable object failed`.
   @visibleForTesting
   static Map<String, dynamic> sanitizeMap(Map<String, Object?>? data) {
     if (data == null || data.isEmpty) return {};
@@ -305,7 +424,11 @@ class AppLogger {
       if (value is Iterable) {
         return MapEntry(key, '<list:${value.length}>');
       }
-      return MapEntry(key, value);
+      if (value is DateTime) return MapEntry(key, value.toIso8601String());
+      if (value == null || value is num || value is bool) {
+        return MapEntry(key, value);
+      }
+      return MapEntry(key, value.toString());
     });
   }
 
@@ -372,7 +495,8 @@ class UserSafeMessages {
 /// don't need null-checks.
 class _NoopSpan implements ISentrySpan {
   @override
-  Future<void> finish({SpanStatus? status, DateTime? endTimestamp, dynamic hint}) async {}
+  Future<void> finish(
+      {SpanStatus? status, DateTime? endTimestamp, dynamic hint}) async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) {}

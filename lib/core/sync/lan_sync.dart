@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:dukkan/core/observability.dart';
 
 enum SyncStatus {
   idle,
@@ -51,6 +52,7 @@ mixin LanSyncState on ChangeNotifier {
     String? error,
     double? progress,
   }) {
+    final previous = syncStatus;
     syncStatus = status;
     syncMessage = message ?? status.label;
     syncErrorMessage = error;
@@ -58,6 +60,16 @@ mixin LanSyncState on ChangeNotifier {
       syncProgress = progress.clamp(0, 1).toDouble();
     }
     notifyListeners();
+    // State-transition example: only log the edge, not repeated progress
+    // updates that keep the same status.
+    if (previous != status) {
+      AppLogger.info('Sync state changed', data: {
+        'area': 'sync',
+        'from': previous.name,
+        'to': status.name,
+        if (error != null) 'syncError': error,
+      });
+    }
   }
 }
 

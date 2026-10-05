@@ -1,3 +1,4 @@
+import 'package:dukkan/utils/json_values.dart';
 import 'package:isar_community/isar.dart';
 
 part 'Owner.g.dart';
@@ -25,7 +26,7 @@ class Owner {
   Map<String, Object?> toJson() {
     return {
       'ownerName': ownerName,
-      'lastPaymentDate': lastPaymentDate,
+      'lastPaymentDate': lastPaymentDate.toIso8601String(),
       'lastPayment': lastPayment,
       'totalPayed': totalPayed,
       'dueMoney': dueMoney,
@@ -34,9 +35,11 @@ class Owner {
 
   Owner.fromJson({required Map<String, Object?> map}) {
     ownerName = map['ownerName'] as String;
-    lastPaymentDate = map['lastPaymentDate'] as DateTime;
-    lastPayment = map['lastPayment'] as double;
-    totalPayed = map['totalPayed'] as double;
-    dueMoney = map['dueMoney'] as double;
+    // Non-nullable field: fall back to "now" rather than throwing when the
+    // stored value is missing or unparsable (matches the creation default).
+    lastPaymentDate = dateTimeOrNull(map['lastPaymentDate']) ?? DateTime.now();
+    lastPayment = doubleOrNull(map['lastPayment']) ?? 0;
+    totalPayed = doubleOrNull(map['totalPayed']) ?? 0;
+    dueMoney = doubleOrNull(map['dueMoney']) ?? 0;
   }
 }

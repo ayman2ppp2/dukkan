@@ -1,3 +1,4 @@
+import 'package:dukkan/utils/json_values.dart';
 import 'package:isar_community/isar.dart';
 
 part 'Loaner.g.dart';
@@ -43,17 +44,19 @@ class Loaner {
   DateTime? zeroingDate;
 
   Loaner.fromMap({required Map map}) {
-    name = map['name'];
-    phoneNumber = map['phoneNumber'];
-    location = map['location'];
+    name = map['name'] as String?;
+    phoneNumber = map['phoneNumber'] as String?;
+    location = map['location'] as String?;
     lastPayment = [
       EmbeddedMap.named(
-          key: (map['lastPaymentDate'] as DateTime).toIso8601String(),
-          value: (map['lastPayment'] as double).toString())
+          key: dateTimeOrNull(map['lastPaymentDate'])?.toIso8601String(),
+          value: doubleOrNull(map['lastPayment'])?.toString())
     ];
-    balance = (map['loanedAmount'] ?? map['balance']) as double?;
-    ID = convertId(map['ID']).toInt();
+    balance = doubleOrNull(map['loanedAmount'] ?? map['balance']);
+    final rawId = intValueOrNull(map['ID']);
+    if (rawId != null) ID = convertId(rawId).toInt();
   }
+
   Map<String, dynamic> toMap() {
     return {
       'ID': this.ID,
@@ -61,9 +64,9 @@ class Loaner {
       'phoneNumber': this.phoneNumber,
       'location': this.location,
       'lastPayment': this.lastPaymentTemp,
-      'lastPaymentDate': this.lastPaymentDate,
+      'lastPaymentDate': this.lastPaymentDate?.toIso8601String(),
       'balance': this.balance,
-      'zeroingDate': this.zeroingDate,
+      'zeroingDate': this.zeroingDate?.toIso8601String(),
     };
   }
 
