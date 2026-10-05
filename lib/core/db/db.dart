@@ -473,6 +473,18 @@ class DB {
           await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
         }
       }
+      if (success) {
+        // Structured example: constant message, values as typed attributes so
+        // they stay queryable (e.g. `total:>1000`) instead of string-concatenated.
+        AppLogger.info('Checkout completed', data: {
+          'area': 'checkout',
+          'itemCount': clearedProducts.length,
+          'total': totalPrice,
+          'profit': totalProfit,
+          'discount': discount,
+          'paymentType': loaned ? 'loan' : 'cash',
+        });
+      }
       return success;
     }, data: {'productCount': products.length, 'total': total});
   }

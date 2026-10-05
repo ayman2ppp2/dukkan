@@ -66,20 +66,22 @@ class SalesProvider with ChangeNotifier {
     if (sellList.isEmpty) return;
     final now = DateTime.now();
     final timeStr = DateFormat('HH:mm').format(now);
-    final name = 'فاتورة $timeStr';
-    pendingCarts.insert(
-      0,
-      PendingCart(
-        name: name,
-        products: List.from(sellList),
-        parkedAt: now,
-      ),
+    final cart = PendingCart(
+      name: 'فاتورة $timeStr',
+      products: List.from(sellList),
+      parkedAt: now,
     );
+    pendingCarts.insert(0, cart);
     if (pendingCarts.length > maxPendingCarts) {
       pendingCarts.removeLast();
     }
     sellList.clear();
     _savePendingCarts();
+    AppLogger.info('Cart parked', data: {
+      'area': 'cart.park',
+      'itemCount': cart.products.length,
+      'pendingCarts': pendingCarts.length,
+    });
     notifyListeners();
   }
 
@@ -88,6 +90,11 @@ class SalesProvider with ChangeNotifier {
     final cart = pendingCarts.removeAt(index);
     sellList = cart.products;
     _savePendingCarts();
+    AppLogger.info('Cart restored', data: {
+      'area': 'cart.restore',
+      'itemCount': cart.products.length,
+      'pendingCarts': pendingCarts.length,
+    });
     notifyListeners();
   }
 

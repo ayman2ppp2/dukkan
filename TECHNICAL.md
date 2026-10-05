@@ -423,12 +423,39 @@ Peer-to-peer DB transfer over HTTP on port `30000`. Version-gated:
 
 - `ObservabilityConfig`: reads `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`
   from `String.fromEnvironment`. Crash reporting only when `SENTRY_DSN` non-empty.
-- `AppLogger`: `debug/info/warning/captureException`. Local logging redacts emails,
-  pairing addresses, `.isar` paths; release builds suppress non-error/warning logs.
-  `sanitizeMap`/`sanitizeText` are `@visibleForTesting`.
+- `AppLogger`: `debug/info/warning/captureException`. Each call goes to three sinks:
+  the console (in release only warnings/errors/fatals print), a breadcrumb (all
+  levels — the trail that explains *why* an error happened), and **Sentry Logs**
+  (the queryable stream: `info`/`warning`/`error`/`fatal` always, `debug` outside
+  release so production stays free of breadcrumb-duplicated noise). Local logging
+  redacts emails, pairing addresses, `.isar` paths; `sanitizeMap`/`sanitizeText`
+  are `@visibleForTesting`.
+- **Sentry Logs**: `configureSentry` sets `enableLogs = true` and
+  `beforeSendLog = AppLogger.filterLog`, which drops the same validation messages
+  `beforeSend` drops and re-scrubs body/attributes before the wire. Data values
+  become **typed** log attributes (`integer`/`double`/`boolean`/`string`) instead of
+  being concatenated into the message, so they stay queryable (`total:>1000`).
+  Keys matching `_isSensitiveKey` (…`loan`, `owner`, `code`, `file`…) arrive as
+  `<redacted>` — name business keys accordingly (`paymentType`, not `loaned`).
+  Emission is gated on `Sentry.currentHub.isEnabled`, so nothing is logged before
+  the SDK is live.
 - `UserSafeMessages`: Arabic user-safe error strings (never leak internals).
 
-Always log through `AppLogger` (never raw `print`/`debugPrint`) with an `area` string.
+Always log through `AppLogger` (never raw `print`/`debugPrint`) with an `area` string
+and structured `data`. Exemplars: checkout completion (`db.dart`), sync state
+transitions (`lan_sync.dart`), cart park/restore (`sales_provider.dart`).
+
+Covered by `test/unit/observability_test.dart` (filter, attributes, config) and
+`test/integration/sentry_log_pipeline_test.dart` (real SDK pipeline against a
+capturing transport — asserts the `log` envelope Sentry would ingest). For a live
+check, `test/integration/sentry_log_smoke_test.dart` sends to a real DSN (set
+`SENTRY_LOG_SMOKE_DSN`) and asserts ingest returned HTTP 200.
+
+Measured behaviour of the Logs explorer (2026-10): message and attribute filters
+work (`message:"*x*"`, `area:checkout`, `total:>1000`), but **`environment:` does
+not match logs** — environment rides on logs as the `sentry.environment`
+attribute, which the logs dataset does not index as an environment column, so
+filter by `area:`/message instead. Searchable ~1-2 min after ingest.
 
 ### Appwrite config (`lib/core/appwrite_config.dart`)
 
